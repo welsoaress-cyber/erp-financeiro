@@ -25,7 +25,7 @@ export function BarraLateral({ modulos, aoNavegar }: { modulos: DefinicaoModulo[
           </li>
         ))}
       </ul>
-      <div className="border-t border-white/10 px-5 py-3 text-xs text-white/50">Contas · v0.3</div>
+      <div className="border-t border-white/10 px-5 py-3 text-xs text-white/50">Categorias · v0.4</div>
     </nav>
   )
 }

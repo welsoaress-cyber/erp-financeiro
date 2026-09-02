@@ -1,6 +1,6 @@
 # Etapa 2 — Fundação
 
-Status: **CONCLUÍDA em código e testada localmente (02/09/2026).** Rename `entidades` → `organizacoes` / `entidade_membros` → `organizacao_membros` **aplicado** em migration, testes e app, com zero ocorrências antigas restantes. Pendências externas: criação do projeto Supabase (seção 6) e conexão do Cloudflare Pages (seção 5). Nenhum módulo de operação foi antecipado; eles pertencem ao roadmap (`01-arquitetura.md`, seção 11).
+Status: **CONCLUÍDA E VALIDADA EM PRODUÇÃO (02/09/2026).** Site: https://erp-financeiro.welsoaress.workers.dev (Cloudflare Workers, Free). Supabase novo em conta exclusiva (Free), migration aplicada, verificação 27/27, cadastro e login reais confirmados. Nenhum módulo de operação foi antecipado; eles pertencem ao roadmap (`01-arquitetura.md`, seção 11).
 
 ## 1. O que existe
 
@@ -69,7 +69,7 @@ src/
 | Shell autenticado: menu, nome da organização, e-mail, botão Sair, placeholders, Configurações | Chromium headless + mock local da API REST + sessão simulada | OK |
 | Pós-rename: todos os itens acima reexecutados; busca por `entidade` em `supabase/` e `app/src` = 0 ocorrências | grep + rerun | OK |
 
-**Não testado ainda** (depende do projeto Supabase real): signup/login/logout ponta a ponta contra o Auth.
+| Produção (02/09/2026): migration aplicada no SQL Editor; `verificar_fundacao.sql` = 27 de 27 OK; cadastro real → e-mail de confirmação → login no site publicado | Proprietário, no painel e no navegador | OK |
 
 Rodar os testes de banco localmente:
 ```
@@ -115,6 +115,14 @@ Projeto criado pelo proprietário em 02/09/2026 na nova conta (Opção A). URL: 
 | 4. Teste ponta a ponta | `cd app && npm install && npm run dev` → cadastro → confirmar e-mail (se exigido) → login → navegar → sair | — |
 | 5. Confirmar no banco | SQL Editor: `select nome from organizacoes;` e `select acao, tabela from auditoria order by id;` → 1 organização, 2 auditorias INSERT | — |
 
-Auth: manter e-mail + senha (padrão). "Confirm email" pode ficar ligado; o remetente padrão do Supabase é gratuito e limitado a poucos envios por hora, suficiente para uso pessoal. Nenhum provedor de e-mail pago deve ser configurado.
+Auth: e-mail + senha (padrão). **URL Configuration** obrigatória: Site URL = `https://erp-financeiro.welsoaress.workers.dev` e Redirect URL = `https://erp-financeiro.welsoaress.workers.dev/**`; sem isso o link de confirmação redireciona para `localhost`. "Confirm email" pode ficar ligado; o remetente padrão do Supabase é gratuito e limitado a poucos envios por hora, suficiente para uso pessoal. Nenhum provedor de e-mail pago deve ser configurado.
 
 Limitação do plano Free: projeto pausa após 7 dias sem uso (restauração manual, sem perda de dados).
+
+## 7. Incidentes da implantação (registro para não repetir)
+| Sintoma | Causa | Correção |
+|---|---|---|
+| Worker servia "Hello world" | Deploy command igual ao build command; faltava `wrangler.jsonc` | `app/wrangler.jsonc` + deploy command `npx wrangler deploy` |
+| "Sem conexão com o servidor" | `VITE_SUPABASE_URL` com identificador digitado errado (host inexistente) | Copiar a Project URL do painel; mensagem de erro agora mostra o host usado |
+| Migration falhou: "relation already exists" | Tabelas homônimas criadas por outra ferramenta, sem triggers/policies | Limpeza dos objetos e reaplicação da migration; verificação 27/27 |
+| Link de confirmação abriu `localhost` | Site URL padrão do Supabase Auth | URL Configuration apontando para o site |

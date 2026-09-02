@@ -11,7 +11,16 @@ function hostDoServidor(): string {
 }
 
 /** Converte qualquer erro em uma mensagem curta e legível em português. */
+const CODIGOS_POSTGRES: Record<string, string> = {
+  '23505': 'Já existe um registro com este nome.',
+  '22P02': 'Valor inválido para um dos campos.',
+  '42501': 'Você não tem permissão para esta operação.',
+  'PGRST205': 'Estrutura do banco ainda não atualizada para este módulo.',
+}
+
 export function mensagemDeErro(erro: unknown, padrao = 'Ocorreu um erro inesperado.'): string {
+  const codigo = (erro as { code?: string } | null)?.code
+  if (codigo && CODIGOS_POSTGRES[codigo]) return CODIGOS_POSTGRES[codigo]
   const texto =
     erro instanceof Error ? erro.message
     : typeof erro === 'string' ? erro

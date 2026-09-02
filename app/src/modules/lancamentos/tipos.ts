@@ -24,6 +24,7 @@ export interface Lancamento {
   categoria_id: string | null
   observacao: string | null
   origem: 'manual' | 'sistema'
+  negocio_id: string | null
   cancelado_em: string | null
   motivo_cancelamento: string | null
   criado_em: string
@@ -42,4 +43,5 @@ export interface DadosLancamento {
   conta_destino_id: string | null
   categoria_id: string | null
   observacao: string | null
+  negocio_id: string | null
 }

@@ -3,21 +3,21 @@ import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
 import type { Lancamento } from '../lancamentos/tipos'
 
-export interface ResultadoMensal { mes: string; receitas: number; despesas: number; resultado: number }
+export interface ResultadoNegocio { negocio_id: string | null; receitas: number; despesas: number; resultado: number }
 
-export function useResultadoMensal(mes: string) {
+/** Resultado do mês por negócio (negocio_id nulo = pessoal). */
+export function useResultadoPorNegocio(mes: string) {
   const { organizacao } = useOrganizacao()
   return useQuery({
-    queryKey: ['dashboard', organizacao.id, 'resultado', mes],
-    queryFn: async (): Promise<ResultadoMensal> => {
+    queryKey: ['dashboard', organizacao.id, 'resultado-negocio', mes],
+    queryFn: async (): Promise<ResultadoNegocio[]> => {
       const { data, error } = await supabase
-        .from('vw_resultado_mensal')
-        .select('mes, receitas, despesas, resultado')
+        .from('vw_resultado_mensal_negocio')
+        .select('negocio_id, receitas, despesas, resultado')
         .eq('organizacao_id', organizacao.id)
         .eq('mes', mes)
-        .maybeSingle()
       if (error) throw error
-      return data ?? { mes, receitas: 0, despesas: 0, resultado: 0 }
+      return (data ?? []).map((r) => ({ ...r, receitas: Number(r.receitas), despesas: Number(r.despesas), resultado: Number(r.resultado) }))
     },
   })
 }

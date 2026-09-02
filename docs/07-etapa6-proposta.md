@@ -1,6 +1,6 @@
 # Etapa 6 — Negócios, Pessoas, Planos e Contratos (PROPOSTA)
 
-Status: **proposta para análise; nenhum código.** Só começa após a validação da Etapa 5 e a sua aprovação deste documento.
+Status: **aprovada (02/09/2026).** 6A Negócios implementada (ver `08-negocios.md`); 6B, 6C e 6D aguardam autorização.
 
 ## 1. Objetivo
 Saber **quanto cada contrato e cada negócio dá de resultado**, e não só a DRE consolidada. Isso exige que receitas e despesas carreguem duas dimensões novas: o **negócio** a que pertencem e, quando houver, o **contrato** (e portanto a pessoa) que as originou. O motor financeiro não muda: é o mesmo lançamento, com mais duas etiquetas.

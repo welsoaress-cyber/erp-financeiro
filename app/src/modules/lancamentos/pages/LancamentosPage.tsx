@@ -12,6 +12,8 @@ import { formatarData, formatarMoeda, mesAtualISO } from '../../../core/formatos
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useContas } from '../../contas/api'
 import { useCategorias } from '../../categorias/api'
+import { useNegocios } from '../../negocios/api'
+import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { buscarPossiveisDuplicados, useAtualizarLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
@@ -25,12 +27,14 @@ export function LancamentosPage() {
   const [mes, setMes] = useState(mesAtualISO())
   const [filtroTipo, setFiltroTipo] = useState<TipoLancamento | ''>('')
   const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | ''>('')
+  const [filtroNegocio, setFiltroNegocio] = useState<string>('') // '' = todos, 'pessoal', ou id
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [avisoDuplicidade, setAvisoDuplicidade] = useState<string | null>(null)
 
   const lancamentos = useLancamentos(mes)
   const contas = useContas()
   const categorias = useCategorias()
+  const negocios = useNegocios()
   const criar = useCriarLancamento()
   const atualizar = useAtualizarLancamento()
   const efetivar = useEfetivarLancamento()
@@ -39,8 +43,13 @@ export function LancamentosPage() {
 
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
+  const nomeNegocio = useMemo(() => new Map((negocios.data ?? []).map((n) => [n.id, n.nome])), [negocios.data])
+  const temNegocios = (negocios.data ?? []).length > 0
 
-  const lista = (lancamentos.data ?? []).filter((l) => (!filtroTipo || l.tipo === filtroTipo) && (!filtroStatus || l.status === filtroStatus))
+  const lista = (lancamentos.data ?? []).filter((l) =>
+    (!filtroTipo || l.tipo === filtroTipo)
+    && (!filtroStatus || l.status === filtroStatus)
+    && (!filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio)))
   const totais = lista.reduce((t, l) => {
     if (l.status !== 'efetivado') return t
     if (l.tipo === 'receita') t.receitas += l.valor
@@ -77,8 +86,10 @@ export function LancamentosPage() {
   const ocupadoAcao = efetivar.isPending || cancelar.isPending || excluir.isPending
 
   function descricaoSecundaria(l: Lancamento) {
-    if (l.tipo === 'transferencia') return `${nomeConta.get(l.conta_id) ?? '—'} → ${nomeConta.get(l.conta_destino_id ?? '') ?? '—'}`
-    return `${nomeCategoria.get(l.categoria_id ?? '') ?? '—'} · ${nomeConta.get(l.conta_id) ?? '—'}`
+    const base = l.tipo === 'transferencia'
+      ? `${nomeConta.get(l.conta_id) ?? '—'} → ${nomeConta.get(l.conta_destino_id ?? '') ?? '—'}`
+      : `${nomeCategoria.get(l.categoria_id ?? '') ?? '—'} · ${nomeConta.get(l.conta_id) ?? '—'}`
+    return l.negocio_id ? `${base} · ${nomeNegocio.get(l.negocio_id) ?? '—'}` : base
   }
 
   function classeValor(l: Lancamento) {
@@ -114,6 +125,13 @@ export function LancamentosPage() {
           <option value="previsto">Previstos</option>
           <option value="cancelado">Cancelados</option>
         </select>
+        {temNegocios && (
+          <select aria-label="Filtrar por negócio" value={filtroNegocio} onChange={(e) => setFiltroNegocio(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+            <option value="">Todos os negócios</option>
+            <option value="pessoal">{ROTULO_PESSOAL}</option>
+            {(negocios.data ?? []).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
+          </select>
+        )}
         <span className="ml-auto text-sm text-ink-muted tabular-nums">
           Receitas <span className="font-medium text-green-700">{formatarMoeda(totais.receitas)}</span> · Despesas <span className="font-medium text-red-700">{formatarMoeda(totais.despesas)}</span>
         </span>
@@ -178,6 +196,8 @@ export function LancamentosPage() {
               lancamento={edicao.modo === 'editar' ? edicao.lancamento : undefined}
               contas={contas.data ?? []}
               categorias={categorias.data ?? []}
+              negocios={negocios.data ?? []}
+              negocioInicial={filtroNegocio && filtroNegocio !== 'pessoal' ? filtroNegocio : null}
               tipoInicial={filtroTipo || 'despesa'}
               salvando={criar.isPending || atualizar.isPending}
               erro={erroSalvar ? mensagemDeErro(erroSalvar) : null}

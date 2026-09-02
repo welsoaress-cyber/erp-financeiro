@@ -5,22 +5,26 @@ import { Campo } from '../../../core/ui/Campo'
 import { Selecao } from '../../../core/ui/Selecao'
 import { hojeISO } from '../../../core/formatos'
 import { TIPOS_CONTA, type Conta, type DadosConta, type TipoConta } from '../tipos'
+import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
+import type { Negocio } from '../../negocios/tipos'
 
 interface Props {
   conta?: Conta
+  negocios: Negocio[]
   salvando: boolean
   erro: string | null
   aoSalvar: (dados: DadosConta) => void
   aoCancelar: () => void
 }
 
-export function FormularioConta({ conta, salvando, erro, aoSalvar, aoCancelar }: Props) {
+export function FormularioConta({ conta, negocios, salvando, erro, aoSalvar, aoCancelar }: Props) {
   const editando = Boolean(conta)
   const [nome, setNome] = useState(conta?.nome ?? '')
   const [tipo, setTipo] = useState<TipoConta>(conta?.tipo ?? 'corrente')
   const [saldoInicial, setSaldoInicial] = useState(conta ? String(conta.saldo_inicial) : '0')
   const [dataInicio, setDataInicio] = useState(conta?.data_inicio ?? hojeISO())
   const [ativo, setAtivo] = useState(conta?.ativo ?? true)
+  const [negocioId, setNegocioId] = useState<string | null>(conta?.negocio_id ?? null)
   const [erros, setErros] = useState<{ nome?: string; saldo?: string; data?: string }>({})
 
   function validar(): boolean {
@@ -44,6 +48,7 @@ export function FormularioConta({ conta, salvando, erro, aoSalvar, aoCancelar }:
       saldo_inicial: Math.round(Number(saldoInicial.replace(',', '.')) * 100) / 100,
       data_inicio: dataInicio,
       ativo,
+      negocio_id: negocioId,
     })
   }
 
@@ -63,6 +68,7 @@ export function FormularioConta({ conta, salvando, erro, aoSalvar, aoCancelar }:
         <Campo rotulo="Saldo inicial (R$)" type="number" inputMode="decimal" step="0.01" min="0" value={saldoInicial} onChange={(e) => setSaldoInicial(e.target.value)} erro={erros.saldo} />
         <Campo rotulo="Data de início" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} erro={erros.data} />
       </div>
+      <SelecaoNegocio negocios={negocios} valor={negocioId} aoMudar={setNegocioId} atualId={conta?.negocio_id} ajuda="Conta de um negócio específico ou pessoal." />
       {editando && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-brand-600" />

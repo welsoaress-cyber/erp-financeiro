@@ -11,8 +11,10 @@ import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useContas } from '../../contas/api'
 import { useCategorias } from '../../categorias/api'
 import { ROTULO_TIPO as ROTULO_TIPO_CONTA } from '../../contas/tipos'
-import { useResultadoMensal, useUltimosLancamentos } from '../api'
 import { ROTULO_TIPO } from '../../lancamentos/tipos'
+import { useNegocios } from '../../negocios/api'
+import { ROTULO_PESSOAL } from '../../negocios/tipos'
+import { useResultadoPorNegocio, useUltimosLancamentos } from '../api'
 
 function Indicador({ rotulo, valor, tom = 'neutro' }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto' }) {
   const cor = tom === 'positivo' ? 'text-green-700' : tom === 'negativo' ? 'text-red-700' : tom === 'auto' ? (valor < 0 ? 'text-red-700' : 'text-green-700') : ''
@@ -27,34 +29,94 @@ function Indicador({ rotulo, valor, tom = 'neutro' }: { rotulo: string; valor: n
 export function DashboardPage() {
   const { organizacao } = useOrganizacao()
   const [mes, setMes] = useState(mesAtualISO())
+  const [filtro, setFiltro] = useState<string>('') // '' = todos, 'pessoal', ou id do negócio
   const contas = useContas()
   const categorias = useCategorias()
-  const resultado = useResultadoMensal(mes)
+  const negocios = useNegocios()
+  const resultado = useResultadoPorNegocio(mes)
   const ultimos = useUltimosLancamentos()
 
-  const ativas = (contas.data ?? []).filter((c) => c.ativo)
-  const saldoTotal = ativas.reduce((s, c) => s + Number(c.saldo), 0)
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
+  const nomeNegocio = useMemo(() => new Map((negocios.data ?? []).map((n) => [n.id, n.nome])), [negocios.data])
+  const rotuloNegocio = (id: string | null) => (id ? nomeNegocio.get(id) ?? '—' : ROTULO_PESSOAL)
+  const bate = (negocioId: string | null) => !filtro || (filtro === 'pessoal' ? negocioId === null : negocioId === filtro)
 
-  const carregando = contas.isPending || resultado.isPending || ultimos.isPending
-  const erro = contas.error ?? resultado.error ?? ultimos.error
+  const contasAtivas = (contas.data ?? []).filter((c) => c.ativo && bate(c.negocio_id))
+  const saldoTotal = contasAtivas.reduce((s, c) => s + Number(c.saldo), 0)
+  const linhas = (resultado.data ?? []).filter((r) => bate(r.negocio_id))
+  const totais = linhas.reduce((t, r) => ({ receitas: t.receitas + r.receitas, despesas: t.despesas + r.despesas, resultado: t.resultado + r.resultado }), { receitas: 0, despesas: 0, resultado: 0 })
+  const ultimosFiltrados = (ultimos.data ?? []).filter((l) => bate(l.negocio_id))
+  const temNegocios = (negocios.data ?? []).length > 0
+
+  const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending
+  const erro = contas.error ?? resultado.error ?? ultimos.error ?? negocios.error
 
   return (
     <>
-      <CabecalhoPagina titulo="Dashboard" descricao={`Visão geral de ${organizacao.nome}`} acoes={<SeletorMes mes={mes} aoMudar={setMes} />} />
+      <CabecalhoPagina
+        titulo="Dashboard"
+        descricao={`Visão geral de ${organizacao.nome}`}
+        acoes={
+          <div className="flex flex-wrap items-center gap-2">
+            {temNegocios && (
+              <select aria-label="Filtrar por negócio" value={filtro} onChange={(e) => setFiltro(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+                <option value="">Todos os negócios</option>
+                <option value="pessoal">{ROTULO_PESSOAL}</option>
+                {(negocios.data ?? []).filter((n) => n.ativo).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
+              </select>
+            )}
+            <SeletorMes mes={mes} aoMudar={setMes} />
+          </div>
+        }
+      />
 
       {carregando && <Carregando texto="Calculando…" />}
       {erro && <Alerta tipo="erro" titulo="Não foi possível carregar o painel">{mensagemDeErro(erro)}</Alerta>}
 
-      {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && (
+      {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && negocios.isSuccess && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Indicador rotulo="Saldo total" valor={saldoTotal} tom="auto" />
-            <Indicador rotulo="Receitas do mês" valor={resultado.data.receitas} tom="positivo" />
-            <Indicador rotulo="Despesas do mês" valor={resultado.data.despesas} tom="negativo" />
-            <Indicador rotulo="Resultado do mês" valor={resultado.data.resultado} tom="auto" />
+            <Indicador rotulo="Receitas do mês" valor={totais.receitas} tom="positivo" />
+            <Indicador rotulo="Despesas do mês" valor={totais.despesas} tom="negativo" />
+            <Indicador rotulo="Resultado do mês" valor={totais.resultado} tom="auto" />
           </div>
+
+          {temNegocios && !filtro && (
+            <Cartao className="p-0">
+              <div className="flex items-center justify-between border-b border-line px-6 py-3">
+                <h2 className="text-sm font-semibold">Resultado por negócio</h2>
+                <Link to="/negocios" className="text-xs font-medium text-brand-600 hover:underline">Ver negócios</Link>
+              </div>
+              {linhas.length === 0 ? (
+                <p className="px-6 py-8 text-center text-sm text-ink-muted">Nenhum lançamento efetivado neste mês.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
+                      <tr className="border-b border-line">
+                        <th className="px-6 py-2 font-medium">Negócio</th>
+                        <th className="px-6 py-2 text-right font-medium">Receitas</th>
+                        <th className="px-6 py-2 text-right font-medium">Despesas</th>
+                        <th className="px-6 py-2 text-right font-medium">Resultado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...linhas].sort((a, b) => rotuloNegocio(a.negocio_id).localeCompare(rotuloNegocio(b.negocio_id), 'pt-BR')).map((r) => (
+                        <tr key={r.negocio_id ?? 'pessoal'} className="border-b border-line last:border-0">
+                          <td className="px-6 py-2 font-medium">{rotuloNegocio(r.negocio_id)}</td>
+                          <td className="px-6 py-2 text-right tabular-nums text-green-700">{formatarMoeda(r.receitas)}</td>
+                          <td className="px-6 py-2 text-right tabular-nums text-red-700">{formatarMoeda(r.despesas)}</td>
+                          <td className={`px-6 py-2 text-right font-medium tabular-nums ${r.resultado < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(r.resultado)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Cartao>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Cartao className="p-0">
@@ -62,13 +124,13 @@ export function DashboardPage() {
                 <h2 className="text-sm font-semibold">Saldo por conta</h2>
                 <Link to="/contas" className="text-xs font-medium text-brand-600 hover:underline">Ver contas</Link>
               </div>
-              {ativas.length === 0 ? (
+              {contasAtivas.length === 0 ? (
                 <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhuma conta ativa. <Link to="/contas" className="text-brand-600 hover:underline">Cadastre a primeira.</Link></p>
               ) : (
                 <ul className="divide-y divide-line">
-                  {ativas.map((c) => (
+                  {contasAtivas.map((c) => (
                     <li key={c.id} className="flex items-center justify-between px-6 py-3 text-sm">
-                      <span><span className="font-medium">{c.nome}</span> <span className="text-xs text-ink-muted">· {ROTULO_TIPO_CONTA[c.tipo]}</span></span>
+                      <span><span className="font-medium">{c.nome}</span> <span className="text-xs text-ink-muted">· {ROTULO_TIPO_CONTA[c.tipo]}{temNegocios ? ` · ${rotuloNegocio(c.negocio_id)}` : ''}</span></span>
                       <span className={`font-medium tabular-nums ${Number(c.saldo) < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(c.saldo)}</span>
                     </li>
                   ))}
@@ -81,16 +143,16 @@ export function DashboardPage() {
                 <h2 className="text-sm font-semibold">Últimas movimentações</h2>
                 <Link to="/lancamentos" className="text-xs font-medium text-brand-600 hover:underline">Ver lançamentos</Link>
               </div>
-              {ultimos.data.length === 0 ? (
+              {ultimosFiltrados.length === 0 ? (
                 <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhum lançamento efetivado ainda.</p>
               ) : (
                 <ul className="divide-y divide-line">
-                  {ultimos.data.map((l) => (
+                  {ultimosFiltrados.map((l) => (
                     <li key={l.id} className="flex items-center justify-between gap-3 px-6 py-3 text-sm">
                       <div className="min-w-0">
                         <p className="truncate font-medium">{l.descricao}</p>
                         <p className="truncate text-xs text-ink-muted">
-                          {formatarData(l.data_efetivacao ?? l.data_competencia)} · {l.tipo === 'transferencia' ? `${nomeConta.get(l.conta_id) ?? '—'} → ${nomeConta.get(l.conta_destino_id ?? '') ?? '—'}` : `${nomeCategoria.get(l.categoria_id ?? '') ?? ROTULO_TIPO[l.tipo]} · ${nomeConta.get(l.conta_id) ?? '—'}`}
+                          {formatarData(l.data_efetivacao ?? l.data_competencia)} · {l.tipo === 'transferencia' ? `${nomeConta.get(l.conta_id) ?? '—'} → ${nomeConta.get(l.conta_destino_id ?? '') ?? '—'}` : `${nomeCategoria.get(l.categoria_id ?? '') ?? ROTULO_TIPO[l.tipo]} · ${nomeConta.get(l.conta_id) ?? '—'}`}{l.negocio_id ? ` · ${rotuloNegocio(l.negocio_id)}` : ''}
                         </p>
                       </div>
                       <span className={`shrink-0 font-medium tabular-nums ${l.tipo === 'receita' ? 'text-green-700' : l.tipo === 'despesa' ? 'text-red-700' : 'text-brand-700'}`}>

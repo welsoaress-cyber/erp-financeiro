@@ -23,6 +23,7 @@ export interface Conta {
   /** Derivado: saldo_inicial + Σ movimentos efetivados (vw_saldo_contas). */
   saldo: number
   movimentos: number
+  negocio_id: string | null
 }
 
 export interface DadosConta {
@@ -31,4 +32,5 @@ export interface DadosConta {
   saldo_inicial: number
   data_inicio: string
   ativo: boolean
+  negocio_id: string | null
 }

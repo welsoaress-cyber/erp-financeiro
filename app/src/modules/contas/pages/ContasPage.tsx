@@ -11,11 +11,15 @@ import { formatarData, formatarMoeda } from '../../../core/formatos'
 import { useAtualizarConta, useContas, useCriarConta } from '../api'
 import { FormularioConta } from '../components/FormularioConta'
 import { ROTULO_TIPO, type Conta, type DadosConta } from '../tipos'
+import { useNegocios } from '../../negocios/api'
+import { ROTULO_PESSOAL } from '../../negocios/tipos'
 
 type Edicao = { modo: 'nova' } | { modo: 'editar'; conta: Conta } | null
 
 export function ContasPage() {
   const contas = useContas()
+  const negocios = useNegocios()
+  const nomeNegocio = new Map((negocios.data ?? []).map((n) => [n.id, n.nome]))
   const criar = useCriarConta()
   const atualizar = useAtualizarConta()
   const [edicao, setEdicao] = useState<Edicao>(null)
@@ -83,6 +87,7 @@ export function ContasPage() {
                   <tr className="border-b border-line">
                     <th className="px-6 py-3 font-medium">Nome</th>
                     <th className="px-6 py-3 font-medium">Tipo</th>
+                    <th className="px-6 py-3 font-medium">Negócio</th>
                     <th className="px-6 py-3 text-right font-medium">Saldo inicial</th>
                     <th className="px-6 py-3 text-right font-medium">Saldo atual</th>
                     <th className="px-6 py-3 font-medium">Início</th>
@@ -98,6 +103,7 @@ export function ContasPage() {
                     >
                       <td className="px-6 py-3 font-medium">{c.nome}</td>
                       <td className="px-6 py-3 text-ink-muted">{ROTULO_TIPO[c.tipo]}</td>
+                      <td className="px-6 py-3 text-ink-muted">{c.negocio_id ? nomeNegocio.get(c.negocio_id) ?? '—' : ROTULO_PESSOAL}</td>
                       <td className="px-6 py-3 text-right tabular-nums text-ink-muted">{formatarMoeda(c.saldo_inicial)}</td>
                       <td className={`px-6 py-3 text-right font-medium tabular-nums ${c.saldo < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(c.saldo)}</td>
                       <td className="px-6 py-3 text-ink-muted tabular-nums">{formatarData(c.data_inicio)}</td>
@@ -116,6 +122,7 @@ export function ContasPage() {
           <FormularioConta
             key={edicao.modo === 'editar' ? edicao.conta.id : 'nova'}
             conta={edicao.modo === 'editar' ? edicao.conta : undefined}
+            negocios={negocios.data ?? []}
             salvando={criar.isPending || atualizar.isPending}
             erro={erroSalvar ? mensagemDeErro(erroSalvar) : null}
             aoSalvar={salvar}

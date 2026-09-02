@@ -8,11 +8,15 @@ import { hojeISO } from '../../../core/formatos'
 import type { Conta } from '../../contas/tipos'
 import { montarArvore, type Categoria } from '../../categorias/tipos'
 import { TIPOS_LANCAMENTO, type DadosLancamento, type Lancamento, type TipoLancamento } from '../tipos'
+import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
+import type { Negocio } from '../../negocios/tipos'
 
 interface Props {
   lancamento?: Lancamento
   contas: Conta[]
   categorias: Categoria[]
+  negocios: Negocio[]
+  negocioInicial?: string | null
   tipoInicial?: TipoLancamento
   salvando: boolean
   erro: string | null
@@ -23,7 +27,7 @@ interface Props {
 
 interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string }
 
-export function FormularioLancamento({ lancamento, contas, categorias, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, aoSalvar, aoCancelar }: Props) {
+export function FormularioLancamento({ lancamento, contas, categorias, negocios, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, aoSalvar, aoCancelar }: Props) {
   const editando = Boolean(lancamento)
   const [tipo, setTipo] = useState<TipoLancamento>(lancamento?.tipo ?? tipoInicial)
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '')
@@ -36,6 +40,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, tipoInici
   const [destinoId, setDestinoId] = useState(lancamento?.conta_destino_id ?? '')
   const [categoriaId, setCategoriaId] = useState(lancamento?.categoria_id ?? '')
   const [observacao, setObservacao] = useState(lancamento?.observacao ?? '')
+  const [negocioId, setNegocioId] = useState<string | null>(lancamento ? lancamento.negocio_id : negocioInicial)
   const [erros, setErros] = useState<Erros>({})
 
   const contasDisponiveis = contas.filter((c) => c.ativo || c.id === lancamento?.conta_id || c.id === lancamento?.conta_destino_id)
@@ -65,6 +70,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, tipoInici
       conta_destino_id: ehTransferencia ? destinoId : null,
       categoria_id: ehTransferencia ? null : categoriaId,
       observacao: observacao.trim() || null,
+      negocio_id: negocioId,
     }
   }
 
@@ -154,6 +160,10 @@ export function FormularioLancamento({ lancamento, contas, categorias, tipoInici
         </div>
         {!efetivado && <p className="mt-2 text-xs text-ink-muted">Lançamento previsto: não altera o saldo até ser efetivado.</p>}
       </div>
+
+      {negocios.some((n) => n.ativo || n.id === lancamento?.negocio_id) && (
+        <SelecaoNegocio negocios={negocios} valor={negocioId} aoMudar={setNegocioId} atualId={lancamento?.negocio_id} />
+      )}
 
       <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
 

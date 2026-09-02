@@ -86,23 +86,21 @@ npm install
 npm run dev
 ```
 
-## 5. Hospedagem / deploy — Cloudflare Pages (APROVADO, plano Free)
-Aprovado em 02/09/2026. Regra permanente: nenhum recurso pago habilitado.
+## 5. Hospedagem / deploy — Cloudflare Workers (assets estáticos), plano Free
+Aprovado em 02/09/2026. Regra permanente: nenhum recurso pago habilitado. O Worker `erp-financeiro` serve apenas os arquivos estáticos do build (sem código de servidor), com fallback de SPA. Custo: zero no plano Free (100.000 requisições/dia; assets estáticos não contam como requisições).
 
-**Por que não gera cobrança:** Pages Free não exige cartão; inclui 500 builds/mês, banda e requisições ilimitadas para conteúdo estático. Só existe custo se você contratar manualmente o plano Workers Paid, que este projeto não usa. Não usar: Workers, D1, KV, R2, Access, domínios pagos.
+**Repositório oficial:** `welsoaress-cyber/erp-financeiro`, branch `main`. O Worker é conectado ao repositório (Workers Builds) e publica a cada push.
 
-**Estado:** ainda **não conectado**. Este ambiente não possui credencial Cloudflare e o conector disponível não expõe deploy de Pages, então a conexão é feita uma vez no painel (integração Git, sem CI extra):
+Configuração no painel (Workers & Pages → erp-financeiro → Settings → Build):
+| Campo | Valor |
+|---|---|
+| Root directory | `app` |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Production branch | `main` |
+| Variáveis de build | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (chave *publishable*) |
 
-1. Cloudflare Dashboard → *Workers & Pages* → *Create* → *Pages* → *Connect to Git* → repositório `welsoaress-cyber/holding-financeiro`.
-2. Build settings:
-   - Production branch: `main` (ou o branch de trabalho enquanto o PR não for mesclado)
-   - Root directory: `erp-financeiro/app`
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-3. Environment variables (Production e Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (chave *publishable*).
-4. SPA: Pages serve `index.html` para rotas não encontradas quando não existe `404.html` — nada a configurar.
-
-Sem o projeto Supabase, o deploy exibirá a tela "Supabase não configurado" (comportamento esperado).
+O arquivo `app/wrangler.jsonc` define o nome do Worker, o diretório `dist` como assets e `not_found_handling: single-page-application`. Sem ele, ou com o deploy command igual ao build command, o Worker continua com o template inicial vazio.
 
 ## 6. Supabase — projeto novo criado (conta exclusiva, plano Free)
 Projeto criado pelo proprietário em 02/09/2026 na nova conta (Opção A). URL: `https://slrdhspnovzubiyccnnk.supabase.co`. A chave *publishable* fica apenas em `app/.env.local` (ignorado pelo git) e nas variáveis do Cloudflare Pages; nunca no repositório.

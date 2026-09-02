@@ -1,6 +1,6 @@
 # Etapa 5 — Lançamentos (motor financeiro) e Dashboard
 
-Status: **implementada e testada localmente (02/09/2026); aguardando aplicação da migration em produção e validação do proprietário.**
+Status: **CONCLUÍDA E VALIDADA EM PRODUÇÃO (02/09/2026).** Migration 0005 aplicada; `verificar_lancamentos.sql` 8 de 8; receita, despesa, dashboard e cancelamento confirmados pelo proprietário no site.
 
 ## 1. Modelo
 ```
@@ -80,3 +80,6 @@ Rodar tudo localmente: `PGHOST=/tmp PGPORT=5433 PGUSER=postgres supabase/tests/r
 2. SQL Editor → `supabase/migrations/20260902000005_lancamentos.sql` → Run.
 3. SQL Editor → `supabase/tests/verificar_lancamentos.sql` → esperado `8 de 8 verificações OK`; `verificar_rls.sql` → todas ok.
 4. Site: Lançamentos → novo lançamento de cada tipo; Dashboard.
+
+## 7. Incidente na implantação (registro)
+Tabelas `categorias`, `lancamentos` e `movimentos` de outra origem existiam no banco (estrutura diferente, sem o motor), fazendo as migrations 0004/0005 falharem em "already exists" e a verificação apontar 5 falhas. Solução: diagnóstico da estrutura, limpeza com travas (só sem dados e sem o motor presente; `supabase/scripts/limpar_lancamentos_externos.sql`), reaplicação das migrations. Regra daqui em diante: **nenhuma outra ferramenta cria objetos neste banco**; toda alteração de esquema entra por migration versionada neste repositório.

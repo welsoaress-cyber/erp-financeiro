@@ -1,6 +1,6 @@
 # Etapa 4 — Categorias
 
-Status: **implementada e testada localmente (02/09/2026); aguardando aplicação da migration em produção e validação do proprietário.**
+Status: **CONCLUÍDA E VALIDADA EM PRODUÇÃO (02/09/2026).** Migration 0004 aplicada após limpeza de tabela externa; `verificar_categorias.sql` 9 de 9; categorias padrão visíveis no site.
 
 ## 1. O que existe
 

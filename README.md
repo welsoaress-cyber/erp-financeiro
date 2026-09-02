@@ -7,4 +7,6 @@ Projeto novo e independente do restante deste repositório.
 - `supabase/tests/` — testes SQL de integridade e RLS
 - `app/` — aplicação React + TypeScript + Vite
 
-Ver `docs/02-fundacao.md` para rodar.
+Site: https://erp-financeiro.welsoaress.workers.dev
+
+Ver `docs/02-fundacao.md` para rodar localmente e para o deploy.

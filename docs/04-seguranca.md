@@ -1,6 +1,6 @@
 # Segurança
 
-Status: **implementado; migration 0003 aplicada em produção (02/09/2026).** Pendência no painel do Supabase: política de senha (seção 5).
+Status: **CONCLUÍDO E EM PRODUÇÃO (02/09/2026).** Migration 0003 aplicada; política de senha (mínimo 8, maiúscula, minúscula e número) configurada também no Supabase Auth.
 
 ## 1. Visão geral
 O sistema é um app estático (Cloudflare Workers) que fala diretamente com a API do Supabase (Auth + PostgREST). Não existe backend próprio. Consequência: **toda regra de segurança que importa vive no banco** (RLS, grants, triggers) e no Supabase Auth (hash de senha, rate limiting, sessões). O que roda no navegador (limite de tentativas, validação de senha, logout por inatividade) melhora a experiência e reduz abuso acidental, mas nunca é a única barreira.
@@ -54,7 +54,7 @@ Regras: policies separadas para `select`, `insert` (`with check`) e `update` (`u
 - Arquivo: `app/src/core/auth/validarSenha.ts`, usado em `CadastroPage`, com checklist visual em tempo real.
 - Requisitos: **mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número**. Caractere especial recomendado, não exigido.
 - Mensagens: "A senha deve ter no mínimo 8 caracteres." / "...pelo menos 1 letra maiúscula." / "...1 letra minúscula." / "...1 número."
-- **Pendente no painel (proprietário):** *Authentication → Providers → Email*: Minimum password length = **8**; Password requirements = **"Lowercase, uppercase letters and digits"**. Sem isso, a API aceitaria senha fraca vinda de fora do app.
+- **Configurado no painel (02/09/2026):** *Authentication → Providers → Email*: Minimum password length = **8**; Password requirements = **"Lowercase, uppercase letters and digits"**. A API rejeita senha fraca mesmo fora do app.
 
 ## 6. Logout por inatividade
 - Arquivo: `app/src/core/auth/useInatividade.ts`, ativado em `AppShell` (só com sessão).

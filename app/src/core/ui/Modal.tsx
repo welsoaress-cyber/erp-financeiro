@@ -19,7 +19,7 @@ export function Modal({ titulo, aberto, aoFechar, children }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
       <button type="button" aria-label="Fechar" className="absolute inset-0 bg-black/40" onClick={aoFechar} />
-      <div className="relative w-full max-w-md rounded-lg border border-line bg-white p-6 shadow-xl">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-line bg-white p-6 shadow-xl">
         <h2 id="modal-titulo" className="mb-4 text-lg font-semibold">{titulo}</h2>
         {children}
       </div>

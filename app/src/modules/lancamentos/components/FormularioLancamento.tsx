@@ -11,6 +11,7 @@ import { TIPOS_LANCAMENTO, type DadosLancamento, type Lancamento, type TipoLanca
 import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
 import type { Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
+import { codigoContrato, type Contrato } from '../../contratos/tipos'
 
 interface Props {
   lancamento?: Lancamento
@@ -18,6 +19,7 @@ interface Props {
   categorias: Categoria[]
   negocios: Negocio[]
   pessoas: Pessoa[]
+  contratos: Contrato[]
   negocioInicial?: string | null
   tipoInicial?: TipoLancamento
   salvando: boolean
@@ -29,7 +31,7 @@ interface Props {
 
 interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string }
 
-export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, aoSalvar, aoCancelar }: Props) {
+export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, aoSalvar, aoCancelar }: Props) {
   const editando = Boolean(lancamento)
   const [tipo, setTipo] = useState<TipoLancamento>(lancamento?.tipo ?? tipoInicial)
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '')
@@ -45,6 +47,14 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   const [negocioId, setNegocioId] = useState<string | null>(lancamento ? lancamento.negocio_id : negocioInicial)
   const [pessoaId, setPessoaId] = useState<string>(lancamento?.pessoa_id ?? '')
   const pessoasDisponiveis = pessoas.filter((p) => p.ativo || p.id === lancamento?.pessoa_id)
+  const [contratoId, setContratoId] = useState<string>(lancamento?.contrato_id ?? '')
+  const contratosDisponiveis = contratos.filter((c) => (c.status !== 'encerrado' || c.id === lancamento?.contrato_id) && (!negocioId || c.negocio_id === negocioId))
+  const contratoSel = contratos.find((c) => c.id === contratoId)
+  function escolherContrato(id: string) {
+    setContratoId(id)
+    const c = contratos.find((x) => x.id === id)
+    if (c) { setNegocioId(c.negocio_id); setPessoaId(c.pessoa_id) }
+  }
   const [erros, setErros] = useState<Erros>({})
 
   const contasDisponiveis = contas.filter((c) => c.ativo || c.id === lancamento?.conta_id || c.id === lancamento?.conta_destino_id)
@@ -76,6 +86,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       observacao: observacao.trim() || null,
       negocio_id: negocioId,
       pessoa_id: pessoaId || null,
+      contrato_id: contratoId || null,
     }
   }
 
@@ -167,11 +178,14 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       </div>
 
       {negocios.some((n) => n.ativo || n.id === lancamento?.negocio_id) && (
-        <SelecaoNegocio negocios={negocios} valor={negocioId} aoMudar={setNegocioId} atualId={lancamento?.negocio_id} />
+        <SelecaoNegocio negocios={negocios} valor={negocioId} aoMudar={(id) => { setNegocioId(id); setContratoId('') }} atualId={lancamento?.negocio_id} />
+      )}
+      {!ehTransferencia && contratosDisponiveis.length > 0 && (
+        <Selecao rotulo="Contrato (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...contratosDisponiveis.map((c) => ({ valor: c.id, rotulo: `${codigoContrato(c)} · ${pessoas.find((p) => p.id === c.pessoa_id)?.nome ?? '—'}` }))]} value={contratoId} onChange={(e) => escolherContrato(e.target.value)} ajuda={contratoSel ? 'Negócio e pessoa seguem o contrato.' : 'Vincule ao contrato para medir a rentabilidade por contrato.'} />
       )}
 
       {pessoasDisponiveis.length > 0 && !ehTransferencia && (
-        <Selecao rotulo="Pessoa (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhuma' }, ...pessoasDisponiveis.map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => setPessoaId(e.target.value)} ajuda="Cliente ou fornecedor relacionado a este lançamento." />
+        <Selecao rotulo="Pessoa (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhuma' }, ...pessoasDisponiveis.map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => setPessoaId(e.target.value)} disabled={Boolean(contratoSel)} ajuda={contratoSel ? 'Definida pelo contrato.' : 'Cliente ou fornecedor relacionado a este lançamento.'} />
       )}
 
       <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />

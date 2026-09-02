@@ -1,6 +1,6 @@
 # Etapa 6B — Pessoas e vínculos
 
-Status: **implementada e testada localmente (02/09/2026); aguardando aplicação da migration em produção e validação do proprietário.**
+Status: **CONCLUÍDA E VALIDADA EM PRODUÇÃO (02/09/2026).** Migration 0007 aplicada, verificação 7 de 7, cadastro/vínculo/lançamento confirmados pelo proprietário.
 
 ## 1. O que existe
 

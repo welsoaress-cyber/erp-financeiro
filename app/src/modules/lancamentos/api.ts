@@ -58,6 +58,7 @@ function paramsDe(d: DadosLancamento) {
     p_observacao: d.observacao,
     p_negocio_id: d.negocio_id,
     p_pessoa_id: d.pessoa_id,
+    p_contrato_id: d.contrato_id,
   }
 }
 

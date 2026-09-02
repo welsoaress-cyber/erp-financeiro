@@ -17,5 +17,5 @@ preparar() { # $1 = nome do banco, $2 = "com_ana" para inserir usuário antes da
 preparar erp_test_a sem_ana
 for t in fundacao contas seguranca; do printf "%-12s " "$t"; (psql -q -d erp_test_a -f "supabase/tests/${t}_test.sql" 2>&1 || true) | grep -E "ERROR|^OK" | head -1; done
 preparar erp_test_b com_ana
-for t in categorias lancamentos negocios pessoas; do printf "%-12s " "$t"; (psql -q -d erp_test_b -f "supabase/tests/${t}_test.sql" 2>&1 || true) | grep -E "ERROR|^OK" | head -1; done
+for t in categorias lancamentos negocios pessoas contratos; do printf "%-12s " "$t"; (psql -q -d erp_test_b -f "supabase/tests/${t}_test.sql" 2>&1 || true) | grep -E "ERROR|^OK" | head -1; done
 printf "%-12s " "rls"; psql -At -d erp_test_b -f supabase/tests/verificar_rls.sql | awk -F'|' '{ok=ok&&($NF=="t")} BEGIN{ok=1} END{print (ok?"OK":"FALHOU")}'

@@ -10,6 +10,7 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { useAtualizarNegocio, useCriarNegocio, useNegocios } from '../api'
 import { FormularioNegocio } from '../components/FormularioNegocio'
 import type { DadosNegocio, Negocio } from '../tipos'
+import { PlanosNegocio } from '../../contratos/components/PlanosNegocio'
 
 type Edicao = { modo: 'novo' } | { modo: 'editar'; negocio: Negocio } | null
 
@@ -88,6 +89,7 @@ export function NegociosPage() {
       )}
       <Modal aberto={edicao !== null} aoFechar={fechar} titulo={edicao?.modo === 'editar' ? 'Editar negócio' : 'Novo negócio'}>
         {edicao && (
+          <div className="space-y-4">
           <FormularioNegocio
             key={edicao.modo === 'editar' ? edicao.negocio.id : 'novo'}
             negocio={edicao.modo === 'editar' ? edicao.negocio : undefined}
@@ -96,6 +98,8 @@ export function NegociosPage() {
             aoSalvar={salvar}
             aoCancelar={fechar}
           />
+          {edicao.modo === 'editar' && <PlanosNegocio negocio={edicao.negocio} />}
+          </div>
         )}
       </Modal>
     </>

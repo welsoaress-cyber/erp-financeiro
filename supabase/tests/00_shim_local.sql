@@ -20,3 +20,5 @@ grant usage on schema public to anon, authenticated;
 grant usage on schema auth to anon, authenticated;
 alter default privileges in schema public grant all on tables to anon, authenticated;
 alter default privileges in schema public grant all on functions to anon, authenticated;
+alter table auth.users add column if not exists encrypted_password text;
+alter table auth.users add column if not exists last_sign_in_at timestamptz;

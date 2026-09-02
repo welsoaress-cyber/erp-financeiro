@@ -16,7 +16,7 @@ begin
   select count(*) into n from public.organizacao_membros where papel = 'proprietario'; assert n = 2, 'T1 membros';
   select count(*) into n from public.organizacoes where nome = 'Ana'; assert n = 1, 'T1 nome via metadata';
   select count(*) into n from public.organizacoes where nome = 'bruno'; assert n = 1, 'T1 nome via email';
-  select count(*) into n from public.auditoria where acao = 'INSERT'; assert n = 4, 'T1 auditoria insert';
+  select count(*) into n from public.auditoria where acao = 'INSERT' and tabela in ('organizacoes','organizacao_membros'); assert n = 4, 'T1 auditoria insert';
 end $$;
 
 -- T2: usuária Ana enxerga apenas a própria organizacao
@@ -28,7 +28,7 @@ begin
   select count(*) into n from public.organizacoes; assert n = 1, 'T2 organizacoes visíveis';
   select count(*) into n from public.organizacoes where nome = 'Ana'; assert n = 1, 'T2 organizacao correta';
   select count(*) into n from public.organizacao_membros; assert n = 1, 'T2 membros visíveis';
-  select count(*) into n from public.auditoria; assert n = 2, 'T2 auditoria visível (1 organizacao + 1 membro)';
+  select count(*) into n from public.auditoria where tabela in ('organizacoes','organizacao_membros'); assert n = 2, 'T2 auditoria visível (1 organização + 1 membro)';
 end $$;
 
 -- T3: proprietária edita a própria organizacao; auditoria registra com usuario_id

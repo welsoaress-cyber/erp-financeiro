@@ -20,8 +20,9 @@ export interface Conta {
   saldo_inicial: number
   data_inicio: string
   ativo: boolean
-  criado_em: string
-  atualizado_em: string
+  /** Derivado: saldo_inicial + Σ movimentos efetivados (vw_saldo_contas). */
+  saldo: number
+  movimentos: number
 }
 
 export interface DadosConta {

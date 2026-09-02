@@ -84,6 +84,7 @@ export function ContasPage() {
                     <th className="px-6 py-3 font-medium">Nome</th>
                     <th className="px-6 py-3 font-medium">Tipo</th>
                     <th className="px-6 py-3 text-right font-medium">Saldo inicial</th>
+                    <th className="px-6 py-3 text-right font-medium">Saldo atual</th>
                     <th className="px-6 py-3 font-medium">Início</th>
                     <th className="px-6 py-3 font-medium">Status</th>
                   </tr>
@@ -97,7 +98,8 @@ export function ContasPage() {
                     >
                       <td className="px-6 py-3 font-medium">{c.nome}</td>
                       <td className="px-6 py-3 text-ink-muted">{ROTULO_TIPO[c.tipo]}</td>
-                      <td className="px-6 py-3 text-right tabular-nums">{formatarMoeda(c.saldo_inicial)}</td>
+                      <td className="px-6 py-3 text-right tabular-nums text-ink-muted">{formatarMoeda(c.saldo_inicial)}</td>
+                      <td className={`px-6 py-3 text-right font-medium tabular-nums ${c.saldo < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(c.saldo)}</td>
                       <td className="px-6 py-3 text-ink-muted tabular-nums">{formatarData(c.data_inicio)}</td>
                       <td className="px-6 py-3"><Distintivo tom={c.ativo ? 'ok' : 'neutro'}>{c.ativo ? 'Ativa' : 'Inativa'}</Distintivo></td>
                     </tr>

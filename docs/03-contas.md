@@ -21,7 +21,7 @@ Status: **CONCLUÍDA E VALIDADA EM PRODUÇÃO (02/09/2026).** Migration 0002 apl
 | `tipos.ts` | Tipos e rótulos dos tipos de conta |
 | `api.ts` | `useContas`, `useCriarConta`, `useAtualizarConta` (TanStack Query + Supabase). A atualização nunca envia `tipo`. |
 | `components/FormularioConta.tsx` | Formulário de criar/editar com validação: nome obrigatório (≤ 80), saldo numérico ≥ 0, data obrigatória. Tipo desabilitado na edição. Checkbox "Conta ativa" só na edição. |
-| `pages/ContasPage.tsx` | Lista (Nome, Tipo, Saldo inicial, Início, Status), botão "Nova conta", estado vazio, filtro "Mostrar inativas", clique na linha abre edição em modal. |
+| `pages/ContasPage.tsx` | Lista (Nome, Tipo, Saldo inicial, **Saldo atual** desde a Etapa 5, Início, Status), botão "Nova conta", estado vazio, filtro "Mostrar inativas", clique na linha abre edição em modal. |
 
 Componentes novos no núcleo, reutilizáveis pelos próximos módulos: `ui/Modal`, `ui/Selecao`, `ui/Distintivo`, `formatos/` (moeda BRL, data BR, hoje ISO). `mensagemDeErro` passou a traduzir códigos do Postgres (duplicidade, valor inválido, permissão, tabela inexistente).
 

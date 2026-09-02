@@ -11,7 +11,7 @@ export function useContas() {
     queryKey: chave(organizacao.id),
     queryFn: async (): Promise<Conta[]> => {
       const { data, error } = await supabase
-        .from('contas')
+        .from('vw_saldo_contas')
         .select('*')
         .eq('organizacao_id', organizacao.id)
         .order('ativo', { ascending: false })
@@ -26,7 +26,7 @@ export function useCriarConta() {
   const { organizacao } = useOrganizacao()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (dados: DadosConta): Promise<Conta> => {
+    mutationFn: async (dados: DadosConta) => {
       const { data, error } = await supabase
         .from('contas')
         .insert({ ...dados, nome: dados.nome.trim(), organizacao_id: organizacao.id })
@@ -35,7 +35,7 @@ export function useCriarConta() {
       if (error) throw error
       return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: chave(organizacao.id) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['contas', organizacao.id] }),
   })
 }
 
@@ -44,7 +44,7 @@ export function useAtualizarConta() {
   const qc = useQueryClient()
   return useMutation({
     // tipo nunca é enviado: o banco também rejeita, mas a UI não tenta.
-    mutationFn: async ({ id, ...dados }: Omit<DadosConta, 'tipo'> & { id: string }): Promise<Conta> => {
+    mutationFn: async ({ id, ...dados }: Omit<DadosConta, 'tipo'> & { id: string }) => {
       const { data, error } = await supabase
         .from('contas')
         .update({ ...dados, nome: dados.nome.trim() })

@@ -86,12 +86,12 @@ begin
   exception when insufficient_privilege then null; end;
 end $$;
 
--- T7: com movimentos (simulação da tabela da Etapa 5), inativar e alterar saldo inicial são bloqueados
-reset role;
-create table public.movimentos (id uuid primary key default gen_random_uuid(), conta_id uuid not null references public.contas (id));
-insert into public.movimentos (conta_id) select id from public.contas where nome = 'Nubank Conta';
-set local role authenticated;
 set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+-- T7: com movimentos reais (motor da Etapa 5), inativar e alterar saldo inicial são bloqueados
+select public.criar_lancamento('despesa', 'Compra teste', 10, '2026-09-01', null, '2026-09-01',
+  (select id from public.contas where nome = 'Nubank Conta'), null,
+  (select c.id from public.categorias c join public.contas k on k.organizacao_id = c.organizacao_id where k.nome = 'Nubank Conta' and c.nome = 'Alimentação'));
 do $$ begin
   begin
     update public.contas set ativo = false where nome = 'Nubank Conta';

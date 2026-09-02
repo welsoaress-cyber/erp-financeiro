@@ -108,12 +108,12 @@ begin
   exception when insufficient_privilege then null; end;
 end $$;
 
--- T7: com lancamentos (simulação da Etapa 5), inativar bloqueado; renomear permitido
-reset role;
-create table public.lancamentos (id uuid primary key default gen_random_uuid(), categoria_id uuid references public.categorias (id));
-insert into public.lancamentos (categoria_id) select id from public.categorias where nome = 'Mercado';
-set local role authenticated;
 set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+-- T7: com lançamentos reais (motor da Etapa 5), inativar bloqueado; renomear permitido
+insert into public.contas (organizacao_id, nome, tipo) select organizacao_id, 'Conta teste', 'dinheiro' from public.categorias where nome = 'Mercado';
+select public.criar_lancamento('despesa', 'Compra teste', 10, '2026-09-01', null, '2026-09-01',
+  (select id from public.contas where nome = 'Conta teste'), null, (select id from public.categorias where nome = 'Mercado'));
 do $$ begin
   begin
     update public.categorias set ativo = false where nome = 'Mercado';

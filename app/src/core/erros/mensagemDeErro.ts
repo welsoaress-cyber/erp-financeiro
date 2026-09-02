@@ -12,7 +12,7 @@ function hostDoServidor(): string {
 
 /** Converte qualquer erro em uma mensagem curta e legível em português. */
 const CODIGOS_POSTGRES: Record<string, string> = {
-  '23505': 'Já existe um registro com este nome.',
+  '23505': 'Já existe um registro com este nome ou documento.',
   '22P02': 'Valor inválido para um dos campos.',
   '42501': 'Você não tem permissão para esta operação.',
   'PGRST205': 'Estrutura do banco ainda não atualizada para este módulo.',

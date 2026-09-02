@@ -57,6 +57,7 @@ function paramsDe(d: DadosLancamento) {
     p_categoria_id: d.categoria_id,
     p_observacao: d.observacao,
     p_negocio_id: d.negocio_id,
+    p_pessoa_id: d.pessoa_id,
   }
 }
 

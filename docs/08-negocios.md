@@ -1,6 +1,6 @@
 # Etapa 6A — Negócios
 
-Status: **implementada e testada localmente (02/09/2026); aguardando aplicação da migration em produção e validação do proprietário.**
+Status: **CONCLUÍDA E VALIDADA EM PRODUÇÃO (02/09/2026).** Migration 0006 aplicada, verificação 7 de 7, negócio/conta/lançamento/dashboard confirmados pelo proprietário.
 
 ## 1. O que existe
 

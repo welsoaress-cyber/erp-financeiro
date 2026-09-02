@@ -10,12 +10,14 @@ import { montarArvore, type Categoria } from '../../categorias/tipos'
 import { TIPOS_LANCAMENTO, type DadosLancamento, type Lancamento, type TipoLancamento } from '../tipos'
 import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
 import type { Negocio } from '../../negocios/tipos'
+import type { Pessoa } from '../../pessoas/tipos'
 
 interface Props {
   lancamento?: Lancamento
   contas: Conta[]
   categorias: Categoria[]
   negocios: Negocio[]
+  pessoas: Pessoa[]
   negocioInicial?: string | null
   tipoInicial?: TipoLancamento
   salvando: boolean
@@ -27,7 +29,7 @@ interface Props {
 
 interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string }
 
-export function FormularioLancamento({ lancamento, contas, categorias, negocios, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, aoSalvar, aoCancelar }: Props) {
+export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, aoSalvar, aoCancelar }: Props) {
   const editando = Boolean(lancamento)
   const [tipo, setTipo] = useState<TipoLancamento>(lancamento?.tipo ?? tipoInicial)
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '')
@@ -41,6 +43,8 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   const [categoriaId, setCategoriaId] = useState(lancamento?.categoria_id ?? '')
   const [observacao, setObservacao] = useState(lancamento?.observacao ?? '')
   const [negocioId, setNegocioId] = useState<string | null>(lancamento ? lancamento.negocio_id : negocioInicial)
+  const [pessoaId, setPessoaId] = useState<string>(lancamento?.pessoa_id ?? '')
+  const pessoasDisponiveis = pessoas.filter((p) => p.ativo || p.id === lancamento?.pessoa_id)
   const [erros, setErros] = useState<Erros>({})
 
   const contasDisponiveis = contas.filter((c) => c.ativo || c.id === lancamento?.conta_id || c.id === lancamento?.conta_destino_id)
@@ -71,6 +75,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       categoria_id: ehTransferencia ? null : categoriaId,
       observacao: observacao.trim() || null,
       negocio_id: negocioId,
+      pessoa_id: pessoaId || null,
     }
   }
 
@@ -163,6 +168,10 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
 
       {negocios.some((n) => n.ativo || n.id === lancamento?.negocio_id) && (
         <SelecaoNegocio negocios={negocios} valor={negocioId} aoMudar={setNegocioId} atualId={lancamento?.negocio_id} />
+      )}
+
+      {pessoasDisponiveis.length > 0 && !ehTransferencia && (
+        <Selecao rotulo="Pessoa (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhuma' }, ...pessoasDisponiveis.map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => setPessoaId(e.target.value)} ajuda="Cliente ou fornecedor relacionado a este lançamento." />
       )}
 
       <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />

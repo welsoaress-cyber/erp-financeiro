@@ -13,6 +13,7 @@ import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useContas } from '../../contas/api'
 import { useCategorias } from '../../categorias/api'
 import { useNegocios } from '../../negocios/api'
+import { usePessoas } from '../../pessoas/api'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { buscarPossiveisDuplicados, useAtualizarLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
@@ -35,6 +36,7 @@ export function LancamentosPage() {
   const contas = useContas()
   const categorias = useCategorias()
   const negocios = useNegocios()
+  const pessoas = usePessoas()
   const criar = useCriarLancamento()
   const atualizar = useAtualizarLancamento()
   const efetivar = useEfetivarLancamento()
@@ -44,6 +46,7 @@ export function LancamentosPage() {
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
   const nomeNegocio = useMemo(() => new Map((negocios.data ?? []).map((n) => [n.id, n.nome])), [negocios.data])
+  const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const temNegocios = (negocios.data ?? []).length > 0
 
   const lista = (lancamentos.data ?? []).filter((l) =>
@@ -89,7 +92,8 @@ export function LancamentosPage() {
     const base = l.tipo === 'transferencia'
       ? `${nomeConta.get(l.conta_id) ?? '—'} → ${nomeConta.get(l.conta_destino_id ?? '') ?? '—'}`
       : `${nomeCategoria.get(l.categoria_id ?? '') ?? '—'} · ${nomeConta.get(l.conta_id) ?? '—'}`
-    return l.negocio_id ? `${base} · ${nomeNegocio.get(l.negocio_id) ?? '—'}` : base
+    const comNegocio = l.negocio_id ? `${base} · ${nomeNegocio.get(l.negocio_id) ?? '—'}` : base
+    return l.pessoa_id ? `${comNegocio} · ${nomePessoa.get(l.pessoa_id) ?? '—'}` : comNegocio
   }
 
   function classeValor(l: Lancamento) {
@@ -197,6 +201,7 @@ export function LancamentosPage() {
               contas={contas.data ?? []}
               categorias={categorias.data ?? []}
               negocios={negocios.data ?? []}
+              pessoas={pessoas.data ?? []}
               negocioInicial={filtroNegocio && filtroNegocio !== 'pessoal' ? filtroNegocio : null}
               tipoInicial={filtroTipo || 'despesa'}
               salvando={criar.isPending || atualizar.isPending}

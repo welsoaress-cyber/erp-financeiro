@@ -7,6 +7,8 @@ import { Alerta } from '../../core/ui/Alerta'
 import { Botao } from '../../core/ui/Botao'
 import { Campo } from '../../core/ui/Campo'
 import { LayoutAuth } from './LayoutAuth'
+import { Modal } from '../../core/ui/Modal'
+import { CHAVE_SESSAO_EXPIRADA } from '../../core/auth/useInatividade'
 
 export function LoginPage() {
   const { entrar } = useAuth()
@@ -19,6 +21,13 @@ export function LoginPage() {
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const limite = useLimiteTentativas()
+  const [sessaoExpirada, setSessaoExpirada] = useState(() => {
+    try { return sessionStorage.getItem(CHAVE_SESSAO_EXPIRADA) === '1' } catch { return false }
+  })
+  function fecharAvisoExpirada() {
+    try { sessionStorage.removeItem(CHAVE_SESSAO_EXPIRADA) } catch { /* ignora */ }
+    setSessaoExpirada(false)
+  }
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault()
@@ -49,6 +58,10 @@ export function LoginPage() {
           Ainda não tem conta? <Link to="/cadastro" className="font-medium text-brand-600 hover:underline">Criar conta</Link>
         </p>
       </form>
+      <Modal aberto={sessaoExpirada} aoFechar={fecharAvisoExpirada} titulo="Sessão expirada">
+        <p className="text-sm text-ink-muted">Sessão expirada por inatividade. Clique em OK para fazer login novamente.</p>
+        <div className="mt-4 flex justify-end"><Botao onClick={fecharAvisoExpirada}>OK</Botao></div>
+      </Modal>
     </LayoutAuth>
   )
 }

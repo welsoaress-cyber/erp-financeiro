@@ -1,68 +1,108 @@
 # Segurança
 
-Status: **implementado e testado localmente (02/09/2026); migration 0003 aguardando aplicação em produção.**
+Status: **implementado e testado (02/09/2026).** Pendências em produção: aplicar a migration 0003 e ajustar duas configurações no painel do Supabase (seções 5 e 7).
 
-## 1. O que já estava em vigor (verificado)
+## 1. Visão geral
+O sistema é um app estático (Cloudflare Workers) que fala diretamente com a API do Supabase (Auth + PostgREST). Não existe backend próprio. Consequência: **toda regra de segurança que importa vive no banco** (RLS, grants, triggers) e no Supabase Auth (hash de senha, rate limiting, sessões). O que roda no navegador (limite de tentativas, validação de senha, logout por inatividade) melhora a experiência e reduz abuso acidental, mas nunca é a única barreira.
 
-| Medida | Como funciona | Evidência |
+Chaves: o app usa apenas a chave *publishable*, que é pública por natureza. A chave *service_role* não existe em nenhum lugar do projeto. Credenciais nunca vão para o repositório.
+
+## 2. Medidas implementadas
+
+| # | Medida | Camada | Estado |
+|---|---|---|---|
+| 1 | Senhas com hash **bcrypt** (Supabase Auth). O app nunca vê senha nem hash. | Auth | Verificado (padrão do serviço) |
+| 2 | **RLS ativo** em `organizacoes`, `organizacao_membros`, `auditoria`, `contas`; policies por organização; `anon` sem grants; nenhum DELETE para clientes | Banco | Verificado por `verificar_rls.sql` |
+| 3 | API protegida: sem JWT o papel é `anon` (sem acesso); com JWT, `auth.uid()` filtra tudo | Banco | Verificado |
+| 4 | **Auditoria** INSERT/UPDATE/DELETE em todas as tabelas de negócio (antes/depois em JSON, `usuario_id`), tabela somente leitura. `CANCEL` de lançamentos entra na Etapa 5 como UPDATE de status auditado | Banco | Verificado (T1–T8) |
+| 5 | **Auditoria de autenticação**: LOGIN bem-sucedido, troca de e-mail, troca de senha (sem hash) | Banco (migration 0003) | Testado (S1–S6) |
+| 6 | **Limite de tentativas de login** por faixas, persistente | App | Testado (e2e) |
+| 7 | **Senha forte** no cadastro | App + painel | Testado (e2e); painel pendente |
+| 8 | **Logout por inatividade** (30 min) | App | Testado (e2e) |
+| 9 | **Sanitização**: React escapa todo texto; zero uso de `dangerouslySetInnerHTML`, `innerHTML` ou `eval` (verificado por busca no código). SQL injection é impossível pelo caminho usado: PostgREST parametriza tudo, não há SQL montado no app | App | Verificado |
+| 10 | URLs de Auth: Site URL e Redirect URL apontam para o site | Painel | Feito pelo proprietário |
+| 11 | Regras de integridade no banco (tipo imutável, saldo derivado, sem exclusão física) | Banco | Verificado |
+
+## 3. Políticas de RLS
+
+Padrão adotado (usa função `security definer`, evita recursão quando a própria `organizacao_membros` é consultada):
+```sql
+create policy contas_select on public.contas
+  for select to authenticated
+  using (organizacao_id in (select public.minhas_organizacoes()));
+```
+
+Forma equivalente com `exists`, aceita quando a tabela não for `organizacao_membros`:
+```sql
+create policy usuario_visualiza_proprios_dados on public.nome_tabela
+  for select to authenticated
+  using (exists (
+    select 1 from public.organizacao_membros m
+    where m.organizacao_id = nome_tabela.organizacao_id and m.usuario_id = auth.uid()
+  ));
+```
+Regras: policies separadas para `select`, `insert` (`with check`) e `update` (`using` + `with check`); **nunca** policy nem grant de `delete` sem decisão documentada; `anon` nunca recebe grant.
+
+## 4. Limite de tentativas de login (rate limiting)
+- Arquivo: `app/src/core/auth/useLimiteTentativas.ts`, usado em `LoginPage`.
+- Faixas por falhas seguidas: 1ª e 2ª → pausa de 5 s; **3ª → 1 minuto; 5ª → 5 minutos; 10ª → 15 minutos**. Faixas intermediárias repetem a anterior (4ª = 1 min; 6ª a 9ª = 5 min).
+- Mensagem: "Muitas tentativas. Aguarde X minutos." Botão desabilitado durante o bloqueio.
+- Persistência em `localStorage` (`erp.login.tentativas`): vale entre abas e após recarregar. Contador zera com login correto ou após 1 h sem novas falhas.
+- **Limite honesto:** é experiência do usuário. Quem ataca chama a API direto. A proteção real é o **rate limiting do Supabase Auth** (por IP nos endpoints de token/signup e limites de envio de e-mail), ativo por padrão. Conferir em *Authentication → Rate Limits*.
+
+## 5. Política de senhas
+- Arquivo: `app/src/core/auth/validarSenha.ts`, usado em `CadastroPage`, com checklist visual em tempo real.
+- Requisitos: **mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número**. Caractere especial recomendado, não exigido.
+- Mensagens: "A senha deve ter no mínimo 8 caracteres." / "...pelo menos 1 letra maiúscula." / "...1 letra minúscula." / "...1 número."
+- **Pendente no painel (proprietário):** *Authentication → Providers → Email*: Minimum password length = **8**; Password requirements = **"Lowercase, uppercase letters and digits"**. Sem isso, a API aceitaria senha fraca vinda de fora do app.
+
+## 6. Logout por inatividade
+- Arquivo: `app/src/core/auth/useInatividade.ts`, ativado em `AppShell` (só com sessão).
+- 30 minutos sem `mousemove`, `keydown`, `click`, `scroll` ou `touchstart` → logout e redirecionamento ao login com o aviso "Sessão expirada por inatividade. Clique em OK para fazer login novamente."
+- Última atividade gravada em `localStorage` (no máximo 1 vez por segundo): vale entre abas e ao reabrir o navegador depois do prazo.
+- Complemento recomendado no painel: *Authentication → Sessions* → time-box / inactivity timeout, para o servidor também expirar o token.
+
+## 7. CORS e domínios autorizados
+- **Fato técnico:** a API do Supabase (PostgREST e Auth) **não restringe CORS por domínio**; ela responde a qualquer origem porque a chave publishable é pública por definição. Não existe campo "domínio autorizado" para a API. A barreira é o JWT do usuário + RLS. Um site de outro domínio com a chave publishable só consegue o que um usuário anônimo consegue: **nada**.
+- O que existe e está configurado: *Authentication → URL Configuration* → **Site URL** `https://erp-financeiro.welsoaress.workers.dev` e **Redirect URLs** `https://erp-financeiro.welsoaress.workers.dev/**`. Isso impede que links de confirmação e recuperação redirecionem para domínios de terceiros.
+- Teste manual válido: acessar o site pela URL → funciona. "Bloquear a API de outro domínio" não é testável porque não é uma restrição que o serviço ofereça; o teste equivalente é: com a chave publishable e sem login, `select` em qualquer tabela retorna vazio ou erro de permissão.
+
+## 8. Procedimento obrigatório para novas tabelas
+Na própria migration que cria a tabela:
+1. Coluna `organizacao_id uuid not null references public.organizacoes(id)`.
+2. `alter table public.X enable row level security;`
+3. Policies `X_select`, `X_insert`, `X_update` com o padrão da seção 3. Sem `delete`.
+4. `revoke all on public.X from anon, authenticated;` e depois `grant select, insert, update on public.X to authenticated;`
+5. Triggers `X_atualizado_em` (`tg_atualizado_em`) e `X_auditoria` (`tg_auditoria`).
+6. Funções novas: `set search_path = public`; `security definer` só quando necessário, com `revoke ... from public, anon`.
+7. Rodar `supabase/tests/verificar_rls.sql` (todas as linhas `ok = true`) e cobrir a tabela no teste SQL da etapa (criar, RLS entre usuários, DELETE negado).
+
+## 9. Recomendações futuras (não implementadas)
+| Medida | Onde | Custo |
 |---|---|---|
-| Senhas com hash | Supabase Auth (GoTrue) armazena `encrypted_password` com **bcrypt**. O app nunca vê nem grava senha. | Padrão do serviço; nenhuma tabela própria de senha |
-| RLS em todas as tabelas | `organizacoes`, `organizacao_membros`, `auditoria`, `contas`: RLS ativo, policies por organização via `minhas_organizacoes()` (security definer, sem recursão). `anon` sem nenhum grant. Nenhuma tabela concede DELETE ao cliente. | `supabase/tests/verificar_rls.sql` → todas as linhas `ok = true` |
-| API protegida | Só existe a API do Supabase (PostgREST/Auth). Toda requisição leva a chave *publishable* + JWT do usuário; sem JWT o papel é `anon`, que não tem acesso a nada. A chave *service_role* nunca é usada no app. | grants na migration 0001/0002 |
-| Auditoria de dados | Trigger genérico `tg_auditoria` em todas as tabelas de negócio: INSERT/UPDATE/DELETE com antes/depois em JSON e `usuario_id`. Tabela somente leitura para clientes. | testes T1–T8 e S1–S6 |
-| Regras no banco | Integridade (tipo imutável, saldo derivado, sem exclusão física) é imposta por constraints e triggers, não pela tela. | `01-arquitetura.md` seção 5 |
+| 2FA (TOTP) | Supabase Auth MFA + telas no app | Free |
+| CAPTCHA no login/cadastro | Cloudflare Turnstile (gratuito) integrado ao Supabase Auth | Free |
+| Expiração de sessão no servidor | *Authentication → Sessions* | Free |
+| Proteção contra senhas vazadas | *Authentication → Providers → Email → Leaked password protection* | Depende do plano |
+| Bloqueio de IPs / WAF | Cloudflare WAF na frente do Worker | Free (regras básicas) |
+| Alertas de auditoria | Consulta periódica em `auditoria` (LOGIN fora de horário, troca de senha) | Etapa futura |
 
-## 2. Implementado agora
-
-### A. Limite de tentativas de login
-- **Onde:** `app/src/core/auth/useLimiteTentativas.ts`, usado em `LoginPage`.
-- **Regra:** 5 s de pausa após cada falha; após 5 falhas seguidas, bloqueio de 5 minutos com a mensagem "Muitas tentativas. Aguarde 5 minutos." O botão fica desabilitado e o bloqueio sobrevive a recarregar a página (sessionStorage). Login correto zera o contador.
-- **Limite honesto:** isso é **experiência do usuário**, não segurança. Qualquer atacante ignora o navegador e chama a API direto. A proteção real é o **rate limiting nativo do Supabase Auth**, que já existe por padrão (limite por IP nos endpoints de token/signup e limite de envio de e-mails). Confira em *Authentication → Rate Limits* no painel; nada precisa ser ativado.
-
-### B. RLS reforçado
-- Já estava completo. A verificação passou a ser **genérica**: `verificar_rls.sql` lista todas as tabelas do `public` e acusa qualquer uma sem RLS, sem policy ou com acesso `anon`.
-- O padrão sugerido na solicitação (`EXISTS` em `organizacao_membros`) é equivalente ao adotado (`organizacao_id in (select minhas_organizacoes())`). O adotado foi mantido porque a função `security definer` evita recursão de RLS quando a própria `organizacao_membros` é consultada.
-
-### C. Auditoria estendida a autenticação (`supabase/migrations/20260902000003_seguranca_auth.sql`)
-- Trigger `on_auth_user_updated` em `auth.users` grava em `public.auditoria`:
-  - **LOGIN** bem-sucedido (mudança de `last_sign_in_at`);
-  - **troca de e-mail** (antes/depois);
-  - **troca de senha** (apenas `senha_alterada: true`; **nenhum hash é gravado**, testado).
-- A linha recebe a `organizacao_id` do usuário, então ele enxerga a própria trilha e ninguém mais.
-- **Tentativas falhas de login não chegam ao banco**: o Supabase Auth as rejeita antes. Elas ficam em *Authentication → Logs* no painel (retenção do plano Free: 1 dia) e na tabela interna `auth.audit_log_entries`. Registrá-las em `public.auditoria` exigiria um backend próprio, fora do escopo.
-
-## 3. Regra obrigatória para toda nova tabela
-Toda migration que criar tabela em `public` deve, na própria migration:
-1. `alter table … enable row level security`;
-2. policies de `select`/`insert`/`update` filtrando por `organizacao_id in (select public.minhas_organizacoes())`;
-3. `revoke all … from anon, authenticated` seguido de grants explícitos, **sem DELETE** salvo decisão documentada;
-4. trigger `…_auditoria` com `tg_auditoria()` e trigger `…_atualizado_em`;
-5. rodar `verificar_rls.sql` e incluir a tabela no teste SQL da etapa.
-
-## 4. Futuro (documentado, não implementado)
-| Medida | Onde | Observação |
-|---|---|---|
-| 2FA (TOTP) | Supabase Auth MFA, plano Free inclui TOTP | Exige tela de enrolar/validar no app |
-| CAPTCHA no login/cadastro | Supabase Auth + hCaptcha ou Turnstile (Cloudflare, gratuito) | Ativar no painel + widget no app |
-| Política de senha forte | *Authentication → Providers → Email → Password requirements* | Configuração no painel; hoje mínimo 6 |
-| Expiração de sessão | *Authentication → Sessions* (time-box, inatividade) | Configuração no painel |
-| Bloqueio de IPs | Cloudflare WAF (Free) na frente do Worker | Só para o site; a API do Supabase tem o rate limit próprio |
-| Leaked password protection | *Authentication → Providers → Email* | Ligar quando disponível no plano |
-
-## 5. Testes
+## 10. Testes realizados
 | Teste | Resultado |
 |---|---|
-| S1 login auditado com organização | OK |
-| S2 troca de e-mail auditada com antes/depois | OK |
-| S3 troca de senha auditada sem hash | OK |
-| S4 nenhum hash em `auditoria` | OK |
-| S5 alteração de metadata não gera auditoria | OK |
-| S6 usuário vê só a própria trilha de autenticação | OK |
-| `verificar_rls.sql`: 4 tabelas, todas ok | OK |
-| Fundação (T1–T6) e Contas (T1–T8) reexecutados com a migration 0003 | OK |
-| Login e2e: falha → pausa 5 s → 5 falhas → bloqueio 5 min → persiste ao recarregar → login correto entra | 7 de 7 |
+| SQL S1–S6: login/e-mail/senha auditados, sem hash, metadata ignorada, trilha visível só ao próprio usuário | OK |
+| `verificar_rls.sql`: 4 tabelas, RLS + policies + sem anon + sem DELETE | OK |
+| Fundação T1–T6 e Contas T1–T8 reexecutados com a migration 0003 | OK |
+| E2E login: pausa curta → 3ª falha 1 min → 4ª 1 min → 5ª 5 min → 10ª 15 min → persiste ao recarregar → login correto zera | 10 de 10 |
+| E2E cadastro: "123", sem maiúscula, sem minúscula, sem número rejeitadas; "Abc12345" aceita | 5 de 5 |
+| E2E inatividade: atividade gravada; 31 min → logout + aviso; OK fecha; sessão removida | 4 de 4 |
+| Busca por `dangerouslySetInnerHTML`, `innerHTML`, `eval(` no código | 0 ocorrências |
+| Lint, typecheck, build | OK |
 
-## 6. Aplicar em produção
+Testes manuais restantes para o proprietário, em produção: errar a senha 3 vezes (1 min) e continuar até 5 (5 min); cadastrar com "123" (rejeita) e "Abc12345" (aceita); deixar 30 min parado (logout).
+
+## 11. Aplicar em produção
 1. SQL Editor → `supabase/migrations/20260902000003_seguranca_auth.sql` → Run.
-2. SQL Editor → `supabase/tests/verificar_rls.sql` → Run → todas as linhas com `ok = true`.
-3. Teste manual: errar a senha 6 vezes no site; na 5ª aparece o bloqueio de 5 minutos.
+2. SQL Editor → `supabase/tests/verificar_rls.sql` → todas as linhas `ok = true`.
+3. Painel: *Authentication → Providers → Email* → senha mínima 8 + "Lowercase, uppercase letters and digits".
+4. Opcional: *Authentication → Sessions* → inactivity timeout 30 min.

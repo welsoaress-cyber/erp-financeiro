@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { BarraLateral } from './BarraLateral'
 import { BarraSuperior } from './BarraSuperior'
 import { OrganizacaoProvider } from '../organizacao/OrganizacaoProvider'
 import { ErrorBoundary } from '../erros/ErrorBoundary'
 import type { DefinicaoModulo } from '../modulos/tipos'
+import { useAuth } from '../auth/useAuth'
+import { useInatividade } from '../auth/useInatividade'
 
 export function AppShell({ modulos }: { modulos: DefinicaoModulo[] }) {
   const [menuAberto, setMenuAberto] = useState(false)
+  const { sair } = useAuth()
+  useInatividade(useCallback(() => { void sair() }, [sair]))
 
   return (
     <OrganizacaoProvider>

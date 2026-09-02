@@ -6,6 +6,7 @@ import { Alerta } from '../../core/ui/Alerta'
 import { Botao } from '../../core/ui/Botao'
 import { Campo } from '../../core/ui/Campo'
 import { LayoutAuth } from './LayoutAuth'
+import { REGRAS_SENHA, temCaractereEspecial, validarSenha } from '../../core/auth/validarSenha'
 
 export function CadastroPage() {
   const { cadastrar } = useAuth()
@@ -23,7 +24,8 @@ export function CadastroPage() {
     e.preventDefault()
     setErro(null)
     if (nome.trim().length < 2) return setErro('Informe seu nome.')
-    if (senha.length < 6) return setErro('A senha deve ter pelo menos 6 caracteres.')
+    const errosSenha = validarSenha(senha)
+    if (errosSenha.length > 0) return setErro(errosSenha[0])
     if (senha !== confirmacao) return setErro('As senhas não conferem.')
 
     setEnviando(true)
@@ -55,7 +57,15 @@ export function CadastroPage() {
         {erro && <Alerta tipo="erro">{erro}</Alerta>}
         <Campo rotulo="Nome" autoComplete="name" required value={nome} onChange={(e) => setNome(e.target.value)} />
         <Campo rotulo="E-mail" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Campo rotulo="Senha" type="password" autoComplete="new-password" required minLength={6} value={senha} onChange={(e) => setSenha(e.target.value)} />
+        <div className="space-y-2">
+          <Campo rotulo="Senha" type="password" autoComplete="new-password" required minLength={8} value={senha} onChange={(e) => setSenha(e.target.value)} />
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs" aria-label="Requisitos da senha">
+            {REGRAS_SENHA.map((r) => (
+              <li key={r.id} className={r.ok(senha) ? 'text-green-700' : 'text-ink-muted'}>{r.ok(senha) ? '✓' : '○'} {r.texto}</li>
+            ))}
+            <li className={temCaractereEspecial(senha) ? 'text-green-700' : 'text-ink-muted'}>{temCaractereEspecial(senha) ? '✓' : '○'} 1 caractere especial (recomendado)</li>
+          </ul>
+        </div>
         <Campo rotulo="Confirmar senha" type="password" autoComplete="new-password" required value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} />
         <Botao type="submit" className="w-full" carregando={enviando}>Criar conta</Botao>
         <p className="text-center text-sm text-ink-muted">

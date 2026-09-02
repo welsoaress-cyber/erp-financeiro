@@ -47,12 +47,12 @@ Efeito colateral desejado: `conta_possui_movimentos` e `categoria_possui_lancame
 
 **Aviso de duplicidade** (regra 10 da arquitetura): ao salvar, o app procura lançamento não cancelado com mesma conta, mesmo valor e data ±1 dia; se achar, mostra o aviso e exige "Salvar mesmo assim".
 
-## 4. Decisões técnicas
+## 4. Decisões técnicas (aprovadas pelo proprietário em 02/09/2026)
 1. **Escrita só pelo motor**, com flag de sessão verificada por trigger. Mesmo um bug no app ou um acesso direto à API não consegue criar lançamento sem movimento ou movimento órfão.
 2. **Cancelar remove movimentos** em vez de gerar estorno. Mais simples para uso pessoal; a auditoria guarda os movimentos removidos (testado). Estorno contábil pode ser adicionado depois sem alterar o modelo.
 3. **Edição de efetivado permitida** e auditada, regenerando movimentos. Alternativa (bloquear e exigir cancelar + recriar) foi descartada por atrito no uso pessoal.
 4. **Resultado mensal por competência**, saldo por efetivação. Relatórios futuros por vencimento usam a coluna própria.
-5. **Ressalva mantida** (Etapa 3): conta com movimentos não pode ser inativada. Para encerrar uma conta bancária com histórico será preciso relaxar a regra para "sem previstos pendentes". Fica para decisão sua.
+5. **Regra mantida por decisão do proprietário**: conta com movimentos não pode ser inativada. Será reavaliada quando houver necessidade real de encerrar uma conta com histórico.
 
 ## 5. Testes realizados
 | Teste | Resultado |

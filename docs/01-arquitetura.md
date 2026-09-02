@@ -266,7 +266,7 @@ Contexto recebido após a aprovação: o ERP deverá, no futuro, administrar vá
 | Conceito | Significado | Pertence a |
 |---|---|---|
 | **Organização** | Escopo raiz: a sua holding. Uma só, hoje. Contém finanças pessoais e todos os projetos. | Núcleo |
-| **Projeto / Operação** | Uma unidade de negócio: SERVNET, SERVIDOR, Navalha… Cada um é um **módulo de operação** plugado ao núcleo. | Núcleo (o cadastro) / Módulo (as regras) |
+| **Negócio** (antes "Projeto / Operação") | Uma unidade de negócio: SERVNET, SERVIDOR, Navalha… Cadastro no núcleo; regras específicas em módulo próprio. Termo ajustado em 02/09/2026 para o vocabulário do proprietário. | Núcleo (o cadastro) / Módulo (as regras) |
 | **Pessoa** | Cadastro único de pessoa física ou jurídica (cliente, fornecedor, contato). João existe **uma vez**. | Núcleo |
 | **Vínculo** | Relação de uma pessoa com um projeto e um papel (João é *cliente* da SERVNET e do SERVIDOR). | Núcleo (o vínculo) |
 | **Contrato / Plano / Serviço / Fatura** | O que a pessoa tem dentro de um projeto. Específico de cada operação. | Módulo de operação |

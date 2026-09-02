@@ -1,6 +1,6 @@
 # Etapa 3 — Contas
 
-Status: **implementada e testada localmente (02/09/2026); aguardando aplicação da migration em produção e validação do proprietário.**
+Status: **CONCLUÍDA E VALIDADA EM PRODUÇÃO (02/09/2026).** Migration 0002 aplicada, `verificar_contas.sql` 9 de 9, `verificar_rls.sql` ok nas 4 tabelas; criar, editar e inativar conta confirmados pelo proprietário no site.
 
 ## 1. O que existe
 

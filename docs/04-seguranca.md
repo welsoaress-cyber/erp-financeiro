@@ -1,6 +1,6 @@
 # Segurança
 
-Status: **implementado e testado (02/09/2026).** Pendências em produção: aplicar a migration 0003 e ajustar duas configurações no painel do Supabase (seções 5 e 7).
+Status: **implementado; migration 0003 aplicada em produção (02/09/2026).** Pendência no painel do Supabase: política de senha (seção 5).
 
 ## 1. Visão geral
 O sistema é um app estático (Cloudflare Workers) que fala diretamente com a API do Supabase (Auth + PostgREST). Não existe backend próprio. Consequência: **toda regra de segurança que importa vive no banco** (RLS, grants, triggers) e no Supabase Auth (hash de senha, rate limiting, sessões). O que roda no navegador (limite de tentativas, validação de senha, logout por inatividade) melhora a experiência e reduz abuso acidental, mas nunca é a única barreira.

@@ -22,6 +22,7 @@ export function FormularioPessoa({ pessoa, salvando, erro, aoSalvar, aoCancelar 
   const [telefone, setTelefone] = useState(pessoa?.telefone ? formatarTelefone(pessoa.telefone) : '')
   const [observacao, setObservacao] = useState(pessoa?.observacao ?? '')
   const [ativo, setAtivo] = useState(pessoa?.ativo ?? true)
+  const [receberAvisos, setReceberAvisos] = useState(pessoa?.receber_avisos ?? true)
   const [erros, setErros] = useState<{ nome?: string; documento?: string; email?: string; telefone?: string }>({})
 
   function aoEnviar(e: FormEvent) {
@@ -39,7 +40,7 @@ export function FormularioPessoa({ pessoa, salvando, erro, aoSalvar, aoCancelar 
     if (tel && (tel.length < 10 || tel.length > 13)) novos.telefone = 'Telefone com DDD, 10 ou 11 dígitos.'
     setErros(novos)
     if (Object.keys(novos).length > 0) return
-    aoSalvar({ tipo, nome: nome.trim(), documento: doc || null, email: email.trim().toLowerCase() || null, telefone: tel || null, observacao: observacao.trim() || null, ativo })
+    aoSalvar({ tipo, nome: nome.trim(), documento: doc || null, email: email.trim().toLowerCase() || null, telefone: tel || null, observacao: observacao.trim() || null, ativo, receber_avisos: receberAvisos })
   }
 
   return (
@@ -58,6 +59,10 @@ export function FormularioPessoa({ pessoa, salvando, erro, aoSalvar, aoCancelar 
       </div>
       <Campo rotulo="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} erro={erros.email} />
       <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={receberAvisos} onChange={(e) => setReceberAvisos(e.target.checked)} className="size-4 accent-brand-600" />
+        Recebe avisos de cobrança por WhatsApp
+      </label>
       {editando && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-brand-600" />

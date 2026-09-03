@@ -1,6 +1,6 @@
 # Etapa 10 — Notificações WhatsApp (modo simulado)
 
-Status: **implementada e testada localmente (03/09/2026); aguardando aplicação das migrations 0016/0017 em produção e validação do proprietário.** Nenhuma mensagem real é enviada nesta etapa.
+Status: **implementada e testada localmente (03/09/2026); aguardando aplicação das migrations 0016–0019 em produção e validação do proprietário.** O envio real (Evolution API) existe, mas fica desligado até o proprietário trocar o provedor na tela.
 
 ## 1. Objetivo
 Resgatar os avisos do sistema anterior: **próximo ao vencimento** (X dias antes), **no dia** e **bloqueio** (Y dias após, sem pagamento), por negócio, com número e mensagens próprias. Nesta etapa o "envio" é simulado e registrado; a integração real entra depois como outro provedor, sem mudar o esquema.
@@ -34,7 +34,22 @@ job diário 12:00 UTC (09:00 Brasília)  →  executar_notificacoes_todas()
 - **Histórico** com busca por cliente ou #contrato e filtros por evento e status; mostra destino, status, motivo do erro e a mensagem.
 - **Enviar teste**: registra uma mensagem `[TESTE]` para um cliente com telefone (simulada).
 
-## 5. Custo e integração futura (não ativar sem autorização)
+## 5. Envio real: provedor "Evolution API" (migration 0018, Edge Function, migration 0019)
+O sistema anterior já envia pela **Evolution API auto-hospedada numa VM da Oracle Cloud** (gratuita), com uma instância por negócio (`servnet`, `servidor`). O ERP novo usa o mesmo caminho:
+```
+banco (fila: notificacoes_log pendente, provedor evolution)
+  └─ pg_cron a cada 15 min (08–18h Brasília) → net.http_post → Edge Function notificacoes-enviar
+        ├─ notificacoes_para_envio(): pendentes dentro do horário comercial (paga antes do envio → erro)
+        ├─ Evolution: connectionState da instância; sendText com 3 tentativas; 1 s entre mensagens
+        └─ registrar_resultado_notificacao(): enviado (com resposta) ou nova tentativa; 5 falhas → erro
+```
+- **Opt-in por negócio**: provedor `simulado` (padrão) ou `evolution` + nome da instância. Nada muda para quem fica em simulado.
+- **Opt-out por pessoa**: "Recebe avisos de cobrança por WhatsApp" no cadastro (equivalente ao `receberLembretes` do sistema anterior).
+- **Segredos só nos lugares certos**: `EVOLUTION_API_URL`, `EVOLUTION_API_KEY` e `NOTIFICACOES_CRON_SECRET` nos secrets da Edge Function; `project_url` e `notificacoes_cron_secret` no Vault do banco. Nada no repositório. No sistema anterior a chave e o IP da Evolution estão escritos dentro da função como valor padrão: **troque a chave na Evolution** e use a nova só nos secrets.
+- A fila é acessível apenas ao `service_role` (a Edge Function). `anon`/`authenticated` não leem nem gravam.
+- Ainda **sem** link Pix nas mensagens (o legado gera cobrança no Mercado Pago). Fica para uma etapa própria, com autorização.
+
+## 5b. Custo e alternativas (não ativar sem autorização)
 | Opção | Custo | Observação |
 |---|---|---|
 | WhatsApp Cloud API (Meta) | Conta Meta Business gratuita; conversas de utilidade cobradas por conversa após a franquia mensal gratuita | Exige número dedicado, verificação da empresa e templates aprovados. Integração via Edge Function do Supabase (gratuita no plano Free) com o token só em segredo do projeto. |
@@ -47,7 +62,7 @@ Quando autorizado: novo valor no enum `provedor_notificacao`, uma Edge Function 
 - e2e (Playwright + mock): configuração e validações, prévia de template, execução, D-3/D0 via RPC, histórico, filtros, teste manual, desativação.
 
 ## 7. Como aplicar em produção
-1. SQL Editor → `supabase/migrations/20260902000016_notificacoes.sql`.
-2. SQL Editor → `supabase/migrations/20260902000017_notificacoes_agendado.sql` (retorna o id do job).
-3. `supabase/tests/verificar_notificacoes.sql` → **6 de 6**; `supabase/tests/verificar_agendamento.sql` → 2 jobs ativos.
-4. Deploy do app (push em `main`). Menu Notificações → Configurar (número fictício é aceito; nada é enviado) → Enviar teste → Executar verificação agora.
+1. SQL Editor → `0016_notificacoes.sql`, depois `0017_notificacoes_agendado.sql` (retorna o id do job), depois `0018_notificacoes_evolution.sql`.
+2. `supabase/tests/verificar_notificacoes.sql` → 6 de 6; `verificar_notificacoes_envio.sql` → 5 de 5; `verificar_tudo.sql` → 16 de 16.
+3. Deploy do app (push em `main`). Menu Notificações → Configurar (simulado) → Enviar teste → Executar verificação agora. Validar em simulado primeiro.
+4. **Só depois, para ligar o envio real:** (a) na Evolution, gerar uma chave nova; (b) painel Supabase → Edge Functions → Deploy `supabase/functions/notificacoes-enviar` com "Verify JWT" desligado, e secrets `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `NOTIFICACOES_CRON_SECRET`; (c) SQL Editor: `select vault.create_secret('https://SEU-REF.supabase.co','project_url'); select vault.create_secret('MESMO-SEGREDO','notificacoes_cron_secret');` (d) `0019_notificacoes_envio_agendado.sql`; (e) na tela, trocar o provedor do negócio para Evolution API com a instância; (f) Enviar teste para o seu próprio número e conferir o histórico como "Enviado".

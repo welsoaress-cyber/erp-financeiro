@@ -1,3 +1,10 @@
+export type ProvedorNotificacao = 'simulado' | 'evolution'
+export const PROVEDORES = [
+  { valor: 'simulado', rotulo: 'Simulado (não envia)' },
+  { valor: 'evolution', rotulo: 'Evolution API (envio real)' },
+] as const
+export const ROTULO_PROVEDOR: Record<ProvedorNotificacao, string> = { simulado: 'Simulado', evolution: 'Evolution API' }
+
 export type TipoNotificacao = 'proximo_vencimento' | 'vencimento' | 'bloqueio' | 'teste'
 export type StatusNotificacao = 'pendente' | 'simulado' | 'enviado' | 'erro'
 export const ROTULO_TIPO: Record<TipoNotificacao, string> = { proximo_vencimento: 'Próximo ao vencimento', vencimento: 'Vencimento', bloqueio: 'Bloqueio', teste: 'Teste' }
@@ -13,7 +20,8 @@ export interface ConfigNotificacao {
   organizacao_id: string
   negocio_id: string
   numero_whatsapp: string | null
-  provedor: 'simulado'
+  provedor: ProvedorNotificacao
+  instancia: string | null
   ativo: boolean
   dias_antes: number
   dias_apos: number
@@ -26,6 +34,8 @@ export interface ConfigNotificacao {
 
 export interface DadosConfigNotificacao {
   numero_whatsapp: string | null
+  provedor: ProvedorNotificacao
+  instancia: string | null
   ativo: boolean
   dias_antes: number
   dias_apos: number

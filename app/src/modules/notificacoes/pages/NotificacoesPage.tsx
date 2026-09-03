@@ -14,7 +14,7 @@ import { usePessoas } from '../../pessoas/api'
 import { useConfigsNotificacao, useExecutarNotificacoes, useNotificacoes } from '../api'
 import { FormularioConfig } from '../components/FormularioConfig'
 import { EnviarTeste } from '../components/EnviarTeste'
-import { ROTULO_STATUS, ROTULO_TIPO, type StatusNotificacao, type TipoNotificacao } from '../tipos'
+import { ROTULO_PROVEDOR, ROTULO_STATUS, ROTULO_TIPO, type StatusNotificacao, type TipoNotificacao } from '../tipos'
 
 type Janela = 'config' | 'teste' | null
 const TOM: Record<StatusNotificacao, 'ok' | 'alerta' | 'neutro' | 'info'> = { simulado: 'info', enviado: 'ok', pendente: 'alerta', erro: 'neutro' }
@@ -65,7 +65,7 @@ export function NotificacoesPage() {
               </select>
             )}
             {config ? (
-              <span className="text-sm text-ink-muted">{negocio.nome} · {config.numero_whatsapp ?? 'sem número'} · {config.dias_antes} dia(s) antes · bloqueio {config.dias_apos} dia(s) após · {config.hora_inicio.slice(0, 5)}–{config.hora_fim.slice(0, 5)}</span>
+              <span className="text-sm text-ink-muted">{negocio.nome} · {config.numero_whatsapp ?? 'sem número'} · {config.dias_antes} dia(s) antes · bloqueio {config.dias_apos} dia(s) após · {config.hora_inicio.slice(0, 5)}–{config.hora_fim.slice(0, 5)} · {ROTULO_PROVEDOR[config.provedor]}{config.instancia ? ` (${config.instancia})` : ''}</span>
             ) : <span className="text-sm text-ink-muted">{negocio.nome} · sem configuração</span>}
             {config && <Distintivo tom={config.ativo ? 'ok' : 'neutro'}>{config.ativo ? 'Ativas' : 'Desativadas'}</Distintivo>}
             <Botao variante="secundario" className="ml-auto" onClick={() => setJanela('config')}>{config ? 'Configurar' : 'Configurar notificações'}</Botao>

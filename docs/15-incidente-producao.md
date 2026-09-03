@@ -28,4 +28,4 @@ Nenhuma outra ferramenta cria, altera ou "ajusta" objetos no banco do ERP. Todo 
 - Ordem em produção: 0014 (feita) → **0015 → 0013 → 0010 → verificar_tudo**. Depois, em Negócios, definir de novo a conta de recebimento e a categoria de receita padrão de cada negócio (as colunas foram recriadas vazias).
 
 ## Encerramento (03/09/2026)
-Produção após 0014 → 0015 → 0013 → 0010: `verificar_tudo.sql` **14 de 14**. Job `erp-faturamento-diario` agendado (executado duas vezes; o script desagenda antes de agendar, restando um job). Pendências: reconfigurar conta/categoria padrão dos negócios na tela e revalidar Etapas 6C, 7, 6D, 8 e 9 sobre o esquema correto.
+Produção após 0014 → 0015 → 0013 → 0010: `verificar_tudo.sql` **14 de 14** (16 de 16 após as migrations 0016–0018). Job `erp-faturamento-diario` agendado (executado duas vezes; o script desagenda antes de agendar, restando um job). Pendências: reconfigurar conta/categoria padrão dos negócios na tela e revalidar Etapas 6C, 7, 6D, 8 e 9 sobre o esquema correto.

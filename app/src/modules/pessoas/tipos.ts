@@ -23,6 +23,7 @@ export interface Pessoa {
   telefone: string | null
   observacao: string | null
   ativo: boolean
+  receber_avisos: boolean
   criado_em: string
   atualizado_em: string
 }
@@ -35,6 +36,7 @@ export interface DadosPessoa {
   telefone: string | null
   observacao: string | null
   ativo: boolean
+  receber_avisos: boolean
 }
 
 export interface Vinculo {

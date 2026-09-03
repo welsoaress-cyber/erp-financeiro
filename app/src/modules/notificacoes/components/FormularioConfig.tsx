@@ -2,10 +2,11 @@ import { useState, type FormEvent } from 'react'
 import { Alerta } from '../../../core/ui/Alerta'
 import { Botao } from '../../../core/ui/Botao'
 import { Campo } from '../../../core/ui/Campo'
+import { Selecao } from '../../../core/ui/Selecao'
 import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { useSalvarConfig } from '../api'
-import { PLACEHOLDERS, TEMPLATES_PADRAO, renderizar, type ConfigNotificacao } from '../tipos'
+import { PLACEHOLDERS, PROVEDORES, TEMPLATES_PADRAO, renderizar, type ConfigNotificacao, type ProvedorNotificacao } from '../tipos'
 
 function Template({ rotulo, valor, aoMudar, exemplo }: { rotulo: string; valor: string; aoMudar: (v: string) => void; exemplo: Record<string, string> }) {
   return (
@@ -22,6 +23,8 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
   const salvar = useSalvarConfig()
   const [numero, setNumero] = useState(config?.numero_whatsapp ?? '')
   const [ativo, setAtivo] = useState(config?.ativo ?? false)
+  const [provedor, setProvedor] = useState<ProvedorNotificacao>(config?.provedor ?? 'simulado')
+  const [instancia, setInstancia] = useState(config?.instancia ?? '')
   const [diasAntes, setDiasAntes] = useState(String(config?.dias_antes ?? 3))
   const [diasApos, setDiasApos] = useState(String(config?.dias_apos ?? 3))
   const [horaInicio, setHoraInicio] = useState((config?.hora_inicio ?? '08:00').slice(0, 5))
@@ -41,15 +44,23 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
     if (!Number.isInteger(dA) || dA < 0 || dA > 30) { setErro('Dias antes: 0 a 30.'); return }
     if (!Number.isInteger(dP) || dP < 1 || dP > 60) { setErro('Dias após: 1 a 60.'); return }
     if (horaFim <= horaInicio) { setErro('O fim do horário comercial deve ser depois do início.'); return }
+    const inst = instancia.trim().toLowerCase()
+    if (provedor === 'evolution' && !/^[a-z0-9_-]{2,40}$/.test(inst)) { setErro('Informe o nome da instância da Evolution API (ex.: servnet).'); return }
     for (const t of [tplProximo, tplDia, tplBloqueio]) if (t.trim().length < 10 || t.length > 1000) { setErro('Cada mensagem precisa ter entre 10 e 1000 caracteres.'); return }
     setErro(null)
-    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, ativo, dias_antes: dA, dias_apos: dP, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
+    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, dias_antes: dA, dias_apos: dP, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
   }
 
   return (
     <form onSubmit={aoEnviar} className="space-y-4" noValidate>
       {(erro || salvar.error) && <Alerta tipo="erro">{erro ?? mensagemDeErro(salvar.error)}</Alerta>}
-      <Alerta tipo="info">Modo simulado: nenhuma mensagem sai do sistema. Os avisos ficam registrados no histórico como "Simulado" até a integração real ser autorizada.</Alerta>
+      {provedor === 'simulado'
+        ? <Alerta tipo="info">Modo simulado: nenhuma mensagem sai do sistema. Os avisos ficam registrados no histórico como "Simulado".</Alerta>
+        : <Alerta tipo="info" titulo="Envio real pela Evolution API">As mensagens pendentes são enviadas pela instância informada, a cada 15 minutos dentro do horário comercial. Requer os secrets EVOLUTION_API_URL, EVOLUTION_API_KEY e NOTIFICACOES_CRON_SECRET configurados no painel do Supabase (nunca no código).</Alerta>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Selecao rotulo="Provedor de envio" opcoes={PROVEDORES} value={provedor} onChange={(e) => setProvedor(e.target.value as ProvedorNotificacao)} />
+        {provedor === 'evolution' && <Campo rotulo="Instância na Evolution API" value={instancia} onChange={(e) => setInstancia(e.target.value)} placeholder="servnet" />}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Campo rotulo="Número de WhatsApp do negócio" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="+5511954490001" />
         <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium"><input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-brand-600" />Notificações ativas</label>

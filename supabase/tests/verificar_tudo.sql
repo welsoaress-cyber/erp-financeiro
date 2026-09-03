@@ -1,5 +1,5 @@
--- Verificação consolidada do esquema em produção (migrations 0001–0014). Somente leitura.
--- Esperado: todas as linhas PASS e "== TOTAL ==" com 14 de 14.
+-- Verificação consolidada do esquema em produção (migrations 0001–0018). Somente leitura.
+-- Esperado: todas as linhas PASS e "== TOTAL ==" com 16 de 16.
 with checks as (
   select '0001 fundação: organizacoes, membros, auditoria' item, (select count(*) from pg_tables where schemaname='public' and tablename in ('organizacoes','organizacao_membros','auditoria')) = 3 ok
   union all select '0002 contas + vw_saldo_contas', exists (select 1 from pg_views where viewname='vw_saldo_contas')
@@ -14,6 +14,8 @@ with checks as (
   union all select '0013 apps: tipo_saldo como enum e sem padrão', exists (select 1 from information_schema.columns where table_schema='public' and table_name='negocios' and column_name='tipo_saldo' and udt_name='tipo_saldo_app' and column_default is null)
   union all select '0014 sem funções antigas do motor (só 1 assinatura de cada)', (select count(*) from pg_proc where proname in ('criar_lancamento','atualizar_lancamento')) = 2
   union all select '0014 sem objetos externos', not exists (select 1 from pg_proc where proname in ('recarregar_saldo','trigger_auditoria','atualizar_updated_at_carteira')) and not exists (select 1 from pg_views where viewname='vw_dashboard_apps') and not exists (select 1 from information_schema.columns where table_schema='public' and table_name in ('carteira','apps_catalogo','transacoes_carteira') and column_name in ('created_at','updated_at'))
+  union all select '0016 notificações (tabelas, motor, view)', (select count(*) from pg_tables where schemaname='public' and tablename in ('notificacoes_config','notificacoes_log')) = 2 and (select count(*) from pg_proc where proname in ('gerar_notificacoes','processar_notificacoes','executar_notificacoes_agora','enviar_notificacao_teste')) = 4 and exists (select 1 from pg_views where viewname='vw_notificacoes')
+  union all select '0018 provedor evolution (fila só para service_role)', (select count(*) from pg_proc where proname in ('notificacoes_para_envio','registrar_resultado_notificacao')) = 2 and not exists (select 1 from information_schema.routine_privileges where routine_name in ('notificacoes_para_envio','registrar_resultado_notificacao') and grantee in ('anon','authenticated','PUBLIC'))
   union all select 'RLS ligado em todas as tabelas públicas', (select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r')
 )
 select item, ok, case when ok then 'PASS' else 'FALHOU' end as resultado from checks

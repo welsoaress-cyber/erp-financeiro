@@ -56,7 +56,7 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
       {(erro || salvar.error) && <Alerta tipo="erro">{erro ?? mensagemDeErro(salvar.error)}</Alerta>}
       {provedor === 'simulado'
         ? <Alerta tipo="info">Modo simulado: nenhuma mensagem sai do sistema. Os avisos ficam registrados no histórico como "Simulado".</Alerta>
-        : <Alerta tipo="info" titulo="Envio real pela Evolution API">As mensagens pendentes são enviadas pela instância informada, a cada 15 minutos dentro do horário comercial. Requer os secrets EVOLUTION_API_URL, EVOLUTION_API_KEY e NOTIFICACOES_CRON_SECRET configurados no painel do Supabase (nunca no código).</Alerta>}
+        : <Alerta tipo="info" titulo="Envio real pela Evolution API">As mensagens pendentes são enviadas pela instância informada uma vez ao dia (09:05, Brasília) ou pelo botão "Enviar pendentes agora". Requer os secrets EVOLUTION_API_URL, EVOLUTION_API_KEY e NOTIFICACOES_CRON_SECRET configurados no painel do Supabase (nunca no código).</Alerta>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Selecao rotulo="Provedor de envio" opcoes={PROVEDORES} value={provedor} onChange={(e) => setProvedor(e.target.value as ProvedorNotificacao)} />
         {provedor === 'evolution' && <Campo rotulo="Instância na Evolution API" value={instancia} onChange={(e) => setInstancia(e.target.value)} placeholder="servnet" />}

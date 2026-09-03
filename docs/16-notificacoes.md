@@ -38,7 +38,7 @@ job diário 12:00 UTC (09:00 Brasília)  →  executar_notificacoes_todas()
 O sistema anterior já envia pela **Evolution API auto-hospedada numa VM da Oracle Cloud** (gratuita), com uma instância por negócio (`servnet`, `servidor`). O ERP novo usa o mesmo caminho:
 ```
 banco (fila: notificacoes_log pendente, provedor evolution)
-  └─ pg_cron a cada 15 min (08–18h Brasília) → net.http_post → Edge Function notificacoes-enviar
+  └─ pg_cron 1× ao dia, 09:05 Brasília (migration 0022) → net.http_post → Edge Function notificacoes-enviar
         ├─ notificacoes_para_envio(): pendentes dentro do horário comercial (paga antes do envio → erro)
         ├─ Evolution: connectionState da instância; sendText com 3 tentativas; 1 s entre mensagens
         └─ registrar_resultado_notificacao(): enviado (com resposta) ou nova tentativa; 5 falhas → erro

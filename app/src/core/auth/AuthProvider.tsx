@@ -41,6 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error
       return { precisaConfirmarEmail: !data.session }
     },
+    async cadastrarPortal(email, senha) {
+      const { data, error } = await supabase.auth.signUp({ email, password: senha, options: { data: { portal: 'true' } } })
+      if (error) throw error
+      return { precisaConfirmarEmail: !data.session }
+    },
+    async recuperarSenha(email, redirecionarPara) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirecionarPara })
+      if (error) throw error
+    },
+    async definirSenha(senha) {
+      const { error } = await supabase.auth.updateUser({ password: senha })
+      if (error) throw error
+    },
     async sair() {
       const { error } = await supabase.auth.signOut()
       if (error) throw error

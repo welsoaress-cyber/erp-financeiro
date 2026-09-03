@@ -18,18 +18,18 @@ preparar() { # $1 = nome do banco, $2 = "com_ana" para inserir usuário antes da
 preparar erp_test_a sem_ana
 for t in fundacao contas seguranca; do printf "%-12s " "$t"; (psql -q -d erp_test_a -f "supabase/tests/${t}_test.sql" 2>&1 || true) | grep -E "ERROR|^OK" | head -1; done
 preparar erp_test_b com_ana
-for t in categorias lancamentos negocios pessoas contratos faturamento importacao recorrencias apps_saldo notificacoes notificacoes_envio; do printf "%-12s " "$t"; (psql -q -d erp_test_b -f "supabase/tests/${t}_test.sql" 2>&1 || true) | grep -E "ERROR|^OK" | head -1; done
+for t in categorias lancamentos negocios pessoas contratos faturamento importacao recorrencias apps_saldo notificacoes notificacoes_envio portal; do printf "%-12s " "$t"; (psql -q -d erp_test_b -f "supabase/tests/${t}_test.sql" 2>&1 || true) | grep -E "ERROR|^OK" | head -1; done
 printf "%-12s " "rls"; psql -At -d erp_test_b -f supabase/tests/verificar_rls.sql | awk -F'|' '{ok=ok&&($NF=="t")} BEGIN{ok=1} END{print (ok?"OK":"FALHOU")}'
 
 # Cenário C: esquema de produção criado fora do repositório (0001–0007 + externo + 0011/0012), corrigido por 0014 → 0015 → 0013
 psql -q -c "drop database if exists erp_test_c" -c "create database erp_test_c"
 for m in "${MIG[@]}"; do
-  case "$m" in *agendado*|*0008_*|*0009_*|*0013_*|*0014_*|*0015_*|*0016_*|*0018_*|*0021_*) continue;; esac
+  case "$m" in *agendado*|*0008_*|*0009_*|*0013_*|*0014_*|*0015_*|*0016_*|*0018_*|*0021_*|*0023_*) continue;; esac
   [[ "$m" == *0004_categorias* ]] && psql -q -d erp_test_c -c "insert into auth.users (id, email, raw_user_meta_data) values ('11111111-1111-1111-1111-111111111111','ana@teste.dev','{\"nome\":\"Ana\"}')"
   [[ "$m" == *0001_fundacao* ]] && psql -q -d erp_test_c -v ON_ERROR_STOP=1 -f supabase/tests/00_shim_local.sql
   [[ "$m" == *0011_* ]] && psql -q -d erp_test_c -v ON_ERROR_STOP=1 -f supabase/tests/simulacao_estado_externo.sql
   psql -q -d erp_test_c -v ON_ERROR_STOP=1 -f "$m"
 done
-for m in 0014 0015 0013 0016 0018 0021; do psql -q -d erp_test_c -v ON_ERROR_STOP=1 -1 -f supabase/migrations/2026090200${m}_*.sql 2>&1 | { grep -vE "NOTICE|DETAIL|drop cascades" || true; }; done
+for m in 0014 0015 0013 0016 0018 0021 0023; do psql -q -d erp_test_c -v ON_ERROR_STOP=1 -1 -f supabase/migrations/2026090200${m}_*.sql 2>&1 | { grep -vE "NOTICE|DETAIL|drop cascades" || true; }; done
 printf "%-12s " "producao"; psql -At -d erp_test_c -f supabase/tests/verificar_tudo.sql | grep TOTAL | awk -F'|' '{print ($2=="t"?"OK":"FALHOU") " (" $3 ")"}'
-for t in contratos faturamento importacao recorrencias apps_saldo notificacoes notificacoes_envio; do printf "%-12s " "prod:$t"; (psql -q -d erp_test_c -f "supabase/tests/${t}_test.sql" 2>&1 || true) | grep -E "ERROR|^OK" | head -1; done
+for t in contratos faturamento importacao recorrencias apps_saldo notificacoes notificacoes_envio portal; do printf "%-12s " "prod:$t"; (psql -q -d erp_test_c -f "supabase/tests/${t}_test.sql" 2>&1 || true) | grep -E "ERROR|^OK" | head -1; done

@@ -8,6 +8,7 @@ import { moduloPessoas } from '../modules/pessoas'
 import { moduloContratos } from '../modules/contratos'
 import { moduloApps } from '../modules/apps'
 import { moduloNotificacoes } from '../modules/notificacoes'
+import { moduloPortal } from '../modules/portal'
 import { moduloConfiguracoes } from '../modules/configuracoes'
 
 /** Registro único de módulos. A ordem aqui é a ordem do menu. */
@@ -21,5 +22,6 @@ export const MODULOS: DefinicaoModulo[] = [
   moduloContratos,
   moduloApps,
   moduloNotificacoes,
+  moduloPortal,
   moduloConfiguracoes,
 ]

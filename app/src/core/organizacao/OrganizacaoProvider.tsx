@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Navigate } from 'react-router'
 import { OrganizacaoContexto, type Organizacao } from './contexto'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../supabase/client'
@@ -47,6 +48,9 @@ export function OrganizacaoProvider({ children }: { children: ReactNode }) {
   }
 
   const organizacoes = consulta.data
+  if (organizacoes.length === 0 && (usuario?.user_metadata?.portal === 'true')) {
+    return <Navigate to="/portal" replace />
+  }
   if (organizacoes.length === 0) {
     return (
       <div className="mx-auto mt-16 max-w-lg space-y-4 p-6">

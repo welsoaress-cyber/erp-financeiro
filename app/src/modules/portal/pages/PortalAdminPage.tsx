@@ -17,6 +17,7 @@ import { usePlanos } from '../../contratos/api'
 import { formatarTelefone } from '../../pessoas/tipos'
 import { useAcessosPortal, useCancelarIndicacao, useConverterIndicacao, useIndicacoesAdmin, usePortalConfigs, usePromocoesAdmin, useSalvarPortalConfig, useSalvarPromocao } from '../api'
 import type { IndicacaoAdmin, PortalConfig, PromocaoAdmin } from '../tipos'
+import { OperacaoPortal } from '../components/OperacaoPortal'
 
 type Janela = { tipo: 'config' } | { tipo: 'promocao'; promocao?: PromocaoAdmin } | { tipo: 'converter'; indicacao: IndicacaoAdmin } | null
 
@@ -24,14 +25,18 @@ function FormConfig({ negocioId, config, aoConcluir }: { negocioId: string; conf
   const salvar = useSalvarPortalConfig()
   const [ativo, setAtivo] = useState(config?.ativo ?? true); const [logo, setLogo] = useState(config?.logo_url ?? ''); const [cor, setCor] = useState(config?.cor_primaria ?? '#1e3a8a')
   const [texto, setTexto] = useState(config?.texto_promocional ?? ''); const [pix, setPix] = useState(config?.chave_pix ?? ''); const [instr, setInstr] = useState(config?.instrucoes_pagamento ?? ''); const [beneficio, setBeneficio] = useState(String(config?.beneficio_indicacao ?? 0))
+  const [tema, setTema] = useState(config?.tema ?? 'escuro'); const [zap, setZap] = useState(config?.whatsapp_suporte ?? ''); const [tipoBen, setTipoBen] = useState(config?.beneficio_tipo ?? 'mes_gratis'); const [fidelidade, setFidelidade] = useState(config?.fidelidade_ativa ?? true); const [site, setSite] = useState(config?.site_url ?? '')
   const [erro, setErro] = useState<string | null>(null)
   function aoEnviar(e: FormEvent) {
     e.preventDefault()
     const b = Number(beneficio.replace(',', '.')); if (Number.isNaN(b) || b < 0) { setErro('Benefício inválido.'); return }
     if (logo && !/^https:\/\//.test(logo)) { setErro('O logo deve ser um endereço https://'); return }
     if (!/^#[0-9a-fA-F]{6}$/.test(cor)) { setErro('Cor no formato #RRGGBB.'); return }
+    const zapDig = zap.replace(/\D/g, '')
+    if (zapDig && (zapDig.length < 12 || zapDig.length > 13)) { setErro('WhatsApp de suporte com código do país e DDD (ex.: 5511999999999).'); return }
+    if (site && !/^https:\/\//.test(site)) { setErro('O site deve começar com https://'); return }
     setErro(null)
-    salvar.mutate({ id: config?.id, negocioId, dados: { ativo, logo_url: logo || null, cor_primaria: cor, texto_promocional: texto.trim() || null, chave_pix: pix.trim() || null, instrucoes_pagamento: instr.trim() || null, beneficio_indicacao: Math.round(b * 100) / 100 } }, { onSuccess: aoConcluir })
+    salvar.mutate({ id: config?.id, negocioId, dados: { ativo, logo_url: logo || null, cor_primaria: cor, texto_promocional: texto.trim() || null, chave_pix: pix.trim() || null, instrucoes_pagamento: instr.trim() || null, beneficio_indicacao: Math.round(b * 100) / 100, tema, whatsapp_suporte: zapDig || null, beneficio_tipo: tipoBen, fidelidade_ativa: fidelidade, site_url: site.trim().replace(/\/$/, '') || null } }, { onSuccess: aoConcluir })
   }
   return (
     <form onSubmit={aoEnviar} className="space-y-4" noValidate>
@@ -40,8 +45,13 @@ function FormConfig({ negocioId, config, aoConcluir }: { negocioId: string; conf
         <Campo rotulo="Cor principal" type="color" value={cor} onChange={(e) => setCor(e.target.value)} className="h-10 p-1" />
         <Campo rotulo="Logo (URL https)" value={logo} onChange={(e) => setLogo(e.target.value)} placeholder="https://…/logo.png" />
         <Campo rotulo="Chave Pix (aparece na fatura)" value={pix} onChange={(e) => setPix(e.target.value)} />
-        <Campo rotulo="Benefício por indicação convertida (R$)" type="number" step="0.01" min="0" value={beneficio} onChange={(e) => setBeneficio(e.target.value)} />
+        <Selecao rotulo="Benefício do Indique e Ganhe" opcoes={[{ valor: 'mes_gratis', rotulo: '1 mês grátis por indicação' }, { valor: 'valor', rotulo: 'Valor fixo em R$' }]} value={tipoBen} onChange={(e) => setTipoBen(e.target.value as 'valor' | 'mes_gratis')} />
+        {tipoBen === 'valor' && <Campo rotulo="Benefício por indicação convertida (R$)" type="number" step="0.01" min="0" value={beneficio} onChange={(e) => setBeneficio(e.target.value)} />}
+        <Selecao rotulo="Tema do portal" opcoes={[{ valor: 'escuro', rotulo: 'Escuro (padrão SERVNET)' }, { valor: 'claro', rotulo: 'Claro' }]} value={tema} onChange={(e) => setTema(e.target.value as 'escuro' | 'claro')} />
+        <Campo rotulo="WhatsApp de suporte (com 55 e DDD)" inputMode="tel" value={zap} onChange={(e) => setZap(e.target.value)} placeholder="5511999999999" />
+        <Campo rotulo="Site do provedor (link de indicação)" value={site} onChange={(e) => setSite(e.target.value)} placeholder="https://www.servnet.net.br" />
       </div>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={fidelidade} onChange={(e) => setFidelidade(e.target.checked)} className="size-4 accent-brand-600" />Programa Fidelidade ativo (6 selos = 50%, 12 selos = mês grátis)</label>
       <AreaTexto rotulo="Texto promocional (aparece no início do portal)" rows={2} maxLength={500} value={texto} onChange={(e) => setTexto(e.target.value)} />
       <AreaTexto rotulo="Instruções de pagamento (aparecem na fatura)" rows={2} maxLength={500} value={instr} onChange={(e) => setInstr(e.target.value)} />
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-brand-600" />Portal ativo para este negócio</label>
@@ -116,6 +126,7 @@ export function PortalAdminPage() {
               {acessos.isPending ? <Carregando /> : (acessos.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Nenhum cliente criou acesso ainda. Eles se cadastram em /portal/cadastro com CPF/CNPJ e telefone.</p> : <ul className="divide-y divide-line rounded-md border border-line">{(acessos.data ?? []).map((a) => <li key={a.id} className="flex items-center justify-between px-3 py-2 text-sm"><span>{a.pessoa}<span className="ml-2 font-mono text-xs text-ink-muted">{a.codigo_indicacao}</span></span><span className="text-xs text-ink-muted">{a.indicacoes} indicação(ões) · desde {formatarData(a.criado_em.slice(0, 10))}</span></li>)}</ul>}
             </Cartao>
           </div>
+          <OperacaoPortal negocioId={negocio.id} />
           <Cartao className="p-0">
             <div className="border-b border-line px-6 py-3"><h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Indicações (Indique e Ganhe)</h2></div>
             {(converter.error || cancelar.error) && <div className="p-4"><Alerta tipo="erro">{mensagemDeErro(converter.error ?? cancelar.error)}</Alerta></div>}
@@ -144,7 +155,7 @@ export function PortalAdminPage() {
             <div className="space-y-4">
               <p className="text-sm">Indicação de <span className="font-medium">{janela.indicacao.nome_indicado}</span> ({formatarTelefone(janela.indicacao.telefone_indicado)}). Selecione o cadastro da pessoa que virou cliente.</p>
               <Selecao rotulo="Pessoa (cliente novo)" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(pessoas.data ?? []).filter((p) => p.ativo && p.id !== janela.indicacao.indicador_pessoa_id).map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaConv} onChange={(e) => setPessoaConv(e.target.value)} />
-              {config && config.beneficio_indicacao > 0 ? <p className="text-xs text-ink-muted">Quem indicou recebe {formatarMoeda(config.beneficio_indicacao)} de desconto na próxima fatura.</p> : <p className="text-xs text-ink-muted">Sem benefício configurado para este negócio.</p>}
+              {config?.beneficio_tipo === 'mes_gratis' ? <p className="text-xs text-ink-muted">Quem indicou ganha 1 mês grátis (100% da próxima fatura).</p> : config && config.beneficio_indicacao > 0 ? <p className="text-xs text-ink-muted">Quem indicou recebe {formatarMoeda(config.beneficio_indicacao)} de desconto na próxima fatura.</p> : <p className="text-xs text-ink-muted">Sem benefício configurado para este negócio.</p>}
               <div className="flex justify-end"><Botao onClick={() => converter.mutate({ id: janela.indicacao.id, pessoaId: pessoaConv }, { onSuccess: fechar })} disabled={!pessoaConv} carregando={converter.isPending}>Confirmar conversão</Botao></div>
             </div>
           )}

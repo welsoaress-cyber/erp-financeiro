@@ -5,13 +5,15 @@ import { LoginPage } from '../pages/auth/LoginPage'
 import { CadastroPage } from '../pages/auth/CadastroPage'
 import { MODULOS } from './modulos'
 import { PortalShell } from '../portal/PortalShell'
-import { PortalCadastroPage, PortalLoginPage, PortalNovaSenhaPage, PortalRecuperarPage, PortalVincularPage } from '../portal/pages/PortalAuthPages'
-import { PortalFaturaPdfPage, PortalFaturasPage, PortalIndiquePage, PortalInicioPage, PortalPagamentosPage, PortalPlanoPage, PortalPromocoesPage } from '../portal/pages/PortalPages'
+import { PortalCadastroPage, PortalLoginEmailPage, PortalLoginPage, PortalNovaSenhaPage, PortalRecuperarPage, PortalVincularPage } from '../portal/pages/PortalAuthPages'
+import { PortalFaturaPdfPage, PortalFaturasPage, PortalIndiquePage, PortalPagamentosPage, PortalPlanoPage, PortalPromocoesPage } from '../portal/pages/PortalPages'
+import { PortalChamadosPage, PortalDadosPage, PortalFidelidadePage, PortalInicioPage } from '../portal/pages/PortalServnetPages'
 import { IndicacaoPublicaPage } from '../portal/pages/IndicacaoPublicaPage'
 
 export const router = createBrowserRouter([
   // Portal do cliente (login próprio, sem acesso ao ERP)
   { path: '/portal/entrar', element: <PortalLoginPage /> },
+  { path: '/portal/entrar-email', element: <PortalLoginEmailPage /> },
   { path: '/portal/cadastro', element: <PortalCadastroPage /> },
   { path: '/portal/recuperar', element: <PortalRecuperarPage /> },
   { path: '/portal/nova-senha', element: <PortalNovaSenhaPage /> },
@@ -28,6 +30,9 @@ export const router = createBrowserRouter([
       { path: 'plano', element: <PortalPlanoPage /> },
       { path: 'indique', element: <PortalIndiquePage /> },
       { path: 'promocoes', element: <PortalPromocoesPage /> },
+      { path: 'fidelidade', element: <PortalFidelidadePage /> },
+      { path: 'chamados', element: <PortalChamadosPage /> },
+      { path: 'dados', element: <PortalDadosPage /> },
     ],
   },
   {

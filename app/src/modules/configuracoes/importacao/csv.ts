@@ -47,12 +47,13 @@ export function lerCsv(texto: string, separador = detectarSeparador(texto)): Tab
 /** Campos que a importação entende. Cada um é mapeado para uma coluna do CSV. */
 export const CAMPOS = [
   { chave: 'nome', rotulo: 'Nome', obrigatorio: true, pistas: ['nome', 'cliente', 'razao'] },
-  { chave: 'documento', rotulo: 'CPF/CNPJ', obrigatorio: true, pistas: ['cpf', 'cnpj', 'documento', 'doc'] },
+  { chave: 'documento', rotulo: 'CPF/CNPJ', obrigatorio: true, pistas: ['cpf/cnpj', 'cpf', 'documento', 'doc', 'cnpj'] },
+  { chave: 'documento2', rotulo: 'CNPJ (se estiver em outra coluna)', obrigatorio: false, pistas: ['cnpj'] },
   { chave: 'telefone', rotulo: 'Telefone', obrigatorio: true, pistas: ['telefone', 'celular', 'fone', 'whatsapp'] },
   { chave: 'email', rotulo: 'E-mail', obrigatorio: false, pistas: ['email', 'e-mail'] },
   { chave: 'plano', rotulo: 'Plano', obrigatorio: true, pistas: ['plano', 'velocidade', 'servico', 'produto'] },
   { chave: 'valor', rotulo: 'Valor mensal', obrigatorio: false, pistas: ['valor', 'mensalidade', 'preco'] },
-  { chave: 'dia_vencimento', rotulo: 'Dia de vencimento', obrigatorio: true, pistas: ['vencimento', 'dia'] },
+  { chave: 'dia_vencimento', rotulo: 'Vencimento (dia ou data)', obrigatorio: true, pistas: ['vencimento', 'dia'] },
   { chave: 'data_inicio', rotulo: 'Data de início de cobrança', obrigatorio: true, pistas: ['inicio', 'início', 'cobranca', 'cadastro', 'adesao'] },
   { chave: 'data_fim', rotulo: 'Data do cancelamento', obrigatorio: false, pistas: ['cancelamento', 'cancel', 'fim', 'encerramento'] },
 ] as const
@@ -92,17 +93,25 @@ export interface LinhaImportacao {
   data_fim: string
 }
 
+/** Aceita o dia (10) ou uma data completa (10/09/2026, 2026-09-10) e devolve só o dia. */
+export function diaDeVencimento(v: string): string {
+  const t = v.trim()
+  const br = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(t); if (br) return String(Number(br[1]))
+  const iso = /^\d{4}-\d{2}-(\d{2})/.exec(t); if (iso) return String(Number(iso[1]))
+  return t.replace(/\D/g, '')
+}
+
 export function montarLinhas(tabela: Tabela, m: Mapeamento): LinhaImportacao[] {
   const pega = (l: string[], i: number | null) => (i === null ? '' : (l[i] ?? '').trim())
   return tabela.linhas.map((l, idx) => ({
     linha: idx + 2, // 1 = cabeçalho
     nome: pega(l, m.nome),
-    documento: pega(l, m.documento),
+    documento: pega(l, m.documento) || pega(l, m.documento2),  // CPF ou CNPJ em colunas separadas
     telefone: pega(l, m.telefone),
     email: pega(l, m.email),
     plano: pega(l, m.plano),
     valor: pega(l, m.valor),
-    dia_vencimento: pega(l, m.dia_vencimento),
+    dia_vencimento: diaDeVencimento(pega(l, m.dia_vencimento)),
     data_inicio: pega(l, m.data_inicio),
     data_fim: pega(l, m.data_fim),
   }))

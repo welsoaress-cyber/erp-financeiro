@@ -14,3 +14,15 @@
 
 html, body, #root { height: 100%; }
 body { background: var(--color-surface); color: var(--color-ink); }
+
+/* Portal do cliente — tema escuro (padrão visual do portal SERVNET) */
+.portal-escuro {
+  --color-surface: #030F18; --color-ink: #CDEAF2; --color-ink-muted: #8FB3BF; --color-line: #12303F; --color-white: #091C2A;
+  --color-brand-50: #0B2431; --color-brand-100: #0F3140; --color-brand-600: #00C4D8; --color-brand-700: #2DDAE8; --color-brand-900: #CDEAF2;
+  --color-green-50: #0B2A22; --color-green-200: #145C46; --color-green-700: #34D399; --color-green-800: #6EE7B7;
+  --color-red-50: #2A0F12; --color-red-200: #7A1F28; --color-red-700: #F87171; --color-red-800: #FCA5A5;
+  --color-amber-50: #2A1F08; --color-amber-800: #FBBF24;
+  --color-gray-50: #0B2230; --color-gray-100: #0F2836; --color-gray-200: #12303F;
+  color: var(--color-ink); background: var(--color-surface); color-scheme: dark;
+}
+.portal-escuro input, .portal-escuro select, .portal-escuro textarea { background: #061520; color: var(--color-ink); }

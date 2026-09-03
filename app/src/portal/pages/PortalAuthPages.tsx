@@ -10,7 +10,7 @@ import { Campo } from '../../core/ui/Campo'
 import { Cartao } from '../../core/ui/Cartao'
 import { Carregando } from '../../core/ui/Carregando'
 import { documentoValido, somenteDigitos } from '../../modules/pessoas/tipos'
-import { useVincularPortal } from '../api'
+import { useLoginSemSenha, useVincularPortal } from '../api'
 
 function Layout({ titulo, subtitulo, children }: { titulo: string; subtitulo: string; children: React.ReactNode }) {
   return (
@@ -31,7 +31,7 @@ function SoAnonimo({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-export function PortalLoginPage() {
+export function PortalLoginEmailPage() {
   const { entrar } = useAuth()
   const navigate = useNavigate()
   const limite = useLimiteTentativas()
@@ -44,7 +44,7 @@ export function PortalLoginPage() {
   }
   return (
     <SoAnonimo>
-      <Layout titulo="Entrar" subtitulo="Acesse suas faturas, seu plano e o Indique e Ganhe">
+      <Layout titulo="Entrar com e-mail" subtitulo="Acesso alternativo com e-mail e senha">
         <form onSubmit={aoEnviar} className="space-y-4" noValidate>
           {erro && <Alerta tipo="erro">{erro}</Alerta>}
           {limite.mensagem && <Alerta tipo="info">{limite.mensagem}</Alerta>}
@@ -53,6 +53,36 @@ export function PortalLoginPage() {
           <Botao type="submit" className="w-full" carregando={enviando} disabled={limite.bloqueado}>Entrar</Botao>
           <p className="text-center text-sm text-ink-muted"><Link to="/portal/recuperar" className="font-medium text-brand-600 hover:underline">Esqueci a senha</Link></p>
           <p className="text-center text-sm text-ink-muted">Primeiro acesso? <Link to="/portal/cadastro" className="font-medium text-brand-600 hover:underline">Criar meu acesso</Link></p>
+          <p className="text-center text-sm text-ink-muted"><Link to="/portal/entrar" className="hover:underline">Entrar com CPF/CNPJ e data de nascimento</Link></p>
+        </form>
+      </Layout>
+    </SoAnonimo>
+  )
+}
+
+/** Login principal, como no portal antigo: CPF/CNPJ + data de nascimento, sem senha. */
+export function PortalLoginPage() {
+  const login = useLoginSemSenha()
+  const navigate = useNavigate()
+  const [documento, setDocumento] = useState(''); const [nascimento, setNascimento] = useState(''); const [erro, setErro] = useState<string | null>(null)
+  function aoEnviar(e: FormEvent) {
+    e.preventDefault()
+    const doc = somenteDigitos(documento)
+    if (!documentoValido(doc)) { setErro('CPF/CNPJ inválido.'); return }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(nascimento)) { setErro('Informe a data de nascimento.'); return }
+    setErro(null)
+    login.mutate({ documento: doc, nascimento }, { onSuccess: () => navigate('/portal', { replace: true }) })
+  }
+  return (
+    <SoAnonimo>
+      <Layout titulo="Área do cliente" subtitulo="Entre com seu CPF ou CNPJ e a data de nascimento cadastrada">
+        <form onSubmit={aoEnviar} className="space-y-4" noValidate>
+          {(erro || login.error) && <Alerta tipo="erro">{erro ?? mensagemDeErro(login.error)}</Alerta>}
+          <Campo rotulo="CPF ou CNPJ" inputMode="numeric" autoComplete="off" value={documento} onChange={(e) => setDocumento(e.target.value)} placeholder="000.000.000-00" autoFocus />
+          <Campo rotulo="Data de nascimento" type="date" value={nascimento} onChange={(e) => setNascimento(e.target.value)} />
+          <Botao type="submit" className="w-full" carregando={login.isPending}>Entrar</Botao>
+          <p className="text-center text-xs text-ink-muted">Para empresas, use a data de fundação cadastrada no provedor.</p>
+          <p className="text-center text-sm text-ink-muted"><Link to="/portal/entrar-email" className="hover:underline">Entrar com e-mail e senha</Link></p>
         </form>
       </Layout>
     </SoAnonimo>

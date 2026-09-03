@@ -12,53 +12,8 @@ import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
 import { useContratosCliente, useFaturas, useIndicacoesCliente, useIndicar, usePagamentos, usePromocoesCliente, useProximasFaturas } from '../api'
-import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
-
-const TOM: Record<SituacaoFatura, 'ok' | 'alerta' | 'neutro' | 'info'> = { paga: 'ok', vencida: 'alerta', pendente: 'info', cancelada: 'neutro' }
-function Indicador({ rotulo, valor, tom }: { rotulo: string; valor: string; tom?: 'alerta' }) {
-  return <Cartao className="p-4"><p className="text-xs uppercase tracking-wide text-ink-muted">{rotulo}</p><p className={`mt-1 text-xl font-semibold tabular-nums ${tom === 'alerta' ? 'text-red-700' : ''}`}>{valor}</p></Cartao>
-}
-function Titulo({ children, acao }: { children: string; acao?: React.ReactNode }) {
-  return <div className="mb-4 flex items-center justify-between"><h1 className="text-xl font-semibold">{children}</h1>{acao}</div>
-}
-
-export function PortalInicioPage() {
-  const r = usePortal()
-  const faturas = useFaturas()
-  const proximas = useProximasFaturas()
-  const contratos = useContratosCliente()
-  const ultimas = (faturas.data ?? []).slice(0, 5)
-  const texto = r.negocios.find((n) => n.portal?.texto_promocional)?.portal?.texto_promocional
-  return (
-    <div className="space-y-6">
-      <div><h1 className="text-xl font-semibold">Olá, {r.pessoa.nome.split(' ')[0]}</h1><p className="text-sm text-ink-muted">Resumo da sua situação</p></div>
-      {r.vencidas > 0 && <Alerta tipo="erro" titulo={`${r.vencidas} fatura(s) vencida(s)`}>Regularize para evitar o bloqueio. <Link to="/portal/faturas" className="underline">Ver faturas</Link>.</Alerta>}
-      {texto && <Alerta tipo="info">{texto} <Link to="/portal/indique" className="underline">Indique e ganhe</Link>.</Alerta>}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Indicador rotulo="Em aberto" valor={formatarMoeda(r.em_aberto)} tom={r.vencidas > 0 ? 'alerta' : undefined} />
-        <Indicador rotulo="Próximo vencimento" valor={r.proximo_vencimento ? formatarData(r.proximo_vencimento) : '—'} />
-        <Indicador rotulo="Planos ativos" valor={String(r.contratos_ativos)} />
-        <Indicador rotulo="Indicações convertidas" valor={String(r.indicacoes_convertidas)} />
-      </div>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Cartao>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">Últimas faturas</h2>
-          {faturas.isPending ? <Carregando /> : ultimas.length === 0 ? <p className="text-sm text-ink-muted">Nenhuma fatura ainda.</p> : (
-            <ul className="divide-y divide-line">{ultimas.map((f) => <li key={f.id} className="flex items-center justify-between py-2 text-sm"><span>{formatarData(f.data_vencimento)} · {f.plano}</span><span className="flex items-center gap-2 tabular-nums">{formatarMoeda(f.valor)}<Distintivo tom={TOM[f.situacao]}>{ROTULO_SITUACAO[f.situacao]}</Distintivo></span></li>)}</ul>
-          )}
-          <p className="mt-3 text-sm"><Link to="/portal/faturas" className="text-brand-700 hover:underline">Todas as faturas</Link></p>
-        </Cartao>
-        <Cartao>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">Próximos vencimentos</h2>
-          {proximas.isPending ? <Carregando /> : (proximas.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Nenhuma cobrança prevista.</p> : (
-            <ul className="divide-y divide-line">{(proximas.data ?? []).slice(0, 4).map((p, i) => <li key={i} className="flex items-center justify-between py-2 text-sm"><span>{formatarData(p.data_vencimento)} · {p.plano}</span><span className="tabular-nums">{formatarMoeda(p.valor)}</span></li>)}</ul>
-          )}
-          {(contratos.data ?? []).filter((c) => c.status === 'ativo').map((c) => <p key={c.id} className="mt-3 text-sm text-ink-muted">Plano <span className="font-medium text-ink">{c.plano}</span> · {ROTULO_STATUS_CONTRATO[c.status]} · vence dia {c.dia_vencimento}</p>)}
-        </Cartao>
-      </div>
-    </div>
-  )
-}
+import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
+import { Indicador, Titulo } from './comum'
 
 export function PortalFaturasPage() {
   const faturas = useFaturas()
@@ -182,7 +137,7 @@ export function PortalPlanoPage() {
       <Cartao>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Seus dados</h2>
         <dl className="grid grid-cols-2 gap-y-1 text-sm"><dt className="text-ink-muted">Nome</dt><dd>{r.pessoa.nome}</dd><dt className="text-ink-muted">CPF/CNPJ</dt><dd>{formatarDocumento(r.pessoa.documento)}</dd><dt className="text-ink-muted">Telefone</dt><dd>{formatarTelefone(r.pessoa.telefone) || '—'}</dd><dt className="text-ink-muted">Avisos por WhatsApp</dt><dd>{r.pessoa.receber_avisos ? 'Sim' : 'Não'}</dd></dl>
-        <p className="mt-2 text-xs text-ink-muted">Para alterar dados cadastrais, fale com o provedor.</p>
+        <p className="mt-2 text-xs"><Link to="/portal/dados" className="text-brand-700 hover:underline">Atualizar e-mail e telefone</Link></p>
       </Cartao>
     </div>
   )
@@ -194,10 +149,12 @@ export function PortalIndiquePage() {
   const indicar = useIndicar()
   const [negocioId, setNegocioId] = useState(r.negocios[0]?.id ?? '')
   const [nome, setNome] = useState(''); const [telefone, setTelefone] = useState(''); const [erro, setErro] = useState<string | null>(null); const [copiado, setCopiado] = useState(false)
-  const link = linkIndicacao(r.codigo_indicacao)
-  const beneficio = r.negocios.find((n) => n.id === negocioId)?.portal?.beneficio_indicacao ?? 0
+  const cfg = r.negocios.find((n) => n.id === negocioId)?.portal ?? null
+  const link = linkIndicacao(r.codigo_indicacao, cfg?.site_url)
+  const beneficio = cfg?.beneficio_indicacao ?? 0
+  const mesGratis = (cfg?.beneficio_tipo ?? 'mes_gratis') === 'mes_gratis'
   const negocioNome = r.negocios.find((n) => n.id === negocioId)?.nome ?? ''
-  const textoConvite = `Olá! Uso o ${negocioNome} e recomendo. Cadastre-se pelo meu link: ${link}`
+  const textoConvite = `Olá! Uso a internet da ${negocioNome} e recomendo. Use meu código ${r.codigo_indicacao} ou cadastre-se pelo link: ${link}`
   const whatsapp = `https://wa.me/?text=${encodeURIComponent(textoConvite)}`
   const ganho = useMemo(() => (indicacoes.data ?? []).filter((i) => i.status === 'convertida').reduce((s, i) => s + i.beneficio_valor, 0), [indicacoes.data])
   function aoEnviar(e: FormEvent) {
@@ -214,13 +171,13 @@ export function PortalIndiquePage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Indicador rotulo="Indicações" valor={String((indicacoes.data ?? []).length)} />
         <Indicador rotulo="Convertidas" valor={String(r.indicacoes_convertidas)} />
-        <Indicador rotulo="Desconto conquistado" valor={formatarMoeda(ganho)} />
+        <Indicador rotulo={mesGratis ? "Meses grátis" : "Desconto conquistado"} valor={mesGratis ? String(r.indicacoes_convertidas) : formatarMoeda(ganho)} />
       </div>
       <Cartao>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Seu link de indicação</h2>
-        <p className="text-sm text-ink-muted">{beneficio > 0 ? `A cada indicação que vira cliente, você ganha ${formatarMoeda(beneficio)} de desconto na próxima fatura.` : 'Compartilhe seu link. O provedor define o benefício das indicações.'}</p>
+        <p className="text-sm text-ink-muted">{mesGratis ? 'A cada indicação que vira cliente, você ganha 1 mês grátis (100% de desconto na próxima fatura).' : beneficio > 0 ? `A cada indicação que vira cliente, você ganha ${formatarMoeda(beneficio)} de desconto na próxima fatura.` : 'Compartilhe seu link. O provedor define o benefício das indicações.'}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <code className="rounded-md border border-line bg-surface px-3 py-2 text-sm">{link}</code>
+          <code className="rounded-md border border-line bg-surface px-3 py-2 text-sm">Código <b>{r.codigo_indicacao}</b> · {link}</code>
           <Botao variante="secundario" onClick={copiar}>{copiado ? 'Copiado!' : 'Copiar link'}</Botao>
           <a href={whatsapp} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center rounded-md bg-green-600 px-4 text-sm font-medium text-white hover:bg-green-700">Convidar pelo WhatsApp</a>
         </div>

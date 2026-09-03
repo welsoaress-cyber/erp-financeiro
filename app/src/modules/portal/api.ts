@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { AcessoPortal, DadosPortalConfig, DadosPromocao, IndicacaoAdmin, PortalConfig, PromocaoAdmin } from './tipos'
+import type { AcessoPortal, DadosPortalConfig, DadosPromocao, IndicacaoAdmin, PortalConfig, PromocaoAdmin, SolicitacaoAdmin, StatusRede, StatusRedeAdmin } from './tipos'
 
 const chave = (org: string) => ['portal-admin', org] as const
 function useInvalidar() { const { organizacao } = useOrganizacao(); const qc = useQueryClient(); return () => { void qc.invalidateQueries({ queryKey: chave(organizacao.id) }); void qc.invalidateQueries({ queryKey: ['contratos', organizacao.id] }) } }
@@ -49,4 +49,27 @@ export function useCancelarIndicacao() {
 export function useAcessosPortal() {
   const { organizacao } = useOrganizacao()
   return useQuery({ queryKey: [...chave(organizacao.id), 'acessos'], queryFn: async (): Promise<AcessoPortal[]> => { const { data, error } = await supabase.from('vw_portal_acessos').select('*').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }); if (error) throw error; return (data ?? []).map((a) => ({ ...a, indicacoes: Number(a.indicacoes) })) } })
+}
+export function useStatusRedeAdmin() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({ queryKey: [...chave(organizacao.id), 'rede'], queryFn: async (): Promise<StatusRedeAdmin[]> => { const { data, error } = await supabase.from('portal_status_rede').select('*').eq('organizacao_id', organizacao.id); if (error) throw error; return data ?? [] } })
+}
+export function useSalvarStatusRede() {
+  const { organizacao } = useOrganizacao(); const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { id?: string; negocioId: string; status: StatusRede; titulo: string | null; descricao: string | null }) => {
+      const dados = { status: p.status, titulo: p.titulo, descricao: p.descricao, atualizado_em: new Date().toISOString() }
+      const q = p.id ? supabase.from('portal_status_rede').update(dados).eq('id', p.id) : supabase.from('portal_status_rede').insert({ ...dados, negocio_id: p.negocioId, organizacao_id: organizacao.id })
+      const { error } = await q.select().single(); if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+export function useSolicitacoesAdmin() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({ queryKey: [...chave(organizacao.id), 'solicitacoes'], queryFn: async (): Promise<SolicitacaoAdmin[]> => { const { data, error } = await supabase.from('vw_portal_solicitacoes').select('*').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }).limit(300); if (error) throw error; return data ?? [] } })
+}
+export function useResponderSolicitacao() {
+  const invalidar = useInvalidar()
+  return useMutation({ mutationFn: async (p: { id: string; status: SolicitacaoAdmin['status']; resposta: string | null }) => { const { error } = await supabase.from('portal_solicitacoes').update({ status: p.status, resposta: p.resposta }).eq('id', p.id); if (error) throw error }, onSuccess: invalidar })
 }

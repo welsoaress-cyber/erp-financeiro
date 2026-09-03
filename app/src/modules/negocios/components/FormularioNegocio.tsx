@@ -5,7 +5,7 @@ import { Campo } from '../../../core/ui/Campo'
 import { Selecao } from '../../../core/ui/Selecao'
 import type { Conta } from '../../contas/tipos'
 import type { Categoria } from '../../categorias/tipos'
-import { gerarSlug, SLUG_VALIDO, type DadosNegocio, type Negocio } from '../tipos'
+import { gerarSlug, SLUG_VALIDO, TIPOS_SALDO, type DadosNegocio, type Negocio, type TipoSaldo } from '../tipos'
 
 interface Props {
   negocio?: Negocio
@@ -25,7 +25,10 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
   const [ativo, setAtivo] = useState(negocio?.ativo ?? true)
   const [contaPadrao, setContaPadrao] = useState(negocio?.conta_padrao_id ?? '')
   const [categoriaReceita, setCategoriaReceita] = useState(negocio?.categoria_receita_id ?? '')
-  const [erros, setErros] = useState<{ nome?: string; slug?: string }>({})
+  const [tipoSaldo, setTipoSaldo] = useState<TipoSaldo | ''>(negocio?.tipo_saldo ?? '')
+  const [taxa, setTaxa] = useState(negocio?.taxa_conversao ? String(negocio.taxa_conversao) : '')
+  const [erros, setErros] = useState<{ nome?: string; slug?: string; taxa?: string }>({})
+  const taxaNum = Number(taxa.replace(',', '.'))
 
   function aoMudarNome(v: string) {
     setNome(v)
@@ -38,9 +41,10 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
     if (nome.trim().length === 0) novos.nome = 'Informe o nome do negócio.'
     else if (nome.trim().length > 60) novos.nome = 'Máximo de 60 caracteres.'
     if (!SLUG_VALIDO.test(slug)) novos.slug = 'Use apenas letras minúsculas, números e hífens.'
+    if (tipoSaldo === 'credito' && (taxa.trim() === '' || Number.isNaN(taxaNum) || taxaNum <= 0)) novos.taxa = 'Informe quantos créditos valem R$ 1,00.'
     setErros(novos)
     if (Object.keys(novos).length > 0) return
-    aoSalvar({ nome: nome.trim(), slug, ativo, conta_padrao_id: contaPadrao || null, categoria_receita_id: categoriaReceita || null })
+    aoSalvar({ nome: nome.trim(), slug, ativo, conta_padrao_id: contaPadrao || null, categoria_receita_id: categoriaReceita || null, tipo_saldo: tipoSaldo || null, taxa_conversao: tipoSaldo === 'credito' ? taxaNum : null })
   }
 
   return (
@@ -56,6 +60,13 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
         <Selecao rotulo="Categoria de receita padrão" opcoes={[{ valor: '', rotulo: 'Não definida' }, ...categorias.filter((c) => c.tipo === 'receita' && (c.ativo || c.id === negocio?.categoria_receita_id)).map((c) => ({ valor: c.id, rotulo: c.categoria_pai_id ? `  ${c.nome}` : c.nome }))]} value={categoriaReceita} onChange={(e) => setCategoriaReceita(e.target.value)} />
       </div>
       <p className="-mt-2 text-xs text-ink-muted">Usados pelo faturamento recorrente dos contratos deste negócio.</p>
+      <div className="grid grid-cols-2 gap-4">
+        <Selecao rotulo="Saldo para ativação de apps" opcoes={TIPOS_SALDO} value={tipoSaldo} onChange={(e) => setTipoSaldo(e.target.value as TipoSaldo | '')} ajuda={tipoSaldo ? 'Habilita o módulo Apps para este negócio.' : undefined} />
+        {tipoSaldo === 'credito' && (
+          <Campo rotulo="Créditos por R$ 1,00" type="number" inputMode="decimal" step="0.0001" min="0.0001" value={taxa} onChange={(e) => { setTaxa(e.target.value); setErros((x) => ({ ...x, taxa: undefined })) }} erro={erros.taxa} placeholder="Ex.: 0,1" />
+        )}
+      </div>
+      {tipoSaldo === 'credito' && !erros.taxa && taxaNum > 0 && <p className="-mt-2 text-xs text-ink-muted">R$ 100,00 de recarga = {(100 * taxaNum).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} crédito(s); 1 crédito custa R$ {(1 / taxaNum).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.</p>}
       {editando && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-brand-600" />

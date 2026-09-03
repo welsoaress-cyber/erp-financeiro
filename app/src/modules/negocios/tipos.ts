@@ -6,6 +6,8 @@ export interface Negocio {
   ativo: boolean
   conta_padrao_id: string | null
   categoria_receita_id: string | null
+  tipo_saldo: TipoSaldo | null
+  taxa_conversao: number | null
   criado_em: string
   atualizado_em: string
 }
@@ -16,7 +18,16 @@ export interface DadosNegocio {
   ativo: boolean
   conta_padrao_id: string | null
   categoria_receita_id: string | null
+  tipo_saldo: TipoSaldo | null
+  taxa_conversao: number | null
 }
+
+export type TipoSaldo = 'dinheiro' | 'credito'
+export const TIPOS_SALDO = [
+  { valor: '', rotulo: 'Não opera carteira' },
+  { valor: 'dinheiro', rotulo: 'Dinheiro (R$)' },
+  { valor: 'credito', rotulo: 'Créditos' },
+] as const
 
 /** "Navalha no Bigode" → "navalha-no-bigode". Sem acentos, minúsculas, hífens. */
 export function gerarSlug(nome: string): string {

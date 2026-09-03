@@ -23,7 +23,7 @@ export interface Lancamento {
   conta_destino_id: string | null
   categoria_id: string | null
   observacao: string | null
-  origem: 'manual' | 'sistema'
+  origem: 'manual' | 'sistema' | 'faturamento'
   negocio_id: string | null
   pessoa_id: string | null
   contrato_id: string | null

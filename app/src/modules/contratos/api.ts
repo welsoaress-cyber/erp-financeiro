@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { Contrato, DadosNovoContrato, DadosPlano, Plano, ReceitaRecorrente, ResultadoContrato, StatusContrato } from './tipos'
+import type { Contrato, DadosNovoContrato, DadosPlano, ExecucaoFaturamento, Faturamento, Plano, ReceitaRecorrente, ResultadoContrato, StatusContrato } from './tipos'
 
 const chavePlanos = (org: string) => ['planos', org] as const
 const chaveContratos = (org: string) => ['contratos', org] as const
@@ -61,7 +61,45 @@ function useInvalidarContratos() {
     void qc.invalidateQueries({ queryKey: chavePlanos(organizacao.id) })
     void qc.invalidateQueries({ queryKey: chaveContratos(organizacao.id) })
     void qc.invalidateQueries({ queryKey: ['vinculos', organizacao.id] })
+    void qc.invalidateQueries({ queryKey: ['lancamentos', organizacao.id] })
+    void qc.invalidateQueries({ queryKey: ['dashboard', organizacao.id] })
   }
+}
+
+export function useFaturamentos() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chaveContratos(organizacao.id), 'faturamentos'],
+    queryFn: async (): Promise<Faturamento[]> => {
+      const { data, error } = await supabase.from('vw_faturamentos').select('*').eq('organizacao_id', organizacao.id).order('competencia', { ascending: false })
+      if (error) throw error
+      return (data ?? []).map((f) => ({ ...f, valor: Number(f.valor) }))
+    },
+  })
+}
+
+export function useUltimaExecucao() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chaveContratos(organizacao.id), 'execucao'],
+    queryFn: async (): Promise<ExecucaoFaturamento | null> => {
+      const { data, error } = await supabase.from('faturamento_execucoes').select('*').eq('organizacao_id', organizacao.id).order('executado_em', { ascending: false }).limit(1).maybeSingle()
+      if (error) throw error
+      return data as ExecucaoFaturamento | null
+    },
+  })
+}
+
+export function useGerarFaturamento() {
+  const invalidar = useInvalidarContratos()
+  return useMutation({
+    mutationFn: async (ate?: string) => {
+      const { data, error } = await supabase.rpc('gerar_faturamento_agora', ate ? { p_ate: ate } : {})
+      if (error) throw error
+      return ((data ?? []) as ExecucaoFaturamento[])[0] ?? null
+    },
+    onSuccess: invalidar,
+  })
 }
 
 export function useCriarPlano() {
@@ -105,7 +143,7 @@ export function useCriarContrato() {
 export function useAtualizarContrato() {
   const invalidar = useInvalidarContratos()
   return useMutation({
-    mutationFn: async ({ id, ...d }: { id: string; valor?: number; dia_vencimento?: number; observacao?: string | null; status?: StatusContrato; data_fim?: string | null }) => {
+    mutationFn: async ({ id, ...d }: { id: string; valor?: number; dia_vencimento?: number; observacao?: string | null; status?: StatusContrato; data_fim?: string | null; faturamento_automatico?: boolean; faturar_desde?: string | null; conta_id?: string | null }) => {
       const { data, error } = await supabase.from('contratos').update(d).eq('id', id).select().single()
       if (error) throw error
       return data as Contrato

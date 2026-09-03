@@ -11,11 +11,15 @@ import { useAtualizarNegocio, useCriarNegocio, useNegocios } from '../api'
 import { FormularioNegocio } from '../components/FormularioNegocio'
 import type { DadosNegocio, Negocio } from '../tipos'
 import { PlanosNegocio } from '../../contratos/components/PlanosNegocio'
+import { useContas } from '../../contas/api'
+import { useCategorias } from '../../categorias/api'
 
 type Edicao = { modo: 'novo' } | { modo: 'editar'; negocio: Negocio } | null
 
 export function NegociosPage() {
   const negocios = useNegocios()
+  const contas = useContas()
+  const categorias = useCategorias()
   const criar = useCriarNegocio()
   const atualizar = useAtualizarNegocio()
   const [edicao, setEdicao] = useState<Edicao>(null)
@@ -93,6 +97,8 @@ export function NegociosPage() {
           <FormularioNegocio
             key={edicao.modo === 'editar' ? edicao.negocio.id : 'novo'}
             negocio={edicao.modo === 'editar' ? edicao.negocio : undefined}
+            contas={contas.data ?? []}
+            categorias={categorias.data ?? []}
             salvando={criar.isPending || atualizar.isPending}
             erro={erroSalvar ? mensagemDeErro(erroSalvar) : null}
             aoSalvar={salvar}

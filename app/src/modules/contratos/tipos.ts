@@ -42,6 +42,9 @@ export interface Contrato {
   dia_vencimento: number
   status: StatusContrato
   observacao: string | null
+  faturamento_automatico: boolean
+  faturar_desde: string | null
+  conta_id: string | null
 }
 
 export interface DadosNovoContrato {
@@ -53,6 +56,8 @@ export interface DadosNovoContrato {
   data_inicio: string
   dia_vencimento: number
   observacao: string | null
+  faturar_desde: string | null
+  conta_id: string | null
 }
 
 export interface ResultadoContrato {
@@ -71,6 +76,28 @@ export interface ReceitaRecorrente {
   contratos_ativos: number
   contratos_suspensos: number
   mrr: number
+}
+
+export interface Faturamento {
+  id: string
+  contrato_id: string
+  competencia: string
+  lancamento_id: string
+  gerado_em: string
+  status_lancamento: 'previsto' | 'efetivado' | 'cancelado'
+  valor: number
+  data_vencimento: string
+  data_efetivacao: string | null
+  descricao: string
+}
+
+export interface ExecucaoFaturamento {
+  id: number
+  executado_em: string
+  origem: 'manual' | 'agendado'
+  ate: string
+  gerados: number
+  pendencias: Array<{ contrato_id: string; codigo: number; negocio_id: string; motivo: string }>
 }
 
 export const codigoContrato = (c: Pick<Contrato, 'codigo'>) => `#${String(c.codigo).padStart(3, '0')}`

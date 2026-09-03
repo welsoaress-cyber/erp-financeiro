@@ -8,18 +8,21 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useAtualizarContrato } from '../api'
 import { codigoContrato, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type ResultadoContrato } from '../tipos'
+import { FaturamentoContrato } from './FaturamentoContrato'
+import type { Conta } from '../../contas/tipos'
 
 interface Props {
   contrato: Contrato
   nomes: { negocio: string; pessoa: string; plano: string }
   resultado?: ResultadoContrato
+  contas: Conta[]
   aoFechar: () => void
 }
 
 const TOM: Record<Contrato['status'], 'ok' | 'alerta' | 'neutro'> = { ativo: 'ok', suspenso: 'alerta', encerrado: 'neutro' }
 
 /** Detalhe do contrato: dados, rentabilidade, edição de valor/vencimento e ciclo de vida. */
-export function DetalheContrato({ contrato, nomes, resultado, aoFechar }: Props) {
+export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }: Props) {
   const atualizar = useAtualizarContrato()
   const encerrado = contrato.status === 'encerrado'
   const [valor, setValor] = useState(String(contrato.valor))
@@ -80,6 +83,7 @@ export function DetalheContrato({ contrato, nomes, resultado, aoFechar }: Props)
           )}
         </>
       )}
+      <FaturamentoContrato contrato={contrato} contas={contas} />
       <p className="text-xs text-ink-muted">Contrato {codigoContrato(contrato)} · Pessoa, negócio e plano não mudam depois de aberto: encerre e abra outro.</p>
     </div>
   )

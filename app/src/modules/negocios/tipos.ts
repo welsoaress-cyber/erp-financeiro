@@ -4,6 +4,8 @@ export interface Negocio {
   nome: string
   slug: string
   ativo: boolean
+  conta_padrao_id: string | null
+  categoria_receita_id: string | null
   criado_em: string
   atualizado_em: string
 }
@@ -12,6 +14,8 @@ export interface DadosNegocio {
   nome: string
   slug: string
   ativo: boolean
+  conta_padrao_id: string | null
+  categoria_receita_id: string | null
 }
 
 /** "Navalha no Bigode" → "navalha-no-bigode". Sem acentos, minúsculas, hífens. */

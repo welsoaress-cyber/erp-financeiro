@@ -174,7 +174,7 @@ export function LancamentosPage() {
                     <tr key={l.id} onClick={() => setEdicao({ modo: 'editar', lancamento: l })} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
                       <td className="px-6 py-3 tabular-nums text-ink-muted">{formatarData(l.data_competencia)}</td>
                       <td className="px-6 py-3">
-                        <div className="font-medium">{l.descricao}</div>
+                        <div className="font-medium">{l.descricao}{l.origem === 'faturamento' && <span className="ml-2 align-middle"><Distintivo tom="info">Automático</Distintivo></span>}</div>
                         <div className="text-xs text-ink-muted">{descricaoSecundaria(l)}</div>
                       </td>
                       <td className="px-6 py-3 text-ink-muted">{ROTULO_TIPO[l.tipo]}</td>

@@ -7,7 +7,7 @@ import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { hojeISO } from '../../../core/formatos'
 import type { Conta } from '../../contas/tipos'
 import { montarArvore, type Categoria } from '../../categorias/tipos'
-import { TIPOS_LANCAMENTO, type DadosLancamento, type Lancamento, type TipoLancamento } from '../tipos'
+import { PERIODICIDADES_RECORRENCIA, TIPOS_LANCAMENTO, rotuloParcela, type DadosLancamento, type Lancamento, type PeriodicidadeRecorrencia, type TipoLancamento } from '../tipos'
 import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
 import type { Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
@@ -25,13 +25,15 @@ interface Props {
   salvando: boolean
   erro: string | null
   avisoDuplicidade?: string | null
+  /** edição: já existe a próxima parcela gerada a partir deste lançamento */
+  proximaGerada?: boolean
   aoSalvar: (dados: DadosLancamento, ignorarDuplicidade: boolean) => void
   aoCancelar: () => void
 }
 
-interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string }
+interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string; recorrencia?: string }
 
-export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, aoSalvar, aoCancelar }: Props) {
+export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoCancelar }: Props) {
   const editando = Boolean(lancamento)
   const [tipo, setTipo] = useState<TipoLancamento>(lancamento?.tipo ?? tipoInicial)
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '')
@@ -56,6 +58,14 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
     if (c) { setNegocioId(c.negocio_id); setPessoaId(c.pessoa_id) }
   }
   const [erros, setErros] = useState<Erros>({})
+  const [recorrente, setRecorrente] = useState(lancamento?.recorrente ?? false)
+  const [periodicidade, setPeriodicidade] = useState<PeriodicidadeRecorrencia>(lancamento?.periodicidade ?? 'mensal')
+  const [numeroParcelas, setNumeroParcelas] = useState(lancamento?.numero_parcelas ? String(lancamento.numero_parcelas) : '')
+  const [dataFimRecorrencia, setDataFimRecorrencia] = useState(lancamento?.data_fim_recorrencia ?? '')
+  const parcelaGerada = lancamento?.recorrente === true && ((lancamento.parcela_atual ?? 1) > 1 || proximaGerada)
+  // com parcelas geradas só descrição e observação mudam (regra do banco)
+  const travado = lancamento?.recorrente === true && proximaGerada
+  const ehFaturamento = lancamento?.origem === 'faturamento'
 
   const contasDisponiveis = contas.filter((c) => c.ativo || c.id === lancamento?.conta_id || c.id === lancamento?.conta_destino_id)
   const arvore = montarArvore(categorias.filter((c) => c.tipo === tipo && (c.ativo || c.id === lancamento?.categoria_id)))
@@ -71,6 +81,12 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
     if (ehTransferencia && !destinoId) novos.destino = 'Informe a conta de destino.'
     if (ehTransferencia && destinoId && destinoId === contaId) novos.destino = 'Origem e destino devem ser contas diferentes.'
     if (!ehTransferencia && !categoriaId) novos.categoria = 'Informe a categoria.'
+    const nParcelas = numeroParcelas.trim() === '' ? null : Number(numeroParcelas)
+    if (recorrente) {
+      if (nParcelas === null && !dataFimRecorrencia) novos.recorrencia = 'Informe o número de parcelas ou a data de término.'
+      else if (nParcelas !== null && (!Number.isInteger(nParcelas) || nParcelas < 2 || nParcelas > 360)) novos.recorrencia = 'Número de parcelas entre 2 e 360.'
+      else if (dataFimRecorrencia && dataFimRecorrencia < (vencimento || data)) novos.recorrencia = 'A data de término deve ser igual ou posterior ao vencimento.'
+    }
     setErros(novos)
     if (Object.keys(novos).length > 0) return null
     return {
@@ -87,6 +103,10 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       negocio_id: negocioId,
       pessoa_id: pessoaId || null,
       contrato_id: contratoId || null,
+      recorrente,
+      periodicidade: recorrente ? periodicidade : null,
+      numero_parcelas: recorrente ? nParcelas : null,
+      data_fim_recorrencia: recorrente ? (dataFimRecorrencia || null) : null,
     }
   }
 
@@ -122,10 +142,12 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         ))}
       </div>
 
+      {travado && <Alerta tipo="info" titulo="Parcelas já geradas">Este lançamento recorrente já gerou a próxima parcela: só descrição e observação podem ser alteradas.</Alerta>}
+
       <Campo rotulo="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} erro={erros.descricao} autoFocus maxLength={140} />
       <div className="grid grid-cols-2 gap-4">
-        <Campo rotulo="Valor (R$)" type="number" inputMode="decimal" step="0.01" min="0.01" value={valor} onChange={(e) => setValor(e.target.value)} erro={erros.valor} />
-        <Campo rotulo="Data" type="date" value={data} onChange={(e) => setData(e.target.value)} erro={erros.data} />
+        <Campo rotulo="Valor (R$)" type="number" inputMode="decimal" step="0.01" min="0.01" value={valor} onChange={(e) => setValor(e.target.value)} erro={erros.valor} disabled={travado} />
+        <Campo rotulo="Data" type="date" value={data} onChange={(e) => setData(e.target.value)} erro={erros.data} disabled={travado} />
       </div>
 
       <Selecao
@@ -133,6 +155,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...contasDisponiveis.map((c) => ({ valor: c.id, rotulo: c.nome }))]}
         value={contaId}
         onChange={(e) => setContaId(e.target.value)}
+        disabled={travado}
       />
       {erros.conta && <p className="-mt-3 text-xs text-red-600">{erros.conta}</p>}
 
@@ -143,13 +166,14 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
             opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...contasDisponiveis.filter((c) => c.id !== contaId).map((c) => ({ valor: c.id, rotulo: c.nome }))]}
             value={destinoId}
             onChange={(e) => setDestinoId(e.target.value)}
+            disabled={travado}
           />
           {erros.destino && <p className="-mt-3 text-xs text-red-600">{erros.destino}</p>}
         </>
       ) : (
         <div className="space-y-1">
           <label htmlFor="categoria" className="block text-sm font-medium text-ink">Categoria</label>
-          <select id="categoria" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
+          <select id="categoria" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} disabled={travado} className="disabled:bg-surface disabled:text-ink-muted h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
             <option value="">Selecione…</option>
             {arvore.map(({ raiz, filhas }) => filhas.length === 0
               ? <option key={raiz.id} value={raiz.id}>{raiz.nome}</option>
@@ -172,10 +196,35 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         <div className="mt-3 grid grid-cols-2 gap-4">
           {efetivado
             ? <Campo rotulo="Data de efetivação" type="date" value={dataEfetivacao || data} onChange={(e) => setDataEfetivacao(e.target.value)} />
-            : <Campo rotulo="Vencimento" type="date" value={vencimento || data} onChange={(e) => setVencimento(e.target.value)} />}
+            : <Campo rotulo="Vencimento" type="date" value={vencimento || data} onChange={(e) => setVencimento(e.target.value)} disabled={travado} />}
         </div>
         {!efetivado && <p className="mt-2 text-xs text-ink-muted">Lançamento previsto: não altera o saldo até ser efetivado.</p>}
       </div>
+
+      {!ehFaturamento && (
+        <div className="rounded-md border border-line bg-surface/60 p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} disabled={parcelaGerada} className="size-4 accent-brand-600" />
+            Lançamento recorrente
+            {lancamento && rotuloParcela(lancamento) && <span className="ml-auto text-xs font-normal text-ink-muted">{rotuloParcela(lancamento)}</span>}
+          </label>
+          {recorrente && (
+            <>
+              <div className="mt-3 grid grid-cols-3 gap-4">
+                <Selecao rotulo="Periodicidade" opcoes={PERIODICIDADES_RECORRENCIA} value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value as PeriodicidadeRecorrencia)} disabled={parcelaGerada} />
+                <Campo rotulo="Número de parcelas" type="number" inputMode="numeric" min={2} max={360} step={1} placeholder="Indeterminado" value={numeroParcelas} onChange={(e) => setNumeroParcelas(e.target.value)} disabled={parcelaGerada} />
+                <Campo rotulo="Data de término" type="date" value={dataFimRecorrencia} onChange={(e) => setDataFimRecorrencia(e.target.value)} disabled={parcelaGerada} />
+              </div>
+              {erros.recorrencia && <p className="mt-1 text-xs text-red-600">{erros.recorrencia}</p>}
+              <p className="mt-2 text-xs text-ink-muted">
+                {parcelaGerada
+                  ? 'Periodicidade, número de parcelas e término não mudam depois que uma parcela foi gerada.'
+                  : 'Ao efetivar cada parcela, a próxima é criada como prevista com os mesmos dados. Vale o que ocorrer primeiro: número de parcelas ou data de término. Cancelar uma parcela prevista interrompe a recorrência.'}
+              </p>
+            </>
+          )}
+        </div>
+      )}
 
       {negocios.some((n) => n.ativo || n.id === lancamento?.negocio_id) && (
         <SelecaoNegocio negocios={negocios} valor={negocioId} aoMudar={(id) => { setNegocioId(id); setContratoId('') }} atualId={lancamento?.negocio_id} />

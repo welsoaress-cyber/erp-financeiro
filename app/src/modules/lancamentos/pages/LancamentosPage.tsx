@@ -17,10 +17,10 @@ import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { buscarPossiveisDuplicados, useAtualizarLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos } from '../api'
+import { buscarPossiveisDuplicados, useAtualizarLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProximaParcela } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
-import { ROTULO_STATUS, ROTULO_TIPO, type DadosLancamento, type Lancamento, type StatusLancamento, type TipoLancamento } from '../tipos'
+import { ROTULO_PERIODICIDADE, ROTULO_STATUS, ROTULO_TIPO, rotuloParcela, type DadosLancamento, type Lancamento, type StatusLancamento, type TipoLancamento } from '../tipos'
 
 type Edicao = { modo: 'novo' } | { modo: 'editar'; lancamento: Lancamento } | null
 const TOM_STATUS: Record<StatusLancamento, 'ok' | 'alerta' | 'neutro'> = { efetivado: 'ok', previsto: 'alerta', cancelado: 'neutro' }
@@ -45,6 +45,8 @@ export function LancamentosPage() {
   const efetivar = useEfetivarLancamento()
   const cancelar = useCancelarLancamento()
   const excluir = useExcluirLancamento()
+  const emEdicao = edicao?.modo === 'editar' ? edicao.lancamento : null
+  const proximaParcela = useProximaParcela(emEdicao?.id ?? null, emEdicao?.recorrente ?? false)
 
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
@@ -174,7 +176,11 @@ export function LancamentosPage() {
                     <tr key={l.id} onClick={() => setEdicao({ modo: 'editar', lancamento: l })} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
                       <td className="px-6 py-3 tabular-nums text-ink-muted">{formatarData(l.data_competencia)}</td>
                       <td className="px-6 py-3">
-                        <div className="font-medium">{l.descricao}{l.origem === 'faturamento' && <span className="ml-2 align-middle"><Distintivo tom="info">Automático</Distintivo></span>}</div>
+                        <div className="font-medium">
+                          {l.descricao}
+                          {l.origem === 'faturamento' && <span className="ml-2 align-middle"><Distintivo tom="info">Automático</Distintivo></span>}
+                          {l.recorrente && <span className="ml-2 align-middle" title={`Recorrente · ${ROTULO_PERIODICIDADE[l.periodicidade!]}`}><Distintivo tom="info">{`🔄 ${rotuloParcela(l)}`}</Distintivo></span>}
+                        </div>
                         <div className="text-xs text-ink-muted">{descricaoSecundaria(l)}</div>
                       </td>
                       <td className="px-6 py-3 text-ink-muted">{ROTULO_TIPO[l.tipo]}</td>
@@ -214,6 +220,7 @@ export function LancamentosPage() {
               salvando={criar.isPending || atualizar.isPending}
               erro={erroSalvar ? mensagemDeErro(erroSalvar) : null}
               avisoDuplicidade={avisoDuplicidade}
+              proximaGerada={Boolean(proximaParcela.data)}
               aoSalvar={salvar}
               aoCancelar={fechar}
             />

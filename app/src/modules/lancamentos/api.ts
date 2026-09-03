@@ -59,7 +59,25 @@ function paramsDe(d: DadosLancamento) {
     p_negocio_id: d.negocio_id,
     p_pessoa_id: d.pessoa_id,
     p_contrato_id: d.contrato_id,
+    p_recorrente: d.recorrente,
+    p_periodicidade: d.recorrente ? d.periodicidade : null,
+    p_numero_parcelas: d.recorrente ? d.numero_parcelas : null,
+    p_data_fim_recorrencia: d.recorrente ? d.data_fim_recorrencia : null,
   }
+}
+
+/** Próxima parcela já gerada a partir deste lançamento (bloqueia a edição da recorrência). */
+export function useProximaParcela(lancamentoId: string | null, recorrente: boolean) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chaveLancamentos(organizacao.id), 'proxima', lancamentoId],
+    enabled: Boolean(lancamentoId) && recorrente,
+    queryFn: async (): Promise<Lancamento | null> => {
+      const { data, error } = await supabase.from('lancamentos').select('*').eq('lancamento_origem_id', lancamentoId!).maybeSingle()
+      if (error) throw error
+      return (data as Lancamento | null) ?? null
+    },
+  })
 }
 
 function useInvalidarFinanceiro() {

@@ -6,6 +6,23 @@ export const TIPOS_LANCAMENTO = [
 export type TipoLancamento = (typeof TIPOS_LANCAMENTO)[number]['valor']
 
 export type StatusLancamento = 'previsto' | 'efetivado' | 'cancelado'
+
+export const PERIODICIDADES_RECORRENCIA = [
+  { valor: 'mensal', rotulo: 'Mensal' },
+  { valor: 'quinzenal', rotulo: 'Quinzenal' },
+  { valor: 'bimestral', rotulo: 'Bimestral' },
+  { valor: 'trimestral', rotulo: 'Trimestral' },
+  { valor: 'semestral', rotulo: 'Semestral' },
+  { valor: 'anual', rotulo: 'Anual' },
+] as const
+export type PeriodicidadeRecorrencia = (typeof PERIODICIDADES_RECORRENCIA)[number]['valor']
+export const ROTULO_PERIODICIDADE: Record<PeriodicidadeRecorrencia, string> = Object.fromEntries(PERIODICIDADES_RECORRENCIA.map((p) => [p.valor, p.rotulo])) as Record<PeriodicidadeRecorrencia, string>
+
+/** "Parcela 2 de 12" ou "Parcela 2" (indeterminada). */
+export function rotuloParcela(l: Pick<Lancamento, 'recorrente' | 'parcela_atual' | 'numero_parcelas'>): string | null {
+  if (!l.recorrente || l.parcela_atual === null) return null
+  return l.numero_parcelas ? `Parcela ${l.parcela_atual} de ${l.numero_parcelas}` : `Parcela ${l.parcela_atual}`
+}
 export const ROTULO_STATUS: Record<StatusLancamento, string> = { previsto: 'Previsto', efetivado: 'Efetivado', cancelado: 'Cancelado' }
 export const ROTULO_TIPO: Record<TipoLancamento, string> = { receita: 'Receita', despesa: 'Despesa', transferencia: 'Transferência' }
 
@@ -27,6 +44,12 @@ export interface Lancamento {
   negocio_id: string | null
   pessoa_id: string | null
   contrato_id: string | null
+  recorrente: boolean
+  periodicidade: PeriodicidadeRecorrencia | null
+  numero_parcelas: number | null
+  parcela_atual: number | null
+  data_fim_recorrencia: string | null
+  lancamento_origem_id: string | null
   cancelado_em: string | null
   motivo_cancelamento: string | null
   criado_em: string
@@ -48,4 +71,8 @@ export interface DadosLancamento {
   negocio_id: string | null
   pessoa_id: string | null
   contrato_id: string | null
+  recorrente: boolean
+  periodicidade: PeriodicidadeRecorrencia | null
+  numero_parcelas: number | null
+  data_fim_recorrencia: string | null
 }

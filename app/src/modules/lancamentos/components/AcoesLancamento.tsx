@@ -49,6 +49,8 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
         <div className="space-y-2">
           <Campo rotulo="Motivo do cancelamento (opcional)" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={200} />
           <p className="text-xs text-ink-muted">O lançamento fica no histórico como cancelado e deixa de afetar o saldo. Não pode ser desfeito.</p>
+          {lancamento.recorrente && lancamento.status === 'previsto' && <p className="text-xs text-amber-800">Parcela prevista de uma recorrência: cancelar interrompe a recorrência (nenhuma parcela seguinte será gerada).</p>}
+          {lancamento.recorrente && lancamento.status === 'efetivado' && <p className="text-xs text-ink-muted">Parcela efetivada de uma recorrência: cancelar só estorna esta parcela; a próxima já gerada continua.</p>}
           <div className="flex gap-2">
             <Botao type="button" variante="perigo" onClick={() => aoCancelarLancamento(motivo)} carregando={ocupado}>Confirmar cancelamento</Botao>
             <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
@@ -58,6 +60,7 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
       {modo === 'excluir' && (
         <div className="space-y-2">
           <p className="text-sm">Excluir definitivamente este lançamento previsto?</p>
+          {lancamento.recorrente && <p className="text-xs text-amber-800">Excluir esta parcela interrompe a recorrência.</p>}
           <div className="flex gap-2">
             <Botao type="button" variante="perigo" onClick={aoExcluir} carregando={ocupado}>Excluir</Botao>
             <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>

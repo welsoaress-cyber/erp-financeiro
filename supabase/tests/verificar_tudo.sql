@@ -1,5 +1,5 @@
 -- Verificação consolidada do esquema em produção (migrations 0001–0023). Somente leitura.
--- Esperado: todas as linhas PASS e "== TOTAL ==" com 17 de 17.
+-- Esperado: todas as linhas PASS e "== TOTAL ==" com 18 de 18.
 with checks as (
   select '0001 fundação: organizacoes, membros, auditoria' item, (select count(*) from pg_tables where schemaname='public' and tablename in ('organizacoes','organizacao_membros','auditoria')) = 3 ok
   union all select '0002 contas + vw_saldo_contas', exists (select 1 from pg_views where viewname='vw_saldo_contas')
@@ -17,6 +17,7 @@ with checks as (
   union all select '0016 notificações (tabelas, motor, view)', (select count(*) from pg_tables where schemaname='public' and tablename in ('notificacoes_config','notificacoes_log')) = 2 and (select count(*) from pg_proc where proname in ('gerar_notificacoes','processar_notificacoes','executar_notificacoes_agora','enviar_notificacao_teste')) = 4 and exists (select 1 from pg_views where viewname='vw_notificacoes')
   union all select '0018 provedor evolution (fila só para service_role)', (select count(*) from pg_proc where proname in ('notificacoes_para_envio','registrar_resultado_notificacao')) = 2 and not exists (select 1 from information_schema.routine_privileges where routine_name in ('notificacoes_para_envio','registrar_resultado_notificacao') and grantee in ('anon','authenticated','PUBLIC'))
   union all select '0023 portal do cliente (tabelas, funções, anon restrito)', (select count(*) from pg_tables where schemaname='public' and tablename in ('portal_config','portal_acessos','promocoes','indicacoes','descontos_contrato')) = 5 and (select count(*) from pg_proc where proname like 'portal\_%') >= 12 and (select count(*) from information_schema.routine_privileges where grantee='anon' and routine_name like 'portal\_%') = 2
+  union all select '0024 portal servnet (login sem senha, fidelidade, chamados, status da rede)', (select count(*) from pg_tables where schemaname='public' and tablename in ('portal_status_rede','portal_solicitacoes','portal_login_tentativas')) = 3 and (select count(*) from pg_proc where proname in ('fidelidade_cartao','fidelidade_registrar_premio','portal_login_verificar','portal_vincular_servico','portal_fidelidade','portal_solicitar')) = 6 and exists (select 1 from information_schema.columns where table_name='pessoas' and column_name='data_nascimento')
   union all select 'RLS ligado em todas as tabelas públicas', (select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r')
 )
 select item, ok, case when ok then 'PASS' else 'FALHOU' end as resultado from checks

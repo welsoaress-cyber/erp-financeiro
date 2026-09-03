@@ -25,7 +25,7 @@ cd app && npx tsc --noEmit -p tsconfig.app.json && npx oxlint src && npm run bui
 E2E: Playwright com API mock (`mock.mjs`, porta 54321) e `vite preview --port 4173`; um spec por módulo. Rodar os specs dos módulos tocados.
 
 ## Produção
-- Verificação consolidada: `supabase/tests/verificar_tudo.sql` (esperado 17 de 17). Diagnóstico somente leitura: `supabase/scripts/diagnostico_contratos.sql`.
+- Verificação consolidada: `supabase/tests/verificar_tudo.sql` (esperado 18 de 18). Diagnóstico somente leitura: `supabase/scripts/diagnostico_contratos.sql`.
 - O ambiente remoto não alcança `*.supabase.co` nem `workers.dev`: o proprietário aplica SQL pelo SQL Editor e reporta o resultado.
 
 ## Estilo de resposta

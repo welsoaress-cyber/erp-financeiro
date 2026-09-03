@@ -23,7 +23,7 @@ grant select on r to service_role, anon;
 insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento)
   select org, servnet, joao, fibra, 99.90, 'mensal', date '2026-07-01', 10 from r;
 select public.gerar_faturamento_agora(date '2026-09-30');  -- cobranças 07, 08, 09/2026
-insert into public.portal_config (organizacao_id, negocio_id, chave_pix, beneficio_indicacao, texto_promocional) select org, servnet, 'pix@servnet.com', 20, 'Indique e ganhe R$ 20' from r;
+insert into public.portal_config (organizacao_id, negocio_id, chave_pix, beneficio_indicacao, texto_promocional, beneficio_tipo) select org, servnet, 'pix@servnet.com', 20, 'Indique e ganhe R$ 20', 'valor' from r;
 insert into public.promocoes (organizacao_id, negocio_id, titulo, descricao) select org, servnet, 'Upgrade grátis', 'Dobro de velocidade por 3 meses' from r;
 insert into public.promocoes (organizacao_id, negocio_id, titulo, descricao, ativa) select org, servnet, 'Encerrada', 'não aparece', false from r;
 -- paga a primeira cobrança

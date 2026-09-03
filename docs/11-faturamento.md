@@ -1,6 +1,6 @@
 # Etapa 7 — Faturamento recorrente automático
 
-Status: **validada em produção pelo proprietário (03/09/2026).**
+Status: **migrations 0008/0009/0010 aplicadas de fato em produção pela 0015 e pela 0010 (03/09/2026); validação anterior era sobre esquema externo — revalidar.**
 
 ## 1. Como funciona
 ```

@@ -1,6 +1,6 @@
 # Etapa 8 — Recorrências em lançamentos
 
-Status: **implementada e testada localmente (03/09/2026); aguardando aplicação da migration 0012 em produção e validação do proprietário.**
+Status: **migration 0012 aplicada em produção (03/09/2026); aguardando validação do proprietário.**
 
 ## 1. Objetivo
 Qualquer lançamento (receita, despesa ou transferência) pode ser **recorrente**: ao ser efetivado, o motor gera automaticamente a próxima parcela como **previsto**, copiando todos os dados. Independente do faturamento por contrato (Etapa 7), que continua gerando cobranças avulsas por competência.

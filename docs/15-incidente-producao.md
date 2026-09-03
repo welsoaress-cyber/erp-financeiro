@@ -26,3 +26,6 @@ Nenhuma outra ferramenta cria, altera ou "ajusta" objetos no banco do ERP. Todo 
 - `20260902000015_refundacao_contratos.sql`: aborta se `contratos` já tiver `organizacao_id` ou se houver dados; remove o esquema externo (tabelas, funções, views, tipos, `trigger_auditoria`), descarta `lancamentos.contrato_id` e `negocios.conta_padrao_id`/`categoria_receita_id` (recriadas em seguida) e recria o conteúdo das 0008 e 0009 sem o motor (já na versão da 0012). Reaplicar é inofensivo: aborta sem alterar nada.
 - Runner local ganhou o **cenário C**: 0001–0007 + `tests/simulacao_estado_externo.sql` (réplica do esquema encontrado) + 0011 + 0012, corrigido por 0014 → 0015 → 0013. Resultado: `verificar_tudo` 14 de 14 e todas as suítes OK.
 - Ordem em produção: 0014 (feita) → **0015 → 0013 → 0010 → verificar_tudo**. Depois, em Negócios, definir de novo a conta de recebimento e a categoria de receita padrão de cada negócio (as colunas foram recriadas vazias).
+
+## Encerramento (03/09/2026)
+Produção após 0014 → 0015 → 0013 → 0010: `verificar_tudo.sql` **14 de 14**. Job `erp-faturamento-diario` agendado (executado duas vezes; o script desagenda antes de agendar, restando um job). Pendências: reconfigurar conta/categoria padrão dos negócios na tela e revalidar Etapas 6C, 7, 6D, 8 e 9 sobre o esquema correto.

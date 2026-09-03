@@ -1,6 +1,6 @@
 # Etapa 6D — Importação de clientes por CSV (SERVNET)
 
-Status: **implementada e testada localmente (03/09/2026); aguardando aplicação da migration 0011 em produção, teste com o arquivo real e validação do proprietário.**
+Status: **migration 0011 aplicada em produção (03/09/2026); aguardando teste com o CSV real e validação do proprietário.**
 
 ## 1. Objetivo
 Trazer clientes, planos e contratos do sistema anterior da SERVNET para o ERP **sem acesso ao banco legado**: o proprietário exporta um CSV, sobe na tela, confere a prévia e confirma. Nada é gravado antes da confirmação.

@@ -1,6 +1,6 @@
 # Etapa 9 — Saldo para ativação de apps (dinheiro ou créditos)
 
-Status: **implementada e testada localmente (03/09/2026); aguardando aplicação da migration 0013 em produção e validação do proprietário.**
+Status: **migration 0013 aplicada em produção (03/09/2026, após a correção 0014/0015); aguardando validação do proprietário.**
 
 ## 1. Objetivo
 Um negócio (ex.: "Ativação de App") mantém uma **carteira** de saldo, em **dinheiro (R$)** ou **créditos**, usada para ativar apps para clientes. Cada ativação consome saldo e abre um **contrato anual** (anuidade) com o cliente. Tudo se integra ao que já existe; nada é duplicado.

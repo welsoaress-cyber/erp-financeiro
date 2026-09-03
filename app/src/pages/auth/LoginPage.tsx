@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../core/auth/useAuth'
 import { useLimiteTentativas } from '../../core/auth/useLimiteTentativas'
 import { mensagemDeErro } from '../../core/erros/mensagemDeErro'

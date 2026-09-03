@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { RouterProvider } from 'react-router-dom'
+import { RouterProvider } from 'react-router'
 import { AuthProvider } from '../core/auth/AuthProvider'
 import { ErrorBoundary } from '../core/erros/ErrorBoundary'
 import { supabaseConfigurado } from '../core/supabase/client'

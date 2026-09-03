@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router'
 import { RequireAuth, SomenteAnonimo } from '../core/auth/RequireAuth'
 import { AppShell } from '../core/layout/AppShell'
 import { LoginPage } from '../pages/auth/LoginPage'

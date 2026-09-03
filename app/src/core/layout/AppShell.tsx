@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router'
 import { BarraLateral } from './BarraLateral'
 import { BarraSuperior } from './BarraSuperior'
 import { OrganizacaoProvider } from '../organizacao/OrganizacaoProvider'

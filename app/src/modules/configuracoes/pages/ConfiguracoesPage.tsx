@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { useAuth } from '../../../core/auth/useAuth'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'

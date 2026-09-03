@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../../core/auth/useAuth'
 import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { Alerta } from '../../core/ui/Alerta'

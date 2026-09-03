@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router'
 import type { DefinicaoModulo } from '../modulos/tipos'
 import { Icone } from '../ui/Icone'
 

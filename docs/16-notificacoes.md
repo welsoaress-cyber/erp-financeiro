@@ -1,6 +1,6 @@
 # Etapa 10 — Notificações WhatsApp (modo simulado)
 
-Status: **implementada e testada localmente (03/09/2026); aguardando aplicação das migrations 0016–0019 em produção e validação do proprietário.** O envio real (Evolution API) existe, mas fica desligado até o proprietário trocar o provedor na tela.
+Status: **validada em produção pelo proprietário (03/09/2026): modo simulado e envio real pela Evolution API (mensagem de teste recebida no WhatsApp).** Pendência de segurança: trocar a chave da Evolution (exposta no código do sistema anterior) e atualizar o secret nos dois projetos.
 
 ## 1. Objetivo
 Resgatar os avisos do sistema anterior: **próximo ao vencimento** (X dias antes), **no dia** e **bloqueio** (Y dias após, sem pagamento), por negócio, com número e mensagens próprias. Nesta etapa o "envio" é simulado e registrado; a integração real entra depois como outro provedor, sem mudar o esquema.

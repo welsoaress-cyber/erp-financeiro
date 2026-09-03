@@ -16,7 +16,7 @@ import { useContas } from '../../contas/api'
 import { formatarData } from '../../../core/formatos'
 import { FormularioContrato } from '../components/FormularioContrato'
 import { DetalheContrato } from '../components/DetalheContrato'
-import { codigoContrato, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type StatusContrato } from '../tipos'
+import { codigoContrato, ROTULO_PERIODICIDADE, ROTULO_PESSOA_CONTRATO, ROTULO_STATUS_CONTRATO, type Contrato, type StatusContrato } from '../tipos'
 
 type Edicao = { modo: 'novo' } | { modo: 'ver'; id: string } | null
 const TOM: Record<StatusContrato, 'ok' | 'alerta' | 'neutro'> = { ativo: 'ok', suspenso: 'alerta', encerrado: 'neutro' }
@@ -123,7 +123,7 @@ export function ContratosPage() {
                       return (
                         <tr key={c.id} onClick={() => setEdicao({ modo: 'ver', id: c.id })} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
                           <td className="px-6 py-3"><div className="font-medium tabular-nums">{codigoContrato(c)}</div><div className="text-xs text-ink-muted">{nome.negocio.get(c.negocio_id) ?? '—'}</div></td>
-                          <td className="px-6 py-3 font-medium">{nome.pessoa.get(c.pessoa_id) ?? '—'}</td>
+                          <td className="px-6 py-3 font-medium">{nome.pessoa.get(c.pessoa_id) ?? '—'}<div className="text-xs font-normal capitalize text-ink-muted">{ROTULO_PESSOA_CONTRATO[c.tipo_financeiro]}</div></td>
                           <td className="px-6 py-3 text-ink-muted">{nome.plano.get(c.plano_id) ?? '—'}<div className="text-xs">venc. dia {c.dia_vencimento}</div></td>
                           <td className="px-6 py-3 text-right tabular-nums">{formatarMoeda(c.valor)}<div className="text-xs text-ink-muted">{ROTULO_PERIODICIDADE[c.periodicidade]}</div></td>
                           <td className={`px-6 py-3 text-right font-medium tabular-nums ${(r?.resultado ?? 0) < 0 ? 'text-red-700' : (r?.resultado ?? 0) > 0 ? 'text-green-700' : 'text-ink-muted'}`}>{formatarMoeda(r?.resultado ?? 0)}</td>

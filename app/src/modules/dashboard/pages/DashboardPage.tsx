@@ -14,7 +14,9 @@ import { ROTULO_TIPO as ROTULO_TIPO_CONTA } from '../../contas/tipos'
 import { ROTULO_TIPO } from '../../lancamentos/tipos'
 import { useNegocios } from '../../negocios/api'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { useResultadoPorNegocio, useUltimosLancamentos } from '../api'
+import { useLancamentos } from '../../lancamentos/api'
+import { useResultadoPorNegocio, useSaldoInicial, useUltimosLancamentos } from '../api'
+import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 
 function Indicador({ rotulo, valor, tom = 'neutro' }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto' }) {
   const cor = tom === 'positivo' ? 'text-green-700' : tom === 'negativo' ? 'text-red-700' : tom === 'auto' ? (valor < 0 ? 'text-red-700' : 'text-green-700') : ''
@@ -35,6 +37,8 @@ export function DashboardPage() {
   const negocios = useNegocios()
   const resultado = useResultadoPorNegocio(mes)
   const ultimos = useUltimosLancamentos()
+  const lancamentosMes = useLancamentos(mes)
+  const saldoInicial = useSaldoInicial(mes)
 
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
@@ -49,8 +53,8 @@ export function DashboardPage() {
   const ultimosFiltrados = (ultimos.data ?? []).filter((l) => bate(l.negocio_id))
   const temNegocios = (negocios.data ?? []).length > 0
 
-  const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending
-  const erro = contas.error ?? resultado.error ?? ultimos.error ?? negocios.error
+  const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending || lancamentosMes.isPending || saldoInicial.isPending
+  const erro = contas.error ?? resultado.error ?? ultimos.error ?? negocios.error ?? lancamentosMes.error ?? saldoInicial.error
 
   return (
     <>
@@ -74,7 +78,7 @@ export function DashboardPage() {
       {carregando && <Carregando texto="Calculando…" />}
       {erro && <Alerta tipo="erro" titulo="Não foi possível carregar o painel">{mensagemDeErro(erro)}</Alerta>}
 
-      {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && negocios.isSuccess && (
+      {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && negocios.isSuccess && lancamentosMes.isSuccess && saldoInicial.isSuccess && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Indicador rotulo="Saldo total" valor={saldoTotal} tom="auto" />
@@ -83,40 +87,7 @@ export function DashboardPage() {
             <Indicador rotulo="Resultado do mês" valor={totais.resultado} tom="auto" />
           </div>
 
-          {temNegocios && !filtro && (
-            <Cartao className="p-0">
-              <div className="flex items-center justify-between border-b border-line px-6 py-3">
-                <h2 className="text-sm font-semibold">Resultado por negócio</h2>
-                <Link to="/negocios" className="text-xs font-medium text-brand-600 hover:underline">Ver negócios</Link>
-              </div>
-              {linhas.length === 0 ? (
-                <p className="px-6 py-8 text-center text-sm text-ink-muted">Nenhum lançamento efetivado neste mês.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
-                      <tr className="border-b border-line">
-                        <th className="px-6 py-2 font-medium">Negócio</th>
-                        <th className="px-6 py-2 text-right font-medium">Receitas</th>
-                        <th className="px-6 py-2 text-right font-medium">Despesas</th>
-                        <th className="px-6 py-2 text-right font-medium">Resultado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...linhas].sort((a, b) => rotuloNegocio(a.negocio_id).localeCompare(rotuloNegocio(b.negocio_id), 'pt-BR')).map((r) => (
-                        <tr key={r.negocio_id ?? 'pessoal'} className="border-b border-line last:border-0">
-                          <td className="px-6 py-2 font-medium">{rotuloNegocio(r.negocio_id)}</td>
-                          <td className="px-6 py-2 text-right tabular-nums text-green-700">{formatarMoeda(r.receitas)}</td>
-                          <td className="px-6 py-2 text-right tabular-nums text-red-700">{formatarMoeda(r.despesas)}</td>
-                          <td className={`px-6 py-2 text-right font-medium tabular-nums ${r.resultado < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(r.resultado)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Cartao>
-          )}
+          <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate} />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Cartao className="p-0">

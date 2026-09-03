@@ -71,14 +71,18 @@ do $$ declare e public.faturamento_execucoes%rowtype; v_c uuid; n int; begin
   select * into e from public.gerar_faturamento_agora('2026-10-01'); assert e.gerados = 0, 'T4 suspenso e desligado';
   update public.contratos set faturamento_automatico = true, faturar_desde = '2026-09-01' where codigo = 2;
   select * into e from public.gerar_faturamento_agora('2026-10-01'); assert e.gerados = 2, 'T4 faturar_desde limita: set e out';
+  -- (0027) ao criar já gera 2024-03 automaticamente
   insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento)
     select org, neg, maria, anual, 1200, 'anual', '2024-03-10', 10 from r;
-  select * into e from public.gerar_faturamento_agora('2026-10-01'); assert e.gerados = 3, 'T4 anual 2024, 2025, 2026';
+  select count(*) into n from public.faturamentos f join public.contratos c on c.id = f.contrato_id where c.codigo = 3; assert n = 1, 'T4 anual: 2024 já gerado ao criar';
+  select * into e from public.gerar_faturamento_agora('2026-10-01'); assert e.gerados = 2, 'T4 anual 2025, 2026 (2024 já tinha sido gerado ao criar)';
   assert (select array_agg(data_vencimento order by 1) from public.lancamentos l join public.contratos c on c.id = l.contrato_id where c.codigo = 3)
          = array['2024-03-10','2025-03-10','2026-03-10']::date[], 'T4 anual datas';
+  -- (0027) único: já gerado ao criar; a chamada seguinte não gera de novo
   insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento)
     select org, neg, joao, inst, 300, 'unico', '2026-09-01', 20 from r;
-  select * into e from public.gerar_faturamento_agora('2026-10-01'); assert e.gerados = 1, 'T4 único gera 1';
+  select count(*) into n from public.faturamentos f join public.contratos c on c.id = f.contrato_id where c.codigo = 4; assert n = 1, 'T4 único: já gerado ao criar';
+  select * into e from public.gerar_faturamento_agora('2026-10-01'); assert e.gerados = 0, 'T4 único não gera de novo';
 end $$;
 -- geração para data distante só pelo motor interno (o RPC limita a 2 meses)
 reset role;

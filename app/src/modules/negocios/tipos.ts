@@ -6,6 +6,7 @@ export interface Negocio {
   ativo: boolean
   conta_padrao_id: string | null
   categoria_receita_id: string | null
+  categoria_despesa_id: string | null
   tipo_saldo: TipoSaldo | null
   taxa_conversao: number | null
   criado_em: string
@@ -18,6 +19,7 @@ export interface DadosNegocio {
   ativo: boolean
   conta_padrao_id: string | null
   categoria_receita_id: string | null
+  categoria_despesa_id: string | null
   tipo_saldo: TipoSaldo | null
   taxa_conversao: number | null
 }

@@ -40,3 +40,18 @@ export function useUltimosLancamentos(limite = 8) {
     },
   })
 }
+
+export interface SaldoInicialNegocio { negocio_id: string | null; saldo: number }
+
+/** Saldo consolidado (por negócio) já existente antes do mês selecionado começar. */
+export function useSaldoInicial(mes: string) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: ['dashboard', organizacao.id, 'saldo-inicial', mes],
+    queryFn: async (): Promise<SaldoInicialNegocio[]> => {
+      const { data, error } = await supabase.rpc('saldo_inicial_mes', { p_mes: mes })
+      if (error) throw error
+      return (data ?? []).map((r: { negocio_id: string | null; saldo: number | string }) => ({ negocio_id: r.negocio_id, saldo: Number(r.saldo) }))
+    },
+  })
+}

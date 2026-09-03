@@ -25,6 +25,7 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
   const [ativo, setAtivo] = useState(negocio?.ativo ?? true)
   const [contaPadrao, setContaPadrao] = useState(negocio?.conta_padrao_id ?? '')
   const [categoriaReceita, setCategoriaReceita] = useState(negocio?.categoria_receita_id ?? '')
+  const [categoriaDespesa, setCategoriaDespesa] = useState(negocio?.categoria_despesa_id ?? '')
   const [tipoSaldo, setTipoSaldo] = useState<TipoSaldo | ''>(negocio?.tipo_saldo ?? '')
   const [taxa, setTaxa] = useState(negocio?.taxa_conversao ? String(negocio.taxa_conversao) : '')
   const [erros, setErros] = useState<{ nome?: string; slug?: string; taxa?: string }>({})
@@ -44,7 +45,7 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
     if (tipoSaldo === 'credito' && (taxa.trim() === '' || Number.isNaN(taxaNum) || taxaNum <= 0)) novos.taxa = 'Informe quantos créditos valem R$ 1,00.'
     setErros(novos)
     if (Object.keys(novos).length > 0) return
-    aoSalvar({ nome: nome.trim(), slug, ativo, conta_padrao_id: contaPadrao || null, categoria_receita_id: categoriaReceita || null, tipo_saldo: tipoSaldo || null, taxa_conversao: tipoSaldo === 'credito' ? taxaNum : null })
+    aoSalvar({ nome: nome.trim(), slug, ativo, conta_padrao_id: contaPadrao || null, categoria_receita_id: categoriaReceita || null, categoria_despesa_id: categoriaDespesa || null, tipo_saldo: tipoSaldo || null, taxa_conversao: tipoSaldo === 'credito' ? taxaNum : null })
   }
 
   return (
@@ -55,11 +56,12 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
         <Campo rotulo="Identificador (slug)" value={slug} onChange={(e) => { setSlugManual(true); setSlug(e.target.value) }} erro={erros.slug} maxLength={40} />
         <p className="text-xs text-ink-muted">Gerado automaticamente a partir do nome. Usado em relatórios e integrações futuras.</p>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Selecao rotulo="Conta de recebimento padrão" opcoes={[{ valor: '', rotulo: 'Não definida' }, ...contas.filter((c) => c.ativo || c.id === negocio?.conta_padrao_id).map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={contaPadrao} onChange={(e) => setContaPadrao(e.target.value)} />
         <Selecao rotulo="Categoria de receita padrão" opcoes={[{ valor: '', rotulo: 'Não definida' }, ...categorias.filter((c) => c.tipo === 'receita' && (c.ativo || c.id === negocio?.categoria_receita_id)).map((c) => ({ valor: c.id, rotulo: c.categoria_pai_id ? `  ${c.nome}` : c.nome }))]} value={categoriaReceita} onChange={(e) => setCategoriaReceita(e.target.value)} />
+        <Selecao rotulo="Categoria de despesa padrão" opcoes={[{ valor: '', rotulo: 'Não definida' }, ...categorias.filter((c) => c.tipo === 'despesa' && (c.ativo || c.id === negocio?.categoria_despesa_id)).map((c) => ({ valor: c.id, rotulo: c.categoria_pai_id ? `  ${c.nome}` : c.nome }))]} value={categoriaDespesa} onChange={(e) => setCategoriaDespesa(e.target.value)} />
       </div>
-      <p className="-mt-2 text-xs text-ink-muted">Usados pelo faturamento recorrente dos contratos deste negócio.</p>
+      <p className="-mt-2 text-xs text-ink-muted">Usados pelo faturamento automático dos contratos deste negócio: receita para contratos de cliente, despesa para contratos de fornecedor.</p>
       <div className="grid grid-cols-2 gap-4">
         <Selecao rotulo="Saldo para ativação de apps" opcoes={TIPOS_SALDO} value={tipoSaldo} onChange={(e) => setTipoSaldo(e.target.value as TipoSaldo | '')} ajuda={tipoSaldo ? 'Habilita o módulo Apps para este negócio.' : undefined} />
         {tipoSaldo === 'credito' && (

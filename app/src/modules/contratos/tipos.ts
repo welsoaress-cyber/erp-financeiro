@@ -6,6 +6,10 @@ export const PERIODICIDADES = [
 export type Periodicidade = (typeof PERIODICIDADES)[number]['valor']
 export const ROTULO_PERIODICIDADE: Record<Periodicidade, string> = { mensal: 'Mensal', anual: 'Anual', unico: 'Único' }
 
+export type TipoFinanceiroContrato = 'receita' | 'despesa'
+export const ROTULO_TIPO_FINANCEIRO: Record<TipoFinanceiroContrato, string> = { receita: 'Cliente (receita)', despesa: 'Fornecedor (despesa)' }
+export const ROTULO_PESSOA_CONTRATO: Record<TipoFinanceiroContrato, string> = { receita: 'cliente', despesa: 'fornecedor' }
+
 export type StatusContrato = 'ativo' | 'suspenso' | 'encerrado'
 export const ROTULO_STATUS_CONTRATO: Record<StatusContrato, string> = { ativo: 'Ativo', suspenso: 'Suspenso', encerrado: 'Encerrado' }
 
@@ -45,6 +49,7 @@ export interface Contrato {
   faturamento_automatico: boolean
   faturar_desde: string | null
   conta_id: string | null
+  tipo_financeiro: TipoFinanceiroContrato
 }
 
 export interface DadosNovoContrato {
@@ -58,6 +63,7 @@ export interface DadosNovoContrato {
   observacao: string | null
   faturar_desde: string | null
   conta_id: string | null
+  tipo_financeiro: TipoFinanceiroContrato
 }
 
 export interface ResultadoContrato {

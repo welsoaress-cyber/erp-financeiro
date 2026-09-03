@@ -8,7 +8,7 @@ import { formatarMoeda, hojeISO } from '../../../core/formatos'
 import type { Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
 import type { Conta } from '../../contas/tipos'
-import { PERIODICIDADES, type DadosNovoContrato, type Periodicidade, type Plano } from '../tipos'
+import { PERIODICIDADES, ROTULO_PESSOA_CONTRATO, ROTULO_TIPO_FINANCEIRO, type DadosNovoContrato, type Periodicidade, type Plano, type TipoFinanceiroContrato } from '../tipos'
 
 interface Props {
   negocios: Negocio[]
@@ -24,6 +24,7 @@ interface Props {
 export function FormularioContrato({ negocios, pessoas, planos, contas, salvando, erro, aoSalvar, aoCancelar }: Props) {
   const negociosAtivos = negocios.filter((n) => n.ativo)
   const [negocioId, setNegocioId] = useState(negociosAtivos.length === 1 ? negociosAtivos[0].id : '')
+  const [tipoFinanceiro, setTipoFinanceiro] = useState<TipoFinanceiroContrato>('receita')
   const [pessoaId, setPessoaId] = useState('')
   const [planoId, setPlanoId] = useState('')
   const [valor, setValor] = useState('')
@@ -56,7 +57,7 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, salvando
     if (!dataInicio) novos.data = 'Informe a data de início.'
     setErros(novos)
     if (Object.keys(novos).length) return
-    aoSalvar({ negocio_id: negocioId, pessoa_id: pessoaId, plano_id: planoId, valor: Math.round(v * 100) / 100, periodicidade, data_inicio: dataInicio, dia_vencimento: d, observacao: observacao.trim() || null, faturar_desde: dataInicio, conta_id: contaId || null })
+    aoSalvar({ negocio_id: negocioId, pessoa_id: pessoaId, plano_id: planoId, valor: Math.round(v * 100) / 100, periodicidade, data_inicio: dataInicio, dia_vencimento: d, observacao: observacao.trim() || null, faturar_desde: dataInicio, conta_id: contaId || null, tipo_financeiro: tipoFinanceiro })
   }
 
   const erroCampo = (k: string) => erros[k] ? <p className="-mt-3 text-xs text-red-600">{erros[k]}</p> : null
@@ -66,7 +67,13 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, salvando
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
       <Selecao rotulo="Negócio" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...negociosAtivos.map((n) => ({ valor: n.id, rotulo: n.nome }))]} value={negocioId} onChange={(e) => { setNegocioId(e.target.value); setPlanoId(''); setValor('') }} />
       {erroCampo('negocio')}
-      <Selecao rotulo="Pessoa (cliente)" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...pessoas.filter((p) => p.ativo).map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => setPessoaId(e.target.value)} ajuda="Se ainda não for cliente deste negócio, o vínculo é criado automaticamente." />
+      <div role="radiogroup" aria-label="Tipo de contrato" className="grid grid-cols-2 gap-1 rounded-md border border-line p-1">
+        {(Object.keys(ROTULO_TIPO_FINANCEIRO) as TipoFinanceiroContrato[]).map((t) => (
+          <button key={t} type="button" role="radio" aria-checked={tipoFinanceiro === t} onClick={() => setTipoFinanceiro(t)}
+            className={`rounded px-2 py-1.5 text-sm ${tipoFinanceiro === t ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>{ROTULO_TIPO_FINANCEIRO[t]}</button>
+        ))}
+      </div>
+      <Selecao rotulo={`Pessoa (${ROTULO_PESSOA_CONTRATO[tipoFinanceiro]})`} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...pessoas.filter((p) => p.ativo).map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => setPessoaId(e.target.value)} ajuda={`Se ainda não for ${ROTULO_PESSOA_CONTRATO[tipoFinanceiro].toLowerCase()} deste negócio, o vínculo é criado automaticamente.`} />
       {erroCampo('pessoa')}
       <Selecao rotulo="Plano" opcoes={[{ valor: '', rotulo: negocioId ? (planosDoNegocio.length ? 'Selecione…' : 'Este negócio não tem planos ativos') : 'Escolha o negócio primeiro' }, ...planosDoNegocio.map((p) => ({ valor: p.id, rotulo: `${p.nome} · ${formatarMoeda(p.valor_tabela)}` }))]} value={planoId} onChange={(e) => escolherPlano(e.target.value)} disabled={!negocioId || planosDoNegocio.length === 0} />
       {erroCampo('plano')}
@@ -78,7 +85,7 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, salvando
         <Campo rotulo="Início" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} erro={erros.data} />
         <Campo rotulo="Dia de vencimento" type="number" inputMode="numeric" min={1} max={31} value={dia} onChange={(e) => setDia(e.target.value)} erro={erros.dia} />
       </div>
-      <Selecao rotulo="Conta de recebimento" opcoes={[{ valor: '', rotulo: 'Padrão do negócio' }, ...contas.filter((c) => c.ativo).map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={contaId} onChange={(e) => setContaId(e.target.value)} ajuda="Onde as cobranças geradas automaticamente entram. As cobranças começam na data de início." />
+      <Selecao rotulo={tipoFinanceiro === 'despesa' ? 'Conta de pagamento' : 'Conta de recebimento'} opcoes={[{ valor: '', rotulo: 'Padrão do negócio' }, ...contas.filter((c) => c.ativo).map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={contaId} onChange={(e) => setContaId(e.target.value)} ajuda={`Ao salvar, o primeiro lançamento ${tipoFinanceiro === 'despesa' ? 'de despesa (Contas a Pagar)' : 'de receita (Contas a Receber)'} já é gerado sozinho, sem precisar clicar em "Gerar faturamento agora" depois.`} />
       <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
       <div className="flex justify-end gap-2 pt-2">
         <Botao type="button" variante="secundario" onClick={aoCancelar} disabled={salvando}>Voltar</Botao>

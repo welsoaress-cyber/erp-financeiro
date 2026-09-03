@@ -11,7 +11,7 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData } from '../../../core/formatos'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
-import { useConfigsNotificacao, useExecutarNotificacoes, useNotificacoes } from '../api'
+import { useConfigsNotificacao, useDispararEnvio, useExecutarNotificacoes, useNotificacoes } from '../api'
 import { FormularioConfig } from '../components/FormularioConfig'
 import { EnviarTeste } from '../components/EnviarTeste'
 import { ROTULO_PROVEDOR, ROTULO_STATUS, ROTULO_TIPO, type StatusNotificacao, type TipoNotificacao } from '../tipos'
@@ -24,6 +24,7 @@ export function NotificacoesPage() {
   const configs = useConfigsNotificacao()
   const pessoas = usePessoas()
   const executar = useExecutarNotificacoes()
+  const disparar = useDispararEnvio()
   const [negocioSel, setNegocioSel] = useState('')
   const [janela, setJanela] = useState<Janela>(null)
   const [filtroTipo, setFiltroTipo] = useState<TipoNotificacao | ''>('')
@@ -51,6 +52,7 @@ export function NotificacoesPage() {
         acoes={negocio && config ? (
           <>
             <Botao variante="secundario" onClick={() => setJanela('teste')}>Enviar teste</Botao>
+            {config.provedor === 'evolution' && <Botao variante="secundario" onClick={() => disparar.mutate()} carregando={disparar.isPending}>Enviar pendentes agora</Botao>}
             <Botao onClick={() => executar.mutate(undefined)} carregando={executar.isPending} disabled={!config.ativo}>Executar verificação agora</Botao>
           </>
         ) : undefined}
@@ -76,6 +78,8 @@ export function NotificacoesPage() {
             </Alerta>
           )}
           {executar.error && <Alerta tipo="erro">{mensagemDeErro(executar.error)}</Alerta>}
+          {disparar.isSuccess && <Alerta tipo="sucesso">Envio disparado. Em alguns segundos o histórico mostra Enviado ou o motivo do erro.</Alerta>}
+          {disparar.error && <Alerta tipo="erro">{mensagemDeErro(disparar.error)}</Alerta>}
           {!config && <Alerta tipo="info" titulo="Sem configuração">Defina o número, os dias e as mensagens deste negócio. Nada é enviado de verdade nesta etapa.</Alerta>}
           {config && !config.ativo && <Alerta tipo="info">Notificações desativadas para este negócio. O job diário não gera avisos até ativar.</Alerta>}
 

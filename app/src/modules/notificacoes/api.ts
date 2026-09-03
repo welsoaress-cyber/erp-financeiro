@@ -75,3 +75,16 @@ export function useEnviarTeste() {
     onSuccess: invalidar,
   })
 }
+
+/** Dispara a Edge Function de envio agora (assíncrono; o histórico é reconsultado em seguida). */
+export function useDispararEnvio() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('disparar_envio_notificacoes')
+      if (error) throw error
+      return data as number
+    },
+    onSuccess: () => { setTimeout(invalidar, 4000); setTimeout(invalidar, 12000) },
+  })
+}

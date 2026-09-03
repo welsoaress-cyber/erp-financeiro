@@ -141,7 +141,7 @@ export function DashboardPage() {
             <Cartao className="p-0">
               <div className="flex items-center justify-between border-b border-line px-6 py-3">
                 <h2 className="text-sm font-semibold">Últimas movimentações</h2>
-                <Link to="/lancamentos" className="text-xs font-medium text-brand-600 hover:underline">Ver lançamentos</Link>
+                <Link to="/financeiro/lancamentos" className="text-xs font-medium text-brand-600 hover:underline">Ver lançamentos</Link>
               </div>
               {ultimosFiltrados.length === 0 ? (
                 <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhum lançamento efetivado ainda.</p>

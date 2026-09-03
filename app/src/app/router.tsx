@@ -50,6 +50,8 @@ export const router = createBrowserRouter([
         children: [
           ...MODULOS.map((m) => ({ path: m.rota, element: <m.Pagina /> })),
           ...MODULOS.flatMap((m) => (m.subRotas ?? []).map((s) => ({ path: s.rota, element: <s.Pagina /> }))),
+          ...MODULOS.flatMap((m) => (m.submodulos ?? []).map((s) => ({ path: s.rota, element: <s.Pagina /> }))),
+          { path: '/lancamentos', element: <Navigate to="/financeiro/lancamentos" replace /> },
           { path: '*', element: <Navigate to="/" replace /> },
         ],
       },

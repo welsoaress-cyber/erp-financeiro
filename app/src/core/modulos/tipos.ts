@@ -14,4 +14,6 @@ export interface DefinicaoModulo {
   Pagina: ComponentType
   /** Telas secundárias do módulo (fora do menu), ex.: /configuracoes/importar */
   subRotas?: { rota: string; Pagina: ComponentType }[]
+  /** Submódulos no menu (ex.: Financeiro → Lançamentos, Contas a receber, Contas a pagar) */
+  submodulos?: { id: string; titulo: string; rota: string; Pagina: ComponentType }[]
 }

@@ -7,7 +7,7 @@ import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { hojeISO } from '../../../core/formatos'
 import type { Conta } from '../../contas/tipos'
 import { montarArvore, type Categoria } from '../../categorias/tipos'
-import { PERIODICIDADES_RECORRENCIA, TIPOS_LANCAMENTO, rotuloParcela, type DadosLancamento, type Lancamento, type PeriodicidadeRecorrencia, type TipoLancamento } from '../tipos'
+import { TIPOS_LANCAMENTO, rotuloParcela, type DadosLancamento, type Lancamento, type TipoLancamento, type TipoRecorrencia } from '../tipos'
 import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
 import type { Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
@@ -59,9 +59,11 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   }
   const [erros, setErros] = useState<Erros>({})
   const [recorrente, setRecorrente] = useState(lancamento?.recorrente ?? false)
-  const [periodicidade, setPeriodicidade] = useState<PeriodicidadeRecorrencia>(lancamento?.periodicidade ?? 'mensal')
+  const [tipoRec, setTipoRec] = useState<TipoRecorrencia>(lancamento?.tipo_recorrencia ?? (lancamento?.numero_parcelas ? 'parcelada' : 'fixa'))
   const [numeroParcelas, setNumeroParcelas] = useState(lancamento?.numero_parcelas ? String(lancamento.numero_parcelas) : '')
-  const [dataFimRecorrencia, setDataFimRecorrencia] = useState(lancamento?.data_fim_recorrencia ?? '')
+  // periodicidade e término ficam no banco (compatibilidade); a tela trabalha com fixa (mensal, sem fim) e parcelamento (N parcelas)
+  const periodicidade = lancamento?.periodicidade ?? 'mensal'
+  const dataFimRecorrencia = lancamento?.data_fim_recorrencia ?? ''
   const parcelaGerada = lancamento?.recorrente === true && ((lancamento.parcela_atual ?? 1) > 1 || proximaGerada)
   // com parcelas geradas só descrição e observação mudam (regra do banco)
   const travado = lancamento?.recorrente === true && proximaGerada
@@ -81,11 +83,10 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
     if (ehTransferencia && !destinoId) novos.destino = 'Informe a conta de destino.'
     if (ehTransferencia && destinoId && destinoId === contaId) novos.destino = 'Origem e destino devem ser contas diferentes.'
     if (!ehTransferencia && !categoriaId) novos.categoria = 'Informe a categoria.'
-    const nParcelas = numeroParcelas.trim() === '' ? null : Number(numeroParcelas)
-    if (recorrente) {
-      if (nParcelas === null && !dataFimRecorrencia) novos.recorrencia = 'Informe o número de parcelas ou a data de término.'
-      else if (nParcelas !== null && (!Number.isInteger(nParcelas) || nParcelas < 2 || nParcelas > 360)) novos.recorrencia = 'Número de parcelas entre 2 e 360.'
-      else if (dataFimRecorrencia && dataFimRecorrencia < (vencimento || data)) novos.recorrencia = 'A data de término deve ser igual ou posterior ao vencimento.'
+    const nParcelas = recorrente && tipoRec === 'parcelada' ? (numeroParcelas.trim() === '' ? null : Number(numeroParcelas)) : null
+    if (recorrente && tipoRec === 'parcelada') {
+      if (nParcelas === null) novos.recorrencia = 'Informe o número de parcelas.'
+      else if (!Number.isInteger(nParcelas) || nParcelas < 2 || nParcelas > 360) novos.recorrencia = 'Número de parcelas entre 2 e 360.'
     }
     setErros(novos)
     if (Object.keys(novos).length > 0) return null
@@ -106,7 +107,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       recorrente,
       periodicidade: recorrente ? periodicidade : null,
       numero_parcelas: recorrente ? nParcelas : null,
-      data_fim_recorrencia: recorrente ? (dataFimRecorrencia || null) : null,
+      data_fim_recorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
     }
   }
 
@@ -142,11 +143,11 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         ))}
       </div>
 
-      {travado && <Alerta tipo="info" titulo="Parcelas já geradas">Este lançamento recorrente já gerou a próxima parcela: só descrição e observação podem ser alteradas.</Alerta>}
+      {travado && <Alerta tipo="info" titulo="Parcelas já geradas">Este lançamento recorrente já gerou a próxima parcela: só descrição, valor e observação podem ser alterados.</Alerta>}
 
       <Campo rotulo="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} erro={erros.descricao} autoFocus maxLength={140} />
       <div className="grid grid-cols-2 gap-4">
-        <Campo rotulo="Valor (R$)" type="number" inputMode="decimal" step="0.01" min="0.01" value={valor} onChange={(e) => setValor(e.target.value)} erro={erros.valor} disabled={travado} />
+        <Campo rotulo="Valor (R$)" type="number" inputMode="decimal" step="0.01" min="0.01" value={valor} onChange={(e) => setValor(e.target.value)} erro={erros.valor} />
         <Campo rotulo="Data" type="date" value={data} onChange={(e) => setData(e.target.value)} erro={erros.data} disabled={travado} />
       </div>
 
@@ -208,18 +209,32 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
             Lançamento recorrente
             {lancamento && rotuloParcela(lancamento) && <span className="ml-auto text-xs font-normal text-ink-muted">{rotuloParcela(lancamento)}</span>}
           </label>
+          {!recorrente && <p className="mt-1 text-xs text-ink-muted">Avulso: acontece uma vez e não se repete.</p>}
           {recorrente && (
             <>
-              <div className="mt-3 grid grid-cols-3 gap-4">
-                <Selecao rotulo="Periodicidade" opcoes={PERIODICIDADES_RECORRENCIA} value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value as PeriodicidadeRecorrencia)} disabled={parcelaGerada} />
-                <Campo rotulo="Número de parcelas" type="number" inputMode="numeric" min={2} max={360} step={1} placeholder="Indeterminado" value={numeroParcelas} onChange={(e) => setNumeroParcelas(e.target.value)} disabled={parcelaGerada} />
-                <Campo rotulo="Data de término" type="date" value={dataFimRecorrencia} onChange={(e) => setDataFimRecorrencia(e.target.value)} disabled={parcelaGerada} />
+              <div role="radiogroup" aria-label="Tipo de recorrência" className="mt-3 grid gap-2 sm:grid-cols-2">
+                <label className={`flex cursor-pointer items-start gap-2 rounded-md border p-2 text-sm ${tipoRec === 'fixa' ? 'border-brand-600 bg-brand-50' : 'border-line'}`}>
+                  <input type="radio" name="tipo-recorrencia" value="fixa" checked={tipoRec === 'fixa'} onChange={() => setTipoRec('fixa')} disabled={parcelaGerada} className="mt-0.5 accent-brand-600" />
+                  <span><span className="font-medium">{tipo === 'receita' ? 'Receita fixa' : 'Despesa fixa'}</span><span className="block text-xs text-ink-muted">Gera todo mês até cancelar (aluguel, internet, salário).</span></span>
+                </label>
+                <label className={`flex cursor-pointer items-start gap-2 rounded-md border p-2 text-sm ${tipoRec === 'parcelada' ? 'border-brand-600 bg-brand-50' : 'border-line'}`}>
+                  <input type="radio" name="tipo-recorrencia" value="parcelada" checked={tipoRec === 'parcelada'} onChange={() => setTipoRec('parcelada')} disabled={parcelaGerada} className="mt-0.5 accent-brand-600" />
+                  <span><span className="font-medium">Parcelamento</span><span className="block text-xs text-ink-muted">Valor dividido em N parcelas; para na última.</span></span>
+                </label>
               </div>
+              {tipoRec === 'parcelada' && (
+                <div className="mt-3 grid grid-cols-2 gap-4">
+                  <Campo rotulo="Número de parcelas" type="number" inputMode="numeric" min={2} max={360} step={1} placeholder="Ex.: 24" value={numeroParcelas} onChange={(e) => setNumeroParcelas(e.target.value)} disabled={parcelaGerada} />
+                  <Campo rotulo="Início (1ª parcela)" type="date" value={vencimento || data} onChange={(e) => { setVencimento(e.target.value); if (!editando) setData(e.target.value) }} disabled={parcelaGerada} />
+                </div>
+              )}
               {erros.recorrencia && <p className="mt-1 text-xs text-red-600">{erros.recorrencia}</p>}
               <p className="mt-2 text-xs text-ink-muted">
                 {parcelaGerada
-                  ? 'Periodicidade, número de parcelas e término não mudam depois que uma parcela foi gerada.'
-                  : 'Ao efetivar cada parcela, a próxima é criada como prevista com os mesmos dados. Vale o que ocorrer primeiro: número de parcelas ou data de término. Cancelar uma parcela prevista interrompe a recorrência.'}
+                  ? 'O tipo de recorrência e o número de parcelas não mudam depois que uma parcela foi gerada.'
+                  : tipoRec === 'fixa'
+                    ? 'Ao efetivar (pagar/receber), o mês seguinte é criado como previsto com os mesmos dados. Só para quando você cancelar.'
+                    : 'Ao efetivar cada parcela, a próxima é criada como prevista. Após a última parcela, para automaticamente.'}
               </p>
             </>
           )}

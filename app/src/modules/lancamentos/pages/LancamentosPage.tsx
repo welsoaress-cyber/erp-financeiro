@@ -8,7 +8,8 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { SeletorMes } from '../../../core/ui/SeletorMes'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
-import { formatarData, formatarMoeda, mesAtualISO } from '../../../core/formatos'
+import { formatarData, formatarMoeda } from '../../../core/formatos'
+import { usePeriodo } from '../../../core/periodo/usePeriodo'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useContas } from '../../contas/api'
 import { useCategorias } from '../../categorias/api'
@@ -27,7 +28,7 @@ const TOM_STATUS: Record<StatusLancamento, 'ok' | 'alerta' | 'neutro'> = { efeti
 
 export function LancamentosPage() {
   const { organizacao } = useOrganizacao()
-  const [mes, setMes] = useState(mesAtualISO())
+  const { mes, setMes } = usePeriodo()
   const [filtroTipo, setFiltroTipo] = useState<TipoLancamento | ''>('')
   const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | ''>('')
   const [filtroNegocio, setFiltroNegocio] = useState<string>('') // '' = todos, 'pessoal', ou id
@@ -174,17 +175,17 @@ export function LancamentosPage() {
                 <tbody>
                   {lista.map((l) => (
                     <tr key={l.id} onClick={() => setEdicao({ modo: 'editar', lancamento: l })} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
-                      <td className="px-6 py-3 tabular-nums text-ink-muted">{formatarData(l.data_competencia)}</td>
+                      <td className="whitespace-nowrap px-6 py-3 tabular-nums text-ink-muted">{formatarData(l.data_competencia)}</td>
                       <td className="px-6 py-3">
                         <div className="font-medium">
                           {l.descricao}
                           {l.origem === 'faturamento' && <span className="ml-2 align-middle"><Distintivo tom="info">Automático</Distintivo></span>}
-                          {l.recorrente && <span className="ml-2 align-middle" title={`Recorrente · ${ROTULO_PERIODICIDADE[l.periodicidade!]}`}><Distintivo tom="info">{`🔄 ${rotuloParcela(l)}`}</Distintivo></span>}
+                          {l.recorrente && <span className="ml-2 align-middle" title={l.numero_parcelas ? `Parcelamento · ${ROTULO_PERIODICIDADE[l.periodicidade!]}` : `${l.tipo === 'receita' ? 'Receita' : 'Despesa'} fixa · ${ROTULO_PERIODICIDADE[l.periodicidade!]}`}><Distintivo tom="info">{`🔄 ${rotuloParcela(l)}`}</Distintivo></span>}
                         </div>
                         <div className="text-xs text-ink-muted">{descricaoSecundaria(l)}</div>
                       </td>
-                      <td className="px-6 py-3 text-ink-muted">{ROTULO_TIPO[l.tipo]}</td>
-                      <td className={`px-6 py-3 text-right font-medium tabular-nums ${classeValor(l)}`}>
+                      <td className="whitespace-nowrap px-6 py-3 text-ink-muted">{ROTULO_TIPO[l.tipo]}</td>
+                      <td className={`whitespace-nowrap px-6 py-3 text-right font-medium tabular-nums ${classeValor(l)}`}>
                         {l.tipo === 'despesa' ? '− ' : l.tipo === 'receita' ? '+ ' : ''}{formatarMoeda(l.valor)}
                       </td>
                       <td className="px-6 py-3"><Distintivo tom={TOM_STATUS[l.status]}>{ROTULO_STATUS[l.status]}</Distintivo></td>

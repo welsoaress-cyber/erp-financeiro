@@ -148,3 +148,16 @@ export function useExcluirLancamento() {
     onSuccess: invalidar,
   })
 }
+
+/** Baixa parcial: efetiva o valor pago e cria um novo lançamento previsto com o restante. */
+export function useBaixaParcial() {
+  const invalidar = useInvalidarFinanceiro()
+  return useMutation({
+    mutationFn: async ({ id, valor, data_efetivacao }: { id: string; valor: number; data_efetivacao: string }) => {
+      const { data, error } = await supabase.rpc('baixar_parcial', { p_id: id, p_valor: valor, p_data_efetivacao: data_efetivacao })
+      if (error) throw error
+      return data as Lancamento
+    },
+    onSuccess: invalidar,
+  })
+}

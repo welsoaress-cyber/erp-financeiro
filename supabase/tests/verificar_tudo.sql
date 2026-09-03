@@ -1,5 +1,5 @@
 -- Verificação consolidada do esquema em produção (migrations 0001–0023). Somente leitura.
--- Esperado: todas as linhas PASS e "== TOTAL ==" com 18 de 18.
+-- Esperado: todas as linhas PASS e "== TOTAL ==" com 20 de 20.
 with checks as (
   select '0001 fundação: organizacoes, membros, auditoria' item, (select count(*) from pg_tables where schemaname='public' and tablename in ('organizacoes','organizacao_membros','auditoria')) = 3 ok
   union all select '0002 contas + vw_saldo_contas', exists (select 1 from pg_views where viewname='vw_saldo_contas')
@@ -18,6 +18,8 @@ with checks as (
   union all select '0018 provedor evolution (fila só para service_role)', (select count(*) from pg_proc where proname in ('notificacoes_para_envio','registrar_resultado_notificacao')) = 2 and not exists (select 1 from information_schema.routine_privileges where routine_name in ('notificacoes_para_envio','registrar_resultado_notificacao') and grantee in ('anon','authenticated','PUBLIC'))
   union all select '0023 portal do cliente (tabelas, funções, anon restrito)', (select count(*) from pg_tables where schemaname='public' and tablename in ('portal_config','portal_acessos','promocoes','indicacoes','descontos_contrato')) = 5 and (select count(*) from pg_proc where proname like 'portal\_%') >= 12 and (select count(*) from information_schema.routine_privileges where grantee='anon' and routine_name like 'portal\_%') = 2
   union all select '0024 portal servnet (login sem senha, fidelidade, chamados, status da rede)', (select count(*) from pg_tables where schemaname='public' and tablename in ('portal_status_rede','portal_solicitacoes','portal_login_tentativas')) = 3 and (select count(*) from pg_proc where proname in ('fidelidade_cartao','fidelidade_registrar_premio','portal_login_verificar','portal_vincular_servico','portal_fidelidade','portal_solicitar')) = 6 and exists (select 1 from information_schema.columns where table_name='pessoas' and column_name='data_nascimento')
+  union all select '0025 recorrência fixa/parcelada (tipo_recorrencia)', exists (select 1 from information_schema.columns where table_name='lancamentos' and column_name='tipo_recorrencia') and (select count(*) from pg_enum e join pg_type t on t.oid=e.enumtypid where t.typname='tipo_recorrencia') = 2 and exists (select 1 from pg_proc p where p.proname='tg_lancamentos_recorrencia' and pg_get_functiondef(p.oid) like '%tipo_recorrencia%')
+  union all select '0026 baixa parcial', exists (select 1 from pg_proc where proname='baixar_parcial') and not exists (select 1 from information_schema.routine_privileges where routine_name='baixar_parcial' and grantee in ('anon','PUBLIC'))
   union all select 'RLS ligado em todas as tabelas públicas', (select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r')
 )
 select item, ok, case when ok then 'PASS' else 'FALHOU' end as resultado from checks

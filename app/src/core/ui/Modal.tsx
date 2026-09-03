@@ -5,9 +5,12 @@ interface Props {
   aberto: boolean
   aoFechar: () => void
   children: ReactNode
+  /** md = confirmações; lg (padrão) ≈ 830px; xl ≈ 1100px */
+  largura?: 'md' | 'lg' | 'xl'
 }
+const LARGURA = { md: 'max-w-md', lg: 'max-w-[52rem]', xl: 'max-w-[70rem]' }
 
-export function Modal({ titulo, aberto, aoFechar, children }: Props) {
+export function Modal({ titulo, aberto, aoFechar, children, largura = 'lg' }: Props) {
   useEffect(() => {
     if (!aberto) return
     const aoTeclar = (e: KeyboardEvent) => { if (e.key === 'Escape') aoFechar() }
@@ -19,7 +22,7 @@ export function Modal({ titulo, aberto, aoFechar, children }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
       <button type="button" aria-label="Fechar" className="absolute inset-0 bg-black/40" onClick={aoFechar} />
-      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-line bg-white p-6 shadow-xl">
+      <div className={`relative max-h-[92vh] w-full ${LARGURA[largura]} overflow-y-auto rounded-lg border border-line bg-white p-6 shadow-xl`}>
         <h2 id="modal-titulo" className="mb-4 text-lg font-semibold">{titulo}</h2>
         {children}
       </div>

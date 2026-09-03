@@ -82,10 +82,13 @@ do $$ declare v r%rowtype; l1 public.lancamentos; l2 public.lancamentos; x publi
   -- descrição e observação podem
   x := public.atualizar_lancamento(l1.id, 'Internet fibra', 120, date '2026-09-15', date '2026-09-15', date '2026-09-15', v.itau, null, v.moradia, 'obs', null, null, null, true, 'mensal', 6, null);
   assert x.descricao = 'Internet fibra' and x.observacao = 'obs', 'T4 descrição/observação editáveis';
+  -- valor pode (0025); conta não
+  x := public.atualizar_lancamento(l1.id, 'Internet fibra', 130, date '2026-09-15', date '2026-09-15', date '2026-09-15', v.itau, null, v.moradia, 'obs', null, null, null, true, 'mensal', 6, null);
+  assert x.valor = 130, 'T4 valor editável';
   begin
-    perform public.atualizar_lancamento(l1.id, 'Internet fibra', 130, date '2026-09-15', date '2026-09-15', date '2026-09-15', v.itau, null, v.moradia, 'obs', null, null, null, true, 'mensal', 6, null);
-    raise exception 'T4 valor deveria ser bloqueado';
-  exception when check_violation then assert sqlerrm like 'Lançamento com parcelas geradas%', 'T4 msg valor: ' || sqlerrm; end;
+    perform public.atualizar_lancamento(l1.id, 'Internet fibra', 130, date '2026-09-15', date '2026-09-15', date '2026-09-15', v.poup, null, v.moradia, 'obs', null, null, null, true, 'mensal', 6, null);
+    raise exception 'T4 conta deveria ser bloqueada';
+  exception when check_violation then assert sqlerrm like 'Lançamento com parcelas geradas%', 'T4 msg conta: ' || sqlerrm; end;
   begin
     perform public.atualizar_lancamento(l1.id, 'Internet fibra', 120, date '2026-09-15', date '2026-09-15', date '2026-09-15', v.itau, null, v.moradia, 'obs', null, null, null, true, 'mensal', 10, null);
     raise exception 'T4 número de parcelas deveria ser bloqueado';
@@ -108,10 +111,8 @@ do $$ declare v r%rowtype; l1 public.lancamentos; l2 public.lancamentos; n int; 
     perform public.criar_lancamento('despesa', 'X', 10, date '2026-09-01', null, null, v.itau, null, v.moradia, null, null, null, null, true, null, 3, null);
     raise exception 'T5 sem periodicidade deveria falhar';
   exception when check_violation or not_null_violation then null; end;
-  begin
-    perform public.criar_lancamento('despesa', 'X', 10, date '2026-09-01', null, null, v.itau, null, v.moradia, null, null, null, null, true, 'mensal', null, null);
-    raise exception 'T5 sem parcelas nem término deveria falhar';
-  exception when check_violation then null; end;
+  -- (0025) sem parcelas nem término = despesa fixa, válido
+  assert (public.criar_lancamento('despesa', 'X', 10, date '2026-09-01', null, null, v.itau, null, v.moradia, null, null, null, null, true, 'mensal', null, null)).tipo_recorrencia = 'fixa', 'T5 fixa sem término';
   begin
     perform public.criar_lancamento('despesa', 'X', 10, date '2026-09-01', null, null, v.itau, null, v.moradia, null, null, null, null, true, 'mensal', null, date '2026-08-01');
     raise exception 'T5 término antes do vencimento deveria falhar';

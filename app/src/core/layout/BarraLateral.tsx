@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router'
+import { NavLink, useLocation } from 'react-router'
 import type { DefinicaoModulo } from '../modulos/tipos'
 import { Icone } from '../ui/Icone'
 
 export function BarraLateral({ modulos, aoNavegar }: { modulos: DefinicaoModulo[]; aoNavegar?: () => void }) {
+  const { pathname } = useLocation()
   return (
     <nav className="flex h-full flex-col bg-brand-900 text-white">
       <div className="flex h-14 items-center border-b border-white/10 px-5">
@@ -22,10 +23,17 @@ export function BarraLateral({ modulos, aoNavegar }: { modulos: DefinicaoModulo[
               <Icone nome={m.icone} className="size-5 shrink-0" />
               {m.titulo}
             </NavLink>
+            {m.submodulos && pathname.startsWith(m.rota) && (
+              <ul className="mt-0.5 space-y-0.5 pl-9">
+                {m.submodulos.map((s) => (
+                  <li key={s.id}><NavLink to={s.rota} onClick={aoNavegar} className={({ isActive }) => `block rounded-md px-2 py-1.5 text-sm ${isActive ? 'text-white font-medium' : 'text-white/65 hover:text-white'}`}>{s.titulo}</NavLink></li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
-      <div className="border-t border-white/10 px-5 py-3 text-xs text-white/50">Portal · v0.15</div>
+      <div className="border-t border-white/10 px-5 py-3 text-xs text-white/50">Financeiro · v0.17</div>
     </nav>
   )
 }

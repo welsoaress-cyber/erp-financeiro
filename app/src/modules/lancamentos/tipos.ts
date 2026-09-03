@@ -18,10 +18,11 @@ export const PERIODICIDADES_RECORRENCIA = [
 export type PeriodicidadeRecorrencia = (typeof PERIODICIDADES_RECORRENCIA)[number]['valor']
 export const ROTULO_PERIODICIDADE: Record<PeriodicidadeRecorrencia, string> = Object.fromEntries(PERIODICIDADES_RECORRENCIA.map((p) => [p.valor, p.rotulo])) as Record<PeriodicidadeRecorrencia, string>
 
-/** "Parcela 2 de 12" ou "Parcela 2" (indeterminada). */
+export type TipoRecorrencia = 'fixa' | 'parcelada'
+/** Fixa → "Fixo"; parcelada → "Parcela 2 de 12"; avulso → null. */
 export function rotuloParcela(l: Pick<Lancamento, 'recorrente' | 'parcela_atual' | 'numero_parcelas'>): string | null {
   if (!l.recorrente || l.parcela_atual === null) return null
-  return l.numero_parcelas ? `Parcela ${l.parcela_atual} de ${l.numero_parcelas}` : `Parcela ${l.parcela_atual}`
+  return l.numero_parcelas ? `Parcela ${l.parcela_atual} de ${l.numero_parcelas}` : 'Fixo'
 }
 export const ROTULO_STATUS: Record<StatusLancamento, string> = { previsto: 'Previsto', efetivado: 'Efetivado', cancelado: 'Cancelado' }
 export const ROTULO_TIPO: Record<TipoLancamento, string> = { receita: 'Receita', despesa: 'Despesa', transferencia: 'Transferência' }
@@ -45,6 +46,7 @@ export interface Lancamento {
   pessoa_id: string | null
   contrato_id: string | null
   recorrente: boolean
+  tipo_recorrencia: TipoRecorrencia | null
   periodicidade: PeriodicidadeRecorrencia | null
   numero_parcelas: number | null
   parcela_atual: number | null

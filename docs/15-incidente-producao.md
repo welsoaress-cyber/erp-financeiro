@@ -16,3 +16,13 @@ Nada disso funciona com o app publicado, e o `ativar_app` externo falharia na pr
 
 ## Regra reforçada
 Nenhuma outra ferramenta cria, altera ou "ajusta" objetos no banco do ERP. Todo SQL executado em produção vem de um arquivo versionado neste repositório. Se uma migration falhar, o passo é enviar o erro aqui, não contornar.
+
+## Diagnóstico confirmado (03/09/2026, após a 0014)
+- `planos`, `contratos`, `faturamentos` e `faturamento_execucoes` em produção foram criadas fora do repositório: colunas `created_at`/`updated_at`, sem `organizacao_id`, `conta_padrao_id`/`categoria_padrao_id` em contratos, nenhum trigger, nenhuma função de faturamento. Todas vazias.
+- `negocios` sem `categoria_receita_id`; `lancamentos.contrato_id` sem o trigger de herança de contrato. Conclusão: **as migrations 0008, 0009 (e provavelmente 0010) nunca foram aplicadas**; as validações das Etapas 6C e 7 "em produção" aconteceram sobre esse esquema externo.
+- 0011 e 0012 estão aplicadas corretamente (funções presentes, motor com 17 parâmetros).
+
+## Correção final
+- `20260902000015_refundacao_contratos.sql`: aborta se `contratos` já tiver `organizacao_id` ou se houver dados; remove o esquema externo (tabelas, funções, views, tipos, `trigger_auditoria`), descarta `lancamentos.contrato_id` e `negocios.conta_padrao_id`/`categoria_receita_id` (recriadas em seguida) e recria o conteúdo das 0008 e 0009 sem o motor (já na versão da 0012). Reaplicar é inofensivo: aborta sem alterar nada.
+- Runner local ganhou o **cenário C**: 0001–0007 + `tests/simulacao_estado_externo.sql` (réplica do esquema encontrado) + 0011 + 0012, corrigido por 0014 → 0015 → 0013. Resultado: `verificar_tudo` 14 de 14 e todas as suítes OK.
+- Ordem em produção: 0014 (feita) → **0015 → 0013 → 0010 → verificar_tudo**. Depois, em Negócios, definir de novo a conta de recebimento e a categoria de receita padrão de cada negócio (as colunas foram recriadas vazias).

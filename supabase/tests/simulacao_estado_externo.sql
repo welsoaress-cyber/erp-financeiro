@@ -1,0 +1,27 @@
+-- Reproduz o esquema encontrado em produção em 03/09/2026 (criado fora do repositório) sobre as migrations 0001–0007.
+-- Usado só pelo runner local para testar as migrations corretivas 0014/0015. NÃO aplicar em produção.
+create table public.planos (id uuid primary key default gen_random_uuid(), negocio_id uuid references public.negocios(id) on delete cascade, nome text not null, descricao text, valor_tabela numeric(12,2) default 0, periodicidade text default 'mensal', ativo boolean default true, created_at timestamptz default now(), updated_at timestamptz default now(), unique (negocio_id, nome));
+create table public.contratos (id uuid primary key default gen_random_uuid(), negocio_id uuid references public.negocios(id) on delete cascade, pessoa_id uuid references public.pessoas(id), plano_id uuid references public.planos(id), codigo integer, valor_negociado numeric(12,2), periodicidade text, data_inicio date default current_date, data_fim date, dia_vencimento integer default 10, status text default 'ativo', faturamento_automatico boolean default true, faturamento_inicio date, conta_padrao_id uuid, categoria_padrao_id uuid, created_at timestamptz default now(), updated_at timestamptz default now());
+alter table public.lancamentos add column contrato_id uuid references public.contratos(id) on delete set null;
+alter table public.negocios add column conta_padrao_id uuid;
+create table public.faturamentos (id uuid primary key default gen_random_uuid(), contrato_id uuid references public.contratos(id) on delete cascade, competencia date, lancamento_id uuid, created_at timestamptz default now());
+create table public.faturamento_execucoes (id bigserial primary key, executado_em timestamptz default now(), total integer, created_at timestamptz default now());
+create or replace function public.trigger_auditoria() returns trigger language plpgsql as $$ begin return null; end $$;
+create trigger auditoria_faturamentos after insert or update or delete on public.faturamentos for each row execute function public.trigger_auditoria();
+alter table public.planos enable row level security; alter table public.contratos enable row level security; alter table public.faturamentos enable row level security; alter table public.faturamento_execucoes enable row level security;
+create policy planos_all on public.planos for all using (true);
+create policy contratos_all on public.contratos for all using (true);
+create view public.vw_receita_recorrente as select negocio_id, sum(valor_negociado) as mrr from public.contratos group by 1;
+-- resíduos deixados pelo script externo de 03/09 (limpos pela 0014)
+create table public.carteira (id uuid primary key default gen_random_uuid(), negocio_id uuid not null references public.negocios(id) on delete cascade, saldo numeric(15,2) not null default 0, updated_at timestamptz default now(), unique(negocio_id));
+create table public.apps_catalogo (id uuid primary key default gen_random_uuid(), negocio_id uuid not null references public.negocios(id) on delete cascade, nome text not null, custo numeric(15,2) not null, ativo boolean default true, created_at timestamptz default now(), updated_at timestamptz default now());
+create table public.transacoes_carteira (id uuid primary key default gen_random_uuid(), negocio_id uuid not null references public.negocios(id) on delete cascade, tipo text not null, valor numeric(15,2) not null, app_id uuid references public.apps_catalogo(id), contrato_id uuid references public.contratos(id), data date default current_date, observacao text, created_at timestamptz default now());
+alter table public.negocios add column tipo_saldo text default 'dinheiro' check (tipo_saldo in ('dinheiro','credito'));
+alter table public.negocios add column taxa_conversao numeric(10,4) default 0.1000;
+create trigger auditoria_carteira after insert or update or delete on public.carteira for each row execute function public.trigger_auditoria();
+create or replace function atualizar_updated_at_carteira() returns trigger as $$ begin new.updated_at = now(); return new; end; $$ language plpgsql;
+create or replace function public.recarregar_saldo(p_negocio_id uuid, p_valor numeric, p_observacao text default null) returns uuid language plpgsql as $$ begin return null; end $$;
+create or replace function public.ativar_app(p_negocio_id uuid, p_pessoa_id uuid, p_app_id uuid, p_valor_anuidade numeric, p_dia_vencimento int, p_data_inicio date default current_date, p_observacao text default null) returns uuid language plpgsql as $$ begin return null; end $$;
+-- versões de 13 parâmetros criadas pelo script externo para "passar" a 0012 (a 0012 as substitui)
+create function public.criar_lancamento(p_tipo text, p_descricao text, p_valor numeric, p_data_competencia date, p_data_vencimento date, p_data_efetivacao date, p_conta_id uuid, p_conta_destino_id uuid, p_categoria_id uuid, p_observacao text, p_negocio_id uuid default null, p_pessoa_id uuid default null, p_contrato_id uuid default null) returns uuid language plpgsql security definer as $$ begin return null; end $$;
+create function public.atualizar_lancamento(p_id uuid, p_descricao text, p_valor numeric, p_data_competencia date, p_data_vencimento date, p_data_efetivacao date, p_conta_id uuid, p_conta_destino_id uuid, p_categoria_id uuid, p_observacao text, p_negocio_id uuid default null, p_pessoa_id uuid default null, p_contrato_id uuid default null) returns void language plpgsql security definer as $$ begin null; end $$;

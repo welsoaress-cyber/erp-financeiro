@@ -1,0 +1,6 @@
+﻿Nome do Cliente;CPF/CNPJ;Telefone;E-mail;Plano;Valor Mensal;Dia de Vencimento;Data de Início de Cobrança;Data do Cancelamento
+João da Silva;123.456.789-09;(11) 98888-7777;joao@exemplo.com;Velocidade_0100_MB;R$ 60,00;10;15/01/2024;
+"Comércio Ltda; Filial";11.222.333/0001-81;1133334444;financeiro@comercio.com;Velocidade_0300_MB;100,00;5;01/02/2022;31/12/2023
+Maria Souza;529.982.247-25;11999990000;;Velocidade_0200_MB;80;10;01/05/2023;
+Sem Documento;;11999999999;;Velocidade_0100_MB;60;10;01/01/2024;
+CPF Errado;123.456.789-00;11999999999;;Velocidade_0100_MB;60;32;01/01/2024;

@@ -1,6 +1,6 @@
 # Etapa 7 — Faturamento recorrente automático
 
-Status: **implementada e testada localmente (02/09/2026); aguardando aplicação das migrations em produção e validação do proprietário.**
+Status: **validada em produção pelo proprietário (03/09/2026).**
 
 ## 1. Como funciona
 ```

@@ -54,7 +54,7 @@ export function useReceitaRecorrente() {
   })
 }
 
-function useInvalidarContratos() {
+export function useInvalidarContratos() {
   const { organizacao } = useOrganizacao()
   const qc = useQueryClient()
   return () => {

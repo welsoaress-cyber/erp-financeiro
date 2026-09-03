@@ -12,4 +12,6 @@ export interface DefinicaoModulo {
   rota: string
   icone: NomeIcone
   Pagina: ComponentType
+  /** Telas secundárias do módulo (fora do menu), ex.: /configuracoes/importar */
+  subRotas?: { rota: string; Pagina: ComponentType }[]
 }

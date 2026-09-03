@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../../core/auth/useAuth'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
@@ -32,6 +33,11 @@ export function ConfiguracoesPage() {
             <Linha rotulo="Nome" valor={organizacao.nome} />
             <Linha rotulo="Seu papel" valor={organizacao.papel === 'proprietario' ? 'Proprietário' : 'Membro'} />
           </dl>
+        </Cartao>
+        <Cartao className="md:col-span-2">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Importação</h2>
+          <p className="mb-3 text-sm text-ink-muted">Traga clientes, planos e contratos de um sistema anterior a partir de um arquivo CSV. A prévia mostra o que será criado antes de gravar.</p>
+          <Link to="/configuracoes/importar" className="inline-flex h-10 items-center rounded-md bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700">Importar CSV</Link>
         </Cartao>
       </div>
     </>

@@ -69,7 +69,13 @@ Deno.serve(async (req) => {
   for (const it of itens) {
     if (!estados.has(it.instancia)) estados.set(it.instancia, await estadoInstancia(it.instancia))
     const st = estados.get(it.instancia)!
-    if (!st.ok) { pulados++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'pulado', motivo: `instância '${it.instancia}' offline (${st.estado})` }); continue }
+    if (!st.ok) {
+      pulados++
+      const motivo = `Instância '${it.instancia}' desconectada do WhatsApp (${st.estado}). Reconecte na Evolution; o aviso continua pendente.`
+      await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: false, p_erro: motivo, p_resposta: null, p_contar: false })
+      resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'pulado', motivo })
+      continue
+    }
     const r = await enviarTexto(it.instancia, it.numero_destino, it.mensagem)
     await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: r.ok, p_erro: r.erro ?? null, p_resposta: r.resposta ?? null })
     if (r.ok) { enviados++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'enviado' }) }

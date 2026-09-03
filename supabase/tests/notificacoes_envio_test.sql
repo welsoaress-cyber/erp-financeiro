@@ -47,6 +47,9 @@ do $$ declare v r%rowtype; f record; n int; g public.notificacoes_log; begin
     select id into f from public.notificacoes_log where pessoa_id = v.joao;
   end if;
   select * into g from public.notificacoes_log where pessoa_id = v.joao;
+  perform public.registrar_resultado_notificacao(g.id, false, 'Instância desconectada', null, false);
+  select * into g from public.notificacoes_log where id = g.id;
+  assert g.status = 'pendente' and g.tentativas = 0 and g.erro like 'Instância%', 'T2 motivo sem consumir tentativa';
   perform public.registrar_resultado_notificacao(g.id, false, 'HTTP 500: instabilidade', '{"e":1}'::jsonb);
   select * into g from public.notificacoes_log where id = g.id;
   assert g.status = 'pendente' and g.tentativas = 1 and g.erro like 'HTTP 500%', 'T2 falha mantém pendente e conta tentativa';

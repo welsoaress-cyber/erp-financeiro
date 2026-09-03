@@ -17,8 +17,12 @@ begin
      or not exists (select 1 from vault.decrypted_secrets where name = 'notificacoes_cron_secret') then
     raise exception 'Crie os segredos project_url e notificacoes_cron_secret no Vault antes desta migration.';
   end if;
+end $$;
+
+do $$
+begin
   perform cron.unschedule('erp-notificacoes-envio');
-exception when undefined_function or invalid_parameter_value then null;
+exception when others then null;  -- ainda não existia
 end $$;
 
 select cron.schedule(

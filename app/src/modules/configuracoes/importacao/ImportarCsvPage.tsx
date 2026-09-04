@@ -22,12 +22,10 @@ function problemasLocais(l: LinhaImportacao): string[] {
   const p: string[] = []
   if (l.nome.trim().length < 2) p.push('nome')
   const doc = somenteDigitos(l.documento)
-  if (!doc) p.push('CPF/CNPJ vazio')
-  else if (!documentoValido(doc)) p.push('CPF/CNPJ inválido')
+  if (doc && !documentoValido(doc)) p.push('CPF/CNPJ inválido')
   const tel = somenteDigitos(l.telefone)
   if (tel.length < 10 || tel.length > 13) p.push('telefone')
   if (l.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(l.email.toLowerCase())) p.push('e-mail')
-  if (!nomePlanoImportado(l.plano)) p.push('plano')
   const dia = Number(somenteDigitos(l.dia_vencimento))
   if (!dia || dia < 1 || dia > 31) p.push('dia de vencimento')
   if (!/^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4})/.test(l.data_inicio)) p.push('data de início')

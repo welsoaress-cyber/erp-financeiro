@@ -47,11 +47,11 @@ export function lerCsv(texto: string, separador = detectarSeparador(texto)): Tab
 /** Campos que a importação entende. Cada um é mapeado para uma coluna do CSV. */
 export const CAMPOS = [
   { chave: 'nome', rotulo: 'Nome', obrigatorio: true, pistas: ['nome', 'cliente', 'razao'] },
-  { chave: 'documento', rotulo: 'CPF/CNPJ', obrigatorio: true, pistas: ['cpf/cnpj', 'cpf', 'documento', 'doc', 'cnpj'] },
+  { chave: 'documento', rotulo: 'CPF/CNPJ (opcional)', obrigatorio: false, pistas: ['cpf/cnpj', 'cpf', 'documento', 'doc', 'cnpj'] },
   { chave: 'documento2', rotulo: 'CNPJ (se estiver em outra coluna)', obrigatorio: false, pistas: ['cnpj'] },
   { chave: 'telefone', rotulo: 'Telefone', obrigatorio: true, pistas: ['telefone', 'celular', 'fone', 'whatsapp'] },
   { chave: 'email', rotulo: 'E-mail', obrigatorio: false, pistas: ['email', 'e-mail'] },
-  { chave: 'plano', rotulo: 'Plano', obrigatorio: true, pistas: ['plano', 'velocidade', 'servico', 'produto'] },
+  { chave: 'plano', rotulo: 'Plano (vazio = nome do negócio)', obrigatorio: false, pistas: ['plano', 'velocidade', 'servico', 'produto'] },
   { chave: 'valor', rotulo: 'Valor da cobrança', obrigatorio: false, pistas: ['valor', 'mensalidade', 'preco'] },
   { chave: 'periodicidade', rotulo: 'Periodicidade (mensal, bimestral…)', obrigatorio: false, pistas: ['periodicidade', 'ciclo', 'frequencia'] },
   { chave: 'dia_vencimento', rotulo: 'Vencimento (dia ou data)', obrigatorio: true, pistas: ['vencimento', 'dia'] },

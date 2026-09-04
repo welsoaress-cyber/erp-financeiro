@@ -42,12 +42,12 @@ do $$ declare v r%rowtype; rel jsonb; n int; begin
   rel := public.importar_clientes(v.servnet, (select linhas from arq), true, date '2026-09-01');
   assert (rel->>'simulado')::boolean, 'T1 simulado';
   assert (rel->>'total')::int = 8, 'T1 total';
-  assert (rel->>'importadas')::int = 3, 'T1 importadas: ' || (rel->>'importadas');
-  assert (rel->>'rejeitadas')::int = 5, 'T1 rejeitadas: ' || (rel->>'rejeitadas');
-  assert (rel->>'pessoas_novas')::int = 2 and (rel->>'pessoas_existentes')::int = 1, 'T1 pessoas';
+  assert (rel->>'importadas')::int = 4, 'T1 importadas (sem documento agora entra): ' || (rel->>'importadas');
+  assert (rel->>'rejeitadas')::int = 4, 'T1 rejeitadas: ' || (rel->>'rejeitadas');
+  assert (rel->>'pessoas_novas')::int = 3 and (rel->>'pessoas_existentes')::int = 1, 'T1 pessoas';
   assert (rel->>'planos_novos')::int = 2, 'T1 planos novos (100 e 300; 200 já existia)';
-  assert (rel->>'contratos_ativos')::int = 2 and (rel->>'contratos_encerrados')::int = 1, 'T1 contratos';
-  assert (select count(*) from jsonb_array_elements(rel->'linhas') l where l->>'status'='rejeitada' and (l->>'linha')::int = 5 and l->>'motivo' = 'CPF/CNPJ obrigatório.') = 1, 'T1 motivo doc obrigatório';
+  assert (rel->>'contratos_ativos')::int = 3 and (rel->>'contratos_encerrados')::int = 1, 'T1 contratos';
+  assert (select l->>'status' from jsonb_array_elements(rel->'linhas') l where (l->>'linha')::int = 5) = 'importada', 'T1 sem documento importa (0036)';
   assert (select count(*) from jsonb_array_elements(rel->'linhas') l where (l->>'linha')::int = 6 and l->>'motivo' = 'CPF/CNPJ inválido.') = 1, 'T1 motivo doc inválido';
   assert (select count(*) from jsonb_array_elements(rel->'linhas') l where (l->>'linha')::int = 7 and l->>'motivo' like 'Dia de vencimento%') = 1, 'T1 motivo dia';
   assert (select count(*) from jsonb_array_elements(rel->'linhas') l where (l->>'linha')::int = 8 and l->>'motivo' like 'Linha repetida%') = 1, 'T1 repetida no arquivo';
@@ -64,8 +64,8 @@ end $$;
 do $$ declare v r%rowtype; rel jsonb; c public.contratos%rowtype; n int; begin
   select * into v from r;
   rel := public.importar_clientes(v.servnet, (select linhas from arq), false, date '2026-09-01');
-  assert not (rel->>'simulado')::boolean and (rel->>'importadas')::int = 3 and (rel->>'rejeitadas')::int = 5, 'T2 totais';
-  select count(*) into n from public.contratos where negocio_id = v.servnet; assert n = 3, 'T2 3 contratos';
+  assert not (rel->>'simulado')::boolean and (rel->>'importadas')::int = 4 and (rel->>'rejeitadas')::int = 4, 'T2 totais';
+  select count(*) into n from public.contratos where negocio_id = v.servnet; assert n = 4, 'T2 4 contratos';
   select count(*) into n from public.pessoas where documento in ('12345678909','11222333000181','52998224725'); assert n = 3, 'T2 pessoas sem duplicar';
   assert (select nome from public.pessoas where documento = '52998224725') = 'Maria Antiga', 'T2 pessoa existente não é sobrescrita';
   assert (select tipo from public.pessoas where documento = '11222333000181') = 'juridica', 'T2 CNPJ vira jurídica';
@@ -76,11 +76,11 @@ do $$ declare v r%rowtype; rel jsonb; c public.contratos%rowtype; n int; begin
   select * into c from public.contratos c2 join public.pessoas p on p.id = c2.pessoa_id where p.documento = '12345678909';
   assert c.status = 'ativo' and c.faturamento_automatico and c.faturar_desde = date '2026-09-01' and c.data_inicio = date '2024-01-15' and c.dia_vencimento = 10 and c.valor = 60, 'T2 contrato ativo com faturar_desde da importação';
   assert c.codigo between 1 and 3, 'T2 código sequencial';
-  select count(*) into n from public.pessoa_negocio_vinculos where negocio_id = v.servnet and papel = 'cliente' and ativo; assert n = 3, 'T2 vínculos cliente';
+  select count(*) into n from public.pessoa_negocio_vinculos where negocio_id = v.servnet and papel = 'cliente' and ativo; assert n = 4, 'T2 vínculos cliente';
   -- reimportar o mesmo arquivo: nada duplica
   rel := public.importar_clientes(v.servnet, (select linhas from arq), false, null);
-  assert (rel->>'importadas')::int = 0 and (rel->>'ignoradas')::int = 3 and (rel->>'rejeitadas')::int = 5, 'T2 reimportação idempotente: ' || rel::text;
-  select count(*) into n from public.contratos where negocio_id = v.servnet; assert n = 3, 'T2 contratos não duplicados';
+  assert (rel->>'importadas')::int = 0 and (rel->>'ignoradas')::int = 4 and (rel->>'rejeitadas')::int = 4, 'T2 reimportação idempotente: ' || rel::text;
+  select count(*) into n from public.contratos where negocio_id = v.servnet; assert n = 4, 'T2 contratos não duplicados';
 end $$;
 
 -- T3: faturar_desde nulo = início do contrato; segundo contrato da mesma pessoa em outro plano é permitido

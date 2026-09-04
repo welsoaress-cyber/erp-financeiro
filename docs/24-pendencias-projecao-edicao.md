@@ -43,3 +43,6 @@ Regra do proprietário: pagou atrasado, o ciclo recomeça na data paga (venceu 3
 
 ## Adendo (migration 0035): excluir parcela exclui a cadeia prevista
 Com a projeção automática, excluir uma parcela batia na FK `lancamento_origem_id` (restrict). `excluir_lancamento` agora apaga a parcela E todas as seguintes, exigindo que todas sejam previstas (se alguma seguinte estiver paga/cancelada, orienta cancelar). Testes: `excluir_cadeia_test.sql`. `verificar_tudo.sql`: 28 de 28.
+
+## Adendo (migration 0036): importação com CPF/CNPJ e plano opcionais
+Clientes de servidor não têm CPF cadastrado. `importar_clientes` agora: documento opcional (valida só quando presente; pessoa sem documento é reaproveitada pelo nome), plano opcional (vazio = nome do negócio). Telefone segue obrigatório (lembrete no WhatsApp). Tela de importação ajustada (rótulos e validação local). Testes: `importacao_opcional_test.sql` + `importacao_test.sql` atualizado. `verificar_tudo.sql`: 29 de 29.

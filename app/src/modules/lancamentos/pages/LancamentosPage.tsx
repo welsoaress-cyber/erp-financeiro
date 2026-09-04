@@ -86,6 +86,13 @@ export function LancamentosPage() {
     else totais.despesasPend += p.valor
   }
 
+  // Ordem da lista: vencimento crescente; no mesmo dia, receitas antes de despesas (transferências por último)
+  const ordemTipo: Record<TipoLancamento, number> = { receita: 0, despesa: 1, transferencia: 2 }
+  const linhas = [
+    ...lista.map((l) => ({ chave: l.id, venc: l.data_vencimento, tipo: l.tipo, real: l as Lancamento, proj: undefined as ProjecaoContrato | undefined })),
+    ...projetados.map((p) => ({ chave: `proj-${p.contrato_id}-${p.data_competencia}`, venc: p.data_vencimento, tipo: p.tipo as TipoLancamento, real: undefined as Lancamento | undefined, proj: p })),
+  ].sort((a, b) => a.venc.localeCompare(b.venc) || ordemTipo[a.tipo] - ordemTipo[b.tipo])
+
   function fechar() {
     criar.reset(); atualizar.reset(); efetivar.reset(); cancelar.reset(); excluir.reset(); projetar.reset(); atualizarLote.reset()
     setAvisoDuplicidade(null)
@@ -194,7 +201,7 @@ export function LancamentosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {lista.map((l) => (
+                  {linhas.map((linha) => linha.real ? ((l) => (
                     <tr key={l.id} onClick={() => setEdicao({ modo: 'editar', lancamento: l })} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
                       <td className="whitespace-nowrap px-6 py-3 tabular-nums text-ink-muted">{formatarData(l.data_competencia)}</td>
                       <td className="px-6 py-3">
@@ -211,8 +218,7 @@ export function LancamentosPage() {
                       </td>
                       <td className="px-6 py-3"><Distintivo tom={TOM_STATUS[l.status]}>{ROTULO_STATUS[l.status]}</Distintivo></td>
                     </tr>
-                  ))}
-                  {projetados.map((p: ProjecaoContrato) => (
+                  ))(linha.real) : ((p: ProjecaoContrato) => (
                     <tr key={`proj-${p.contrato_id}-${p.data_competencia}`} className="border-b border-line last:border-0" title="Projeção do contrato: o lançamento real é gerado automaticamente quando o mês chegar, com descontos e fidelidade aplicados.">
                       <td className="whitespace-nowrap px-6 py-3 tabular-nums text-ink-muted">{formatarData(p.data_competencia)}</td>
                       <td className="px-6 py-3">
@@ -228,7 +234,7 @@ export function LancamentosPage() {
                       </td>
                       <td className="px-6 py-3"><Distintivo tom="alerta">Previsto</Distintivo></td>
                     </tr>
-                  ))}
+                  ))(linha.proj!))}
                 </tbody>
               </table>
             </div>

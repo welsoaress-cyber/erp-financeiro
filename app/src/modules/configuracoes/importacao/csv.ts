@@ -52,7 +52,8 @@ export const CAMPOS = [
   { chave: 'telefone', rotulo: 'Telefone', obrigatorio: true, pistas: ['telefone', 'celular', 'fone', 'whatsapp'] },
   { chave: 'email', rotulo: 'E-mail', obrigatorio: false, pistas: ['email', 'e-mail'] },
   { chave: 'plano', rotulo: 'Plano', obrigatorio: true, pistas: ['plano', 'velocidade', 'servico', 'produto'] },
-  { chave: 'valor', rotulo: 'Valor mensal', obrigatorio: false, pistas: ['valor', 'mensalidade', 'preco'] },
+  { chave: 'valor', rotulo: 'Valor da cobrança', obrigatorio: false, pistas: ['valor', 'mensalidade', 'preco'] },
+  { chave: 'periodicidade', rotulo: 'Periodicidade (mensal, bimestral…)', obrigatorio: false, pistas: ['periodicidade', 'ciclo', 'frequencia'] },
   { chave: 'dia_vencimento', rotulo: 'Vencimento (dia ou data)', obrigatorio: true, pistas: ['vencimento', 'dia'] },
   { chave: 'data_inicio', rotulo: 'Data de início de cobrança', obrigatorio: true, pistas: ['inicio', 'início', 'cobranca', 'cadastro', 'adesao'] },
   { chave: 'data_fim', rotulo: 'Data do cancelamento', obrigatorio: false, pistas: ['cancelamento', 'cancel', 'fim', 'encerramento'] },
@@ -88,6 +89,7 @@ export interface LinhaImportacao {
   email: string
   plano: string
   valor: string
+  periodicidade: string
   dia_vencimento: string
   data_inicio: string
   data_fim: string
@@ -111,6 +113,7 @@ export function montarLinhas(tabela: Tabela, m: Mapeamento): LinhaImportacao[] {
     email: pega(l, m.email),
     plano: pega(l, m.plano),
     valor: pega(l, m.valor),
+    periodicidade: pega(l, m.periodicidade) || 'mensal',
     dia_vencimento: diaDeVencimento(pega(l, m.dia_vencimento)),
     data_inicio: pega(l, m.data_inicio),
     data_fim: pega(l, m.data_fim),

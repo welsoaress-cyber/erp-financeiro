@@ -26,7 +26,7 @@ function CriarRapido({ rotulo, aoCriar }: { rotulo: string; aoCriar: (nome: stri
   const [criando, setCriando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   if (!aberto) {
-    return <button type="button" className="-mt-3 block text-xs font-medium text-brand-600 hover:underline" onClick={() => setAberto(true)}>+ {rotulo}</button>
+    return <button type="button" className="block text-xs font-medium text-brand-600 hover:underline" onClick={() => setAberto(true)}>+ {rotulo}</button>
   }
   async function confirmar() {
     if (nome.trim().length < 2 || criando) return
@@ -41,7 +41,7 @@ function CriarRapido({ rotulo, aoCriar }: { rotulo: string; aoCriar: (nome: stri
     }
   }
   return (
-    <div className="-mt-2 space-y-1">
+    <div className="space-y-1 rounded-md border border-line bg-surface/60 p-2">
       <div className="flex items-center gap-2">
         <input
           value={nome}

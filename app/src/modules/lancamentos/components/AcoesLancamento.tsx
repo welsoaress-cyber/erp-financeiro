@@ -39,7 +39,7 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
         <div className="flex flex-wrap gap-2">
           {lancamento.status === 'previsto' && <Botao type="button" onClick={() => setModo('efetivar')}>{lancamento.tipo === 'receita' ? 'Marcar como recebido' : 'Marcar como pago'}</Botao>}
           {lancamento.recorrente && aoProjetar && fixa && (
-            <Botao type="button" variante="secundario" onClick={() => aoProjetar(12)} carregando={ocupado}>Gerar próximas ocorrências</Botao>
+            <Botao type="button" variante="secundario" onClick={() => aoProjetar(60)} carregando={ocupado}>Gerar próximas ocorrências</Botao>
           )}
           {lancamento.recorrente && aoProjetar && !fixa && <Botao type="button" variante="secundario" onClick={() => setModo('projetar')}>Projetar meses futuros</Botao>}
           <Botao type="button" variante="secundario" onClick={() => setModo('cancelar')}>Cancelar lançamento</Botao>

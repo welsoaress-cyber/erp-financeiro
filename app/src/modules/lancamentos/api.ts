@@ -90,8 +90,9 @@ function useInvalidarFinanceiro() {
   }
 }
 
-/** Meses projetados automaticamente ao criar uma recorrência (mesmo horizonte do botão "Projetar meses futuros"). */
-const MESES_PROJECAO_AUTOMATICA = 12
+/** Meses projetados automaticamente ao criar uma recorrência: teto máximo aceito por projetar_lancamento (5 anos).
+ *  Para fixa, a cadeia continua se repondo sozinha a cada efetivação (gerar_proxima_parcela), então na prática nunca acaba. */
+const MESES_PROJECAO_AUTOMATICA = 60
 
 export function useCriarLancamento() {
   const invalidar = useInvalidarFinanceiro()

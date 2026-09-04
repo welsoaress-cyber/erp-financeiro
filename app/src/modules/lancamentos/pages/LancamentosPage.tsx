@@ -159,16 +159,8 @@ export function LancamentosPage() {
         <div className="mb-4"><Alerta tipo="info" titulo="Cadastre uma conta antes">Lançamentos precisam de uma conta. Crie sua primeira conta no menu Contas.</Alerta></div>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-3 flex flex-wrap items-center gap-3">
         <SeletorMes mes={mes} aoMudar={setMes} />
-        <input
-          type="search"
-          aria-label="Pesquisar lançamentos"
-          placeholder="Pesquisar…"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          className="h-10 w-48 rounded-md border border-line bg-white px-3 text-sm"
-        />
         <select aria-label="Filtrar por tipo" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value as TipoLancamento | '')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
           <option value="">Todos os tipos</option>
           <option value="receita">Receitas</option>
@@ -182,6 +174,8 @@ export function LancamentosPage() {
           <option value="previsto">Previstos</option>
           <option value="cancelado">Cancelados</option>
         </select>
+      </div>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         {temNegocios && (
           <select aria-label="Filtrar por negócio" value={filtroNegocio} onChange={(e) => setFiltroNegocio(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
             <option value="">Todos os negócios</option>
@@ -189,6 +183,14 @@ export function LancamentosPage() {
             {(negocios.data ?? []).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
           </select>
         )}
+        <input
+          type="search"
+          aria-label="Pesquisar lançamentos"
+          placeholder="Pesquisar por descrição, conta, categoria, negócio ou pessoa…"
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          className="h-10 min-w-48 flex-1 rounded-md border border-line bg-white px-3 text-sm"
+        />
         <span className="ml-auto text-right text-sm text-ink-muted tabular-nums">
           <span className="block">Realizado: <span className="font-medium text-green-700">{formatarMoeda(totais.receitasReal)}</span> · <span className="font-medium text-red-700">{formatarMoeda(totais.despesasReal)}</span></span>
           <span className="block text-xs">Pendente: <span className="font-medium text-green-700">{formatarMoeda(totais.receitasPend)}</span> · <span className="font-medium text-red-700">{formatarMoeda(totais.despesasPend)}</span></span>

@@ -69,12 +69,22 @@ export function LancamentosPage() {
     (!filtroTipo || p.tipo === filtroTipo)
     && (!filtroStatus || filtroStatus === 'ativos' || filtroStatus === 'previsto')
     && (!filtroNegocio || (filtroNegocio === 'pessoal' ? p.negocio_id === null : p.negocio_id === filtroNegocio)))
+  // Somas do mês em dois blocos: realizado (efetivados) e pendente (previstos + projeções de contrato)
   const totais = lista.reduce((t, l) => {
-    if (l.status !== 'efetivado') return t
-    if (l.tipo === 'receita') t.receitas += l.valor
-    if (l.tipo === 'despesa') t.despesas += l.valor
+    if (l.status === 'efetivado') {
+      if (l.tipo === 'receita') t.receitasReal += l.valor
+      if (l.tipo === 'despesa') t.despesasReal += l.valor
+    }
+    if (l.status === 'previsto') {
+      if (l.tipo === 'receita') t.receitasPend += l.valor
+      if (l.tipo === 'despesa') t.despesasPend += l.valor
+    }
     return t
-  }, { receitas: 0, despesas: 0 })
+  }, { receitasReal: 0, despesasReal: 0, receitasPend: 0, despesasPend: 0 })
+  for (const p of projetados) {
+    if (p.tipo === 'receita') totais.receitasPend += p.valor
+    else totais.despesasPend += p.valor
+  }
 
   function fechar() {
     criar.reset(); atualizar.reset(); efetivar.reset(); cancelar.reset(); excluir.reset(); projetar.reset(); atualizarLote.reset()
@@ -155,8 +165,9 @@ export function LancamentosPage() {
             {(negocios.data ?? []).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
           </select>
         )}
-        <span className="ml-auto text-sm text-ink-muted tabular-nums">
-          Receitas <span className="font-medium text-green-700">{formatarMoeda(totais.receitas)}</span> · Despesas <span className="font-medium text-red-700">{formatarMoeda(totais.despesas)}</span>
+        <span className="ml-auto text-right text-sm text-ink-muted tabular-nums">
+          <span className="block">Realizado: <span className="font-medium text-green-700">{formatarMoeda(totais.receitasReal)}</span> · <span className="font-medium text-red-700">{formatarMoeda(totais.despesasReal)}</span></span>
+          <span className="block text-xs">Pendente: <span className="font-medium text-green-700">{formatarMoeda(totais.receitasPend)}</span> · <span className="font-medium text-red-700">{formatarMoeda(totais.despesasPend)}</span></span>
         </span>
       </div>
 

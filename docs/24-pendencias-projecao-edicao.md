@@ -34,3 +34,6 @@ Com a projeção automática (60 meses ao criar), toda recorrência nasce com pa
 - **esta e as futuras**: esta recebe a nova data e as seguintes previstas deslocam mês a mês no novo dia âncora; parcelas pagas não movem, mas a régua avança por cima delas.
 - **todas**: data recusada (reescrever data de parcela paga não faz sentido).
 O trigger `tg_lancamentos_recorrencia` continua bloqueando data fora do motor; a flag de sessão `erp.editar_data` (ligada só dentro da função) libera exclusivamente as duas datas. Testes: `recorrencia_data_test.sql`. `verificar_tudo.sql`: 25 de 25.
+
+## Adendo (migration 0033): periodicidades bimestral/trimestral/semestral
+Enum `periodicidade` de planos/contratos ganhou `bimestral`, `trimestral` e `semestral`. `competencias_pendentes` avança no passo certo (a projeção de contratos herda de graça), `importar_clientes` aceita a coluna opcional `periodicidade` por linha (default mensal, valida o conjunto) e a UI de planos/contratos lista as novas opções. Testes: `periodicidades_test.sql`. `verificar_tudo.sql`: 26 de 26.

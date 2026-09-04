@@ -1,10 +1,13 @@
 export const PERIODICIDADES = [
   { valor: 'mensal', rotulo: 'Mensal' },
+  { valor: 'bimestral', rotulo: 'Bimestral' },
+  { valor: 'trimestral', rotulo: 'Trimestral' },
+  { valor: 'semestral', rotulo: 'Semestral' },
   { valor: 'anual', rotulo: 'Anual' },
   { valor: 'unico', rotulo: 'Pagamento único' },
 ] as const
 export type Periodicidade = (typeof PERIODICIDADES)[number]['valor']
-export const ROTULO_PERIODICIDADE: Record<Periodicidade, string> = { mensal: 'Mensal', anual: 'Anual', unico: 'Único' }
+export const ROTULO_PERIODICIDADE: Record<Periodicidade, string> = { mensal: 'Mensal', bimestral: 'Bimestral', trimestral: 'Trimestral', semestral: 'Semestral', anual: 'Anual', unico: 'Único' }
 
 export type TipoFinanceiroContrato = 'receita' | 'despesa'
 export const ROTULO_TIPO_FINANCEIRO: Record<TipoFinanceiroContrato, string> = { receita: 'Cliente (receita)', despesa: 'Fornecedor (despesa)' }

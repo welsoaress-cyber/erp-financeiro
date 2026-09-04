@@ -14,6 +14,7 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { mesAtualISO } from '../../../core/formatos'
 import { documentoValido, somenteDigitos } from '../../pessoas/tipos'
 import { CAMPOS, decodificar, lerCsv, montarLinhas, nomePlanoImportado, sugerirMapeamento, type ChaveCampo, type LinhaImportacao, type Mapeamento, type Tabela } from './csv'
+import { lerXlsx } from './xlsx'
 import { useImportarClientes, type ItemRelatorio, type RelatorioImportacao } from './api'
 
 /** Validação local (mesmas regras do banco) só para orientar antes da simulação. */
@@ -83,7 +84,9 @@ export function ImportarCsvPage() {
     if (!f) return
     setErro(null); setSimulacao(null); setResultado(null)
     try {
-      const t = lerCsv(decodificar(await f.arrayBuffer()))
+      const buffer = await f.arrayBuffer()
+      const ehExcel = /\.xlsx?$/i.test(f.name)
+      const t = ehExcel ? await lerXlsx(buffer) : lerCsv(decodificar(buffer))
       if (t.cabecalho.length < 2 || t.linhas.length === 0) throw new Error('O arquivo não tem cabeçalho e linhas de dados.')
       setArquivo(f.name); setTabela(t); setMapa(sugerirMapeamento(t.cabecalho))
     } catch (err) {
@@ -111,7 +114,7 @@ export function ImportarCsvPage() {
   return (
     <>
       <CabecalhoPagina
-        titulo="Importar CSV"
+        titulo="Importar clientes"
         descricao="Clientes, planos e contratos do sistema anterior para um negócio. Nada é gravado antes da confirmação."
         acoes={<Link to="/configuracoes" className="text-sm text-brand-700 hover:underline">Voltar às configurações</Link>}
       />
@@ -147,7 +150,7 @@ export function ImportarCsvPage() {
               <div className="grid gap-4 md:grid-cols-3">
                 <Selecao rotulo="Negócio de destino" opcoes={negocios.map((n) => ({ valor: n.id, rotulo: n.nome }))} value={negocioAtual} onChange={(e) => { setNegocioId(e.target.value); setSimulacao(null) }} />
                 <Campo rotulo="Faturar contratos ativos a partir de" type="date" value={faturarDesde} onChange={(e) => { setFaturarDesde(e.target.value); setSimulacao(null) }} />
-                <Campo rotulo="Arquivo CSV" type="file" accept=".csv,text/csv,text/plain" onChange={aoEscolherArquivo} className="py-1.5" />
+                <Campo rotulo="Arquivo CSV ou Excel (.xlsx)" type="file" accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={aoEscolherArquivo} className="py-1.5" />
               </div>
             )}
             <p className="mt-3 text-xs text-ink-muted">

@@ -29,7 +29,9 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   const [dia, setDia] = useState(String(contrato.dia_vencimento))
   const [observacao, setObservacao] = useState(contrato.observacao ?? '')
   const [modo, setModo] = useState<'nenhum' | 'encerrar'>('nenhum')
-  const [dataFim, setDataFim] = useState(hojeISO())
+  // Encerramento nunca pode ser antes do início do contrato (check do banco)
+  const dataFimMinima = contrato.data_inicio > hojeISO() ? contrato.data_inicio : hojeISO()
+  const [dataFim, setDataFim] = useState(dataFimMinima)
 
   function salvar() {
     const v = Number(valor.replace(',', '.')); const d = Number(dia)
@@ -75,10 +77,13 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
             <Botao type="button" onClick={salvar} carregando={atualizar.isPending}>Salvar alterações</Botao>
           </div>
           {modo === 'encerrar' && (
-            <div className="flex items-end gap-2 rounded-md border border-red-200 bg-red-50 p-3">
-              <Campo rotulo="Data de encerramento" type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
-              <Botao type="button" variante="perigo" onClick={() => atualizar.mutate({ id: contrato.id, status: 'encerrado', data_fim: dataFim }, { onSuccess: aoFechar })} carregando={atualizar.isPending}>Confirmar encerramento</Botao>
-              <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
+            <div className="space-y-2 rounded-md border border-red-200 bg-red-50 p-3">
+              {dataFim < contrato.data_inicio && <p className="text-xs text-red-800">A data de encerramento não pode ser anterior ao início do contrato ({formatarData(contrato.data_inicio)}).</p>}
+              <div className="flex items-end gap-2">
+                <Campo rotulo="Data de encerramento" type="date" min={contrato.data_inicio} value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
+                <Botao type="button" variante="perigo" onClick={() => atualizar.mutate({ id: contrato.id, status: 'encerrado', data_fim: dataFim }, { onSuccess: aoFechar })} carregando={atualizar.isPending} disabled={dataFim < contrato.data_inicio}>Confirmar encerramento</Botao>
+                <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
+              </div>
             </div>
           )}
         </>

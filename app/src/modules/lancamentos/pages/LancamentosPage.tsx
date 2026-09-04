@@ -30,7 +30,8 @@ export function LancamentosPage() {
   const { organizacao } = useOrganizacao()
   const { mes, setMes } = usePeriodo()
   const [filtroTipo, setFiltroTipo] = useState<TipoLancamento | ''>('')
-  const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | ''>('')
+  // 'ativos' = previstos + efetivados (padrão): cancelados só quando pedidos explicitamente
+  const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | '' | 'ativos'>('ativos')
   const [filtroNegocio, setFiltroNegocio] = useState<string>('') // '' = todos, 'pessoal', ou id
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [avisoDuplicidade, setAvisoDuplicidade] = useState<string | null>(null)
@@ -61,12 +62,12 @@ export function LancamentosPage() {
 
   const lista = (lancamentos.data ?? []).filter((l) =>
     (!filtroTipo || l.tipo === filtroTipo)
-    && (!filtroStatus || l.status === filtroStatus)
+    && (filtroStatus === 'ativos' ? l.status !== 'cancelado' : (!filtroStatus || l.status === filtroStatus))
     && (!filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio)))
   // Meses futuros de contratos ativos: projeção derivada (nada gravado; o lançamento real nasce no mês certo).
   const projetados = (projecaoContratos.data ?? []).filter((p) =>
     (!filtroTipo || p.tipo === filtroTipo)
-    && (!filtroStatus || filtroStatus === 'previsto')
+    && (!filtroStatus || filtroStatus === 'ativos' || filtroStatus === 'previsto')
     && (!filtroNegocio || (filtroNegocio === 'pessoal' ? p.negocio_id === null : p.negocio_id === filtroNegocio)))
   const totais = lista.reduce((t, l) => {
     if (l.status !== 'efetivado') return t
@@ -140,7 +141,8 @@ export function LancamentosPage() {
           <option value="despesa">Despesas</option>
           <option value="transferencia">Transferências</option>
         </select>
-        <select aria-label="Filtrar por status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value as StatusLancamento | '')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        <select aria-label="Filtrar por status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value as StatusLancamento | '' | 'ativos')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <option value="ativos">Ativos (sem cancelados)</option>
           <option value="">Todos os status</option>
           <option value="efetivado">Efetivados</option>
           <option value="previsto">Previstos</option>

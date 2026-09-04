@@ -37,8 +37,8 @@ do $$ declare v r%rowtype; l1 public.lancamentos; l2 public.lancamentos; l3 publ
      and l2.valor = 1500 and l2.descricao = 'Aluguel' and l2.conta_id = v.itau and l2.categoria_id = v.moradia and l2.numero_parcelas = 3, 'T1 parcela 2 gerada por cópia';
   perform public.efetivar_lancamento(l2.id, date '2026-10-12');
   select * into l3 from public.lancamentos where lancamento_origem_id = l2.id;
-  assert found and l3.parcela_atual = 3 and l3.data_vencimento = date '2026-11-10', 'T1 parcela 3 (vencimento pela parcela, não pela efetivação)';
-  perform public.efetivar_lancamento(l3.id, date '2026-11-10');
+  assert found and l3.parcela_atual = 3 and l3.data_vencimento = date '2026-11-12', 'T1 parcela 3 reancorada pela efetivação atrasada (0034)';
+  perform public.efetivar_lancamento(l3.id, date '2026-11-12');
   select count(*) into n from public.lancamentos where lancamento_origem_id = l3.id; assert n = 0, 'T1 parcela 3 de 3 não gera a 4ª';
   select count(*) into n from public.lancamentos where descricao = 'Aluguel'; assert n = 3, 'T1 total de 3 parcelas';
   -- saldo: só efetivados

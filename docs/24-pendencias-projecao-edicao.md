@@ -37,3 +37,6 @@ O trigger `tg_lancamentos_recorrencia` continua bloqueando data fora do motor; a
 
 ## Adendo (migration 0033): periodicidades bimestral/trimestral/semestral
 Enum `periodicidade` de planos/contratos ganhou `bimestral`, `trimestral` e `semestral`. `competencias_pendentes` avança no passo certo (a projeção de contratos herda de graça), `importar_clientes` aceita a coluna opcional `periodicidade` por linha (default mensal, valida o conjunto) e a UI de planos/contratos lista as novas opções. Testes: `periodicidades_test.sql`. `verificar_tudo.sql`: 26 de 26.
+
+## Adendo (migration 0034): pagamento atrasado reancora os vencimentos
+Regra do proprietário: pagou atrasado, o ciclo recomeça na data paga (venceu 30/08, pagou 04/09 → próximos 04/10, 04/11…). `efetivar_lancamento` agora, quando `data_efetivacao > data_vencimento`: recorrência → `reancorar_recorrencia` desloca as parcelas previstas da cadeia para o dia pago; cobrança de contrato (`origem = 'faturamento'`) → `contratos.dia_vencimento` vira o dia pago (faturamento futuro e projeção seguem sozinhos). Em dia ou adiantado, nada muda. Testes: `reancoragem_test.sql`; `recorrencias_test.sql` T1 ajustado à nova regra. `verificar_tudo.sql`: 27 de 27.

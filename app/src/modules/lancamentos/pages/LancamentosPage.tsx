@@ -18,7 +18,7 @@ import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { buscarPossiveisDuplicados, useAtualizarLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProximaParcela } from '../api'
+import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjetarLancamento, useProximaParcela } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
 import { ROTULO_PERIODICIDADE, ROTULO_STATUS, ROTULO_TIPO, rotuloParcela, type DadosLancamento, type Lancamento, type StatusLancamento, type TipoLancamento } from '../tipos'
@@ -46,6 +46,8 @@ export function LancamentosPage() {
   const efetivar = useEfetivarLancamento()
   const cancelar = useCancelarLancamento()
   const excluir = useExcluirLancamento()
+  const projetar = useProjetarLancamento()
+  const atualizarLote = useAtualizarLancamentoRecorrente()
   const emEdicao = edicao?.modo === 'editar' ? edicao.lancamento : null
   const proximaParcela = useProximaParcela(emEdicao?.id ?? null, emEdicao?.recorrente ?? false)
 
@@ -68,7 +70,7 @@ export function LancamentosPage() {
   }, { receitas: 0, despesas: 0 })
 
   function fechar() {
-    criar.reset(); atualizar.reset(); efetivar.reset(); cancelar.reset(); excluir.reset()
+    criar.reset(); atualizar.reset(); efetivar.reset(); cancelar.reset(); excluir.reset(); projetar.reset(); atualizarLote.reset()
     setAvisoDuplicidade(null)
     setEdicao(null)
   }
@@ -91,9 +93,9 @@ export function LancamentosPage() {
 
   const carregando = lancamentos.isPending || contas.isPending || categorias.isPending
   const erroCarga = lancamentos.error ?? contas.error ?? categorias.error
-  const erroSalvar = criar.error ?? atualizar.error
-  const erroAcao = efetivar.error ?? cancelar.error ?? excluir.error
-  const ocupadoAcao = efetivar.isPending || cancelar.isPending || excluir.isPending
+  const erroSalvar = criar.error ?? atualizar.error ?? atualizarLote.error
+  const erroAcao = efetivar.error ?? cancelar.error ?? excluir.error ?? projetar.error
+  const ocupadoAcao = efetivar.isPending || cancelar.isPending || excluir.isPending || projetar.isPending
 
   function descricaoSecundaria(l: Lancamento) {
     const base = l.tipo === 'transferencia'
@@ -218,11 +220,12 @@ export function LancamentosPage() {
               contratos={contratos.data ?? []}
               negocioInicial={filtroNegocio && filtroNegocio !== 'pessoal' ? filtroNegocio : null}
               tipoInicial={filtroTipo || 'despesa'}
-              salvando={criar.isPending || atualizar.isPending}
+              salvando={criar.isPending || atualizar.isPending || atualizarLote.isPending}
               erro={erroSalvar ? mensagemDeErro(erroSalvar) : null}
               avisoDuplicidade={avisoDuplicidade}
               proximaGerada={Boolean(proximaParcela.data)}
               aoSalvar={salvar}
+              aoSalvarLote={edicao.modo === 'editar' ? (d) => atualizarLote.mutate({ id: edicao.lancamento.id, ...d }, { onSuccess: fechar }) : undefined}
               aoCancelar={fechar}
             />
             {edicao.modo === 'editar' && (
@@ -233,6 +236,7 @@ export function LancamentosPage() {
                 aoEfetivar={(data) => efetivar.mutate({ id: edicao.lancamento.id, data_efetivacao: data }, { onSuccess: fechar })}
                 aoCancelarLancamento={(motivo) => cancelar.mutate({ id: edicao.lancamento.id, motivo }, { onSuccess: fechar })}
                 aoExcluir={() => excluir.mutate(edicao.lancamento.id, { onSuccess: fechar })}
+                aoProjetar={(meses) => projetar.mutate({ id: edicao.lancamento.id, meses }, { onSuccess: fechar })}
               />
             )}
           </div>

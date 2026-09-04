@@ -9,13 +9,36 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { SeletorMes } from '../../../core/ui/SeletorMes'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
-import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
+import { formatarData, formatarMoeda, hojeISO, mesAtualISO } from '../../../core/formatos'
 import { usePeriodo } from '../../../core/periodo/usePeriodo'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
-import { useBaixaParcial, useCancelarLancamento, useEfetivarLancamento, useLancamentos } from '../../lancamentos/api'
+import { useBaixaParcial, useCancelarLancamento, useEfetivarLancamento, useLancamentos, useLancamentosVencidosAntes } from '../../lancamentos/api'
 import { rotuloParcela, type Lancamento } from '../../lancamentos/tipos'
+
+const diasAtraso = (vencimento: string) => Math.max(0, Math.round((Date.parse(hojeISO()) - Date.parse(vencimento)) / 86400000))
+
+/** Previstos vencidos antes do mês corrente: fica visível não importa em qual mês o usuário esteja navegando. */
+function PendenciasAnteriores({ tipo, aoAbrirAcao }: { tipo: 'receita' | 'despesa'; aoAbrirAcao: (l: Lancamento) => void }) {
+  const receber = tipo === 'receita'
+  const vencidos = useLancamentosVencidosAntes(tipo, mesAtualISO())
+  if (!vencidos.data || vencidos.data.length === 0) return null
+  const total = vencidos.data.reduce((s, l) => s + l.valor, 0)
+  return (
+    <Alerta tipo="erro" titulo={`${vencidos.data.length} pendência(s) de meses anteriores · ${formatarMoeda(total)}`}>
+      <ul className="mt-1 divide-y divide-red-200/60">
+        {vencidos.data.slice(0, 8).map((l) => (
+          <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+            <span>{l.descricao} · vencido em {formatarData(l.data_vencimento)} (há {diasAtraso(l.data_vencimento)} dia(s)) · {formatarMoeda(l.valor)}</span>
+            <button type="button" className="font-medium underline" onClick={() => aoAbrirAcao(l)}>{receber ? 'Receber' : 'Pagar'}</button>
+          </li>
+        ))}
+      </ul>
+      {vencidos.data.length > 8 && <p className="mt-1 text-xs">+ {vencidos.data.length - 8} outro(s).</p>}
+    </Alerta>
+  )
+}
 
 type Situacao = 'aberto' | 'vencido' | 'pago'
 const situacaoDe = (l: Lancamento): Situacao => (l.status === 'efetivado' ? 'pago' : l.data_vencimento < hojeISO() ? 'vencido' : 'aberto')
@@ -58,6 +81,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   return (
     <>
       <CabecalhoPagina titulo={receber ? 'Contas a receber' : 'Contas a pagar'} descricao={receber ? 'Faturas e receitas do mês: previsto × realizado' : 'Compromissos com fornecedores: previsto × realizado'} />
+      <div className="mb-4"><PendenciasAnteriores tipo={tipo} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SeletorMes mes={mes} aoMudar={setMes} />
         <select aria-label={receber ? 'Filtrar por cliente' : 'Filtrar por fornecedor'} value={filtroPessoa} onChange={(e) => setFiltroPessoa(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">

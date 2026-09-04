@@ -161,3 +161,51 @@ export function useBaixaParcial() {
     onSuccess: invalidar,
   })
 }
+
+/** Projeta N meses à frente de uma recorrência (fixa ou parcelada), sem exigir que a atual esteja paga. */
+export function useProjetarLancamento() {
+  const invalidar = useInvalidarFinanceiro()
+  return useMutation({
+    mutationFn: async ({ id, meses }: { id: string; meses: number }) => {
+      const { data, error } = await supabase.rpc('projetar_lancamento', { p_id: id, p_meses: meses })
+      if (error) throw error
+      return (data ?? []) as Lancamento[]
+    },
+    onSuccess: invalidar,
+  })
+}
+
+export type EscopoEdicaoRecorrente = 'atual' | 'futuras' | 'todas'
+
+/** Edita descrição/valor/observação em lote: só esta parcela, esta e as futuras, ou a cadeia inteira (inclusive já pagas). */
+export function useAtualizarLancamentoRecorrente() {
+  const invalidar = useInvalidarFinanceiro()
+  return useMutation({
+    mutationFn: async ({ id, descricao, valor, observacao, escopo }: { id: string; descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente }) => {
+      const { data, error } = await supabase.rpc('atualizar_lancamento_recorrente', { p_id: id, p_descricao: descricao, p_valor: valor, p_observacao: observacao, p_escopo: escopo })
+      if (error) throw error
+      return (data ?? []) as Lancamento[]
+    },
+    onSuccess: invalidar,
+  })
+}
+
+/** Lançamentos previstos com vencimento antes de uma data, independente do mês selecionado (pendências de meses anteriores). */
+export function useLancamentosVencidosAntes(tipo: 'receita' | 'despesa', antesDe: string) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chaveLancamentos(organizacao.id), 'vencidos', tipo, antesDe],
+    queryFn: async (): Promise<Lancamento[]> => {
+      const { data, error } = await supabase
+        .from('lancamentos')
+        .select('*')
+        .eq('organizacao_id', organizacao.id)
+        .eq('tipo', tipo)
+        .eq('status', 'previsto')
+        .lt('data_vencimento', antesDe)
+        .order('data_vencimento', { ascending: true })
+      if (error) throw error
+      return data ?? []
+    },
+  })
+}

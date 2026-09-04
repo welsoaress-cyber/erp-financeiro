@@ -1,5 +1,5 @@
 -- Verificação consolidada do esquema em produção (migrations 0001–0023). Somente leitura.
--- Esperado: todas as linhas PASS e "== TOTAL ==" com 22 de 22.
+-- Esperado: todas as linhas PASS e "== TOTAL ==" com 23 de 23.
 with checks as (
   select '0001 fundação: organizacoes, membros, auditoria' item, (select count(*) from pg_tables where schemaname='public' and tablename in ('organizacoes','organizacao_membros','auditoria')) = 3 ok
   union all select '0002 contas + vw_saldo_contas', exists (select 1 from pg_views where viewname='vw_saldo_contas')
@@ -22,6 +22,7 @@ with checks as (
   union all select '0026 baixa parcial', exists (select 1 from pg_proc where proname='baixar_parcial') and not exists (select 1 from information_schema.routine_privileges where routine_name='baixar_parcial' and grantee in ('anon','PUBLIC'))
   union all select '0027 contratos de despesa (fornecedor) + lançamento automático ao criar', exists (select 1 from information_schema.columns where table_name='contratos' and column_name='tipo_financeiro') and exists (select 1 from information_schema.columns where table_name='negocios' and column_name='categoria_despesa_id') and exists (select 1 from pg_trigger where tgname='contratos_c_faturar_ao_criar')
   union all select '0028 saldo_inicial_mes', exists (select 1 from pg_proc where proname='saldo_inicial_mes') and not exists (select 1 from information_schema.routine_privileges where routine_name='saldo_inicial_mes' and grantee in ('anon','PUBLIC'))
+  union all select '0029 projeção de recorrência + edição em lote', (select count(*) from pg_proc where proname in ('projetar_lancamento','atualizar_lancamento_recorrente','gerar_proxima_parcela_projetada')) = 3 and not exists (select 1 from information_schema.routine_privileges where routine_name='gerar_proxima_parcela_projetada' and grantee in ('anon','authenticated','PUBLIC'))
   union all select 'RLS ligado em todas as tabelas públicas', (select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r')
 )
 select item, ok, case when ok then 'PASS' else 'FALHOU' end as resultado from checks

@@ -12,13 +12,15 @@ interface Props {
   aoEfetivar: (data: string) => void
   aoCancelarLancamento: (motivo: string) => void
   aoExcluir: () => void
+  aoProjetar?: (meses: number) => void
 }
 
-/** Ações de estado de um lançamento existente: efetivar, cancelar (com motivo) e excluir (só previsto). */
-export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCancelarLancamento, aoExcluir }: Props) {
-  const [modo, setModo] = useState<'nenhum' | 'efetivar' | 'cancelar' | 'excluir'>('nenhum')
+/** Ações de estado de um lançamento existente: efetivar, cancelar (com motivo), excluir (só previsto) e projetar (recorrentes). */
+export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCancelarLancamento, aoExcluir, aoProjetar }: Props) {
+  const [modo, setModo] = useState<'nenhum' | 'efetivar' | 'cancelar' | 'excluir' | 'projetar'>('nenhum')
   const [dataEf, setDataEf] = useState(hojeISO())
   const [motivo, setMotivo] = useState('')
+  const [meses, setMeses] = useState('6')
 
   if (lancamento.status === 'cancelado') {
     return (
@@ -34,6 +36,7 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
       {modo === 'nenhum' && (
         <div className="flex flex-wrap gap-2">
           {lancamento.status === 'previsto' && <Botao type="button" onClick={() => setModo('efetivar')}>{lancamento.tipo === 'receita' ? 'Marcar como recebido' : 'Marcar como pago'}</Botao>}
+          {lancamento.recorrente && aoProjetar && <Botao type="button" variante="secundario" onClick={() => setModo('projetar')}>Projetar meses futuros</Botao>}
           <Botao type="button" variante="secundario" onClick={() => setModo('cancelar')}>Cancelar lançamento</Botao>
           {lancamento.status === 'previsto' && <Botao type="button" variante="perigo" onClick={() => setModo('excluir')}>Excluir</Botao>}
         </div>
@@ -43,6 +46,16 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
           <Campo rotulo="Data de efetivação" type="date" value={dataEf} onChange={(e) => setDataEf(e.target.value)} />
           <Botao type="button" onClick={() => aoEfetivar(dataEf)} carregando={ocupado}>Confirmar</Botao>
           <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
+        </div>
+      )}
+      {modo === 'projetar' && aoProjetar && (
+        <div className="space-y-2">
+          <p className="text-sm text-ink-muted">Gera as próximas ocorrências já como previstas, sem precisar pagar as anteriores primeiro. Só valores, datas e a conta/categoria de hoje — nada é cobrado até você efetivar cada uma.</p>
+          <div className="flex items-end gap-2">
+            <Campo rotulo="Meses à frente" type="number" inputMode="numeric" min={1} max={60} value={meses} onChange={(e) => setMeses(e.target.value)} />
+            <Botao type="button" onClick={() => aoProjetar(Number(meses))} carregando={ocupado} disabled={!Number.isInteger(Number(meses)) || Number(meses) < 1}>Gerar</Botao>
+            <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
+          </div>
         </div>
       )}
       {modo === 'cancelar' && (

@@ -8,6 +8,7 @@ import { hojeISO } from '../../../core/formatos'
 import type { Conta } from '../../contas/tipos'
 import { montarArvore, type Categoria } from '../../categorias/tipos'
 import { TIPOS_LANCAMENTO, rotuloParcela, type DadosLancamento, type Lancamento, type TipoLancamento, type TipoRecorrencia } from '../tipos'
+import type { EscopoEdicaoRecorrente } from '../api'
 import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
 import type { Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
@@ -28,12 +29,14 @@ interface Props {
   /** edição: já existe a próxima parcela gerada a partir deste lançamento */
   proximaGerada?: boolean
   aoSalvar: (dados: DadosLancamento, ignorarDuplicidade: boolean) => void
+  /** edição de recorrente com parcela já gerada: salva descrição/valor/observação no escopo escolhido */
+  aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente }) => void
   aoCancelar: () => void
 }
 
 interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string; recorrencia?: string }
 
-export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoCancelar }: Props) {
+export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoSalvarLote, aoCancelar }: Props) {
   const editando = Boolean(lancamento)
   const [tipo, setTipo] = useState<TipoLancamento>(lancamento?.tipo ?? tipoInicial)
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '')
@@ -58,6 +61,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
     if (c) { setNegocioId(c.negocio_id); setPessoaId(c.pessoa_id) }
   }
   const [erros, setErros] = useState<Erros>({})
+  const [escopo, setEscopo] = useState<EscopoEdicaoRecorrente>('atual')
   const [recorrente, setRecorrente] = useState(lancamento?.recorrente ?? false)
   const [tipoRec, setTipoRec] = useState<TipoRecorrencia>(lancamento?.tipo_recorrencia ?? (lancamento?.numero_parcelas ? 'parcelada' : 'fixa'))
   const [numeroParcelas, setNumeroParcelas] = useState(lancamento?.numero_parcelas ? String(lancamento.numero_parcelas) : '')
@@ -113,6 +117,16 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
 
   function aoEnviar(e: FormEvent) {
     e.preventDefault()
+    if (travado && aoSalvarLote) {
+      const v = Number(valor.replace(',', '.'))
+      const novos: Erros = {}
+      if (descricao.trim().length === 0) novos.descricao = 'Informe a descrição.'
+      if (valor.trim() === '' || Number.isNaN(v) || v <= 0) novos.valor = 'Informe um valor maior que zero.'
+      setErros(novos)
+      if (Object.keys(novos).length > 0) return
+      aoSalvarLote({ descricao: descricao.trim(), valor: Math.round(v * 100) / 100, observacao: observacao.trim() || null, escopo })
+      return
+    }
     const d = montar()
     if (d) aoSalvar(d, false)
   }
@@ -143,7 +157,18 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         ))}
       </div>
 
-      {travado && <Alerta tipo="info" titulo="Parcelas já geradas">Este lançamento recorrente já gerou a próxima parcela: só descrição, valor e observação podem ser alterados.</Alerta>}
+      {travado && (
+        <Alerta tipo="info" titulo="Parcelas já geradas">
+          Este lançamento recorrente já gerou a próxima parcela: só descrição, valor e observação podem ser alterados.
+          {aoSalvarLote && (
+            <div role="radiogroup" aria-label="Alcance da alteração" className="mt-3 space-y-1.5">
+              <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopo" checked={escopo === 'atual'} onChange={() => setEscopo('atual')} className="mt-0.5 accent-brand-600" /><span><b>Apenas esta parcela</b><span className="block text-xs text-ink-muted">Só esta ocorrência muda.</span></span></label>
+              <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopo" checked={escopo === 'futuras'} onChange={() => setEscopo('futuras')} className="mt-0.5 accent-brand-600" /><span><b>Esta e as futuras</b><span className="block text-xs text-ink-muted">Muda esta e as próximas já geradas; as anteriores (inclusive já pagas) continuam como estavam.</span></span></label>
+              <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopo" checked={escopo === 'todas'} onChange={() => setEscopo('todas')} className="mt-0.5 accent-brand-600" /><span><b>Todas as parcelas, inclusive já pagas</b><span className="block text-xs text-amber-800">Reescreve o histórico inteiro desta recorrência — use com cuidado.</span></span></label>
+            </div>
+          )}
+        </Alerta>
+      )}
 
       <Campo rotulo="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} erro={erros.descricao} autoFocus maxLength={140} />
       <div className="grid grid-cols-2 gap-4">

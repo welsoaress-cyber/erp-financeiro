@@ -7,6 +7,10 @@
 -- a plataforma e não é mais um dado fixo do negócio nem do app do catálogo.
 -- =============================================================================
 
+-- Script idempotente e atômico: seguro rodar de novo mesmo que uma tentativa
+-- anterior tenha parado no meio (ex.: coluna já criada, backfill pendente).
+begin;
+
 -- -----------------------------------------------------------------------------
 -- 0. Views antigas dependem das colunas que vão mudar; recriadas no fim.
 -- -----------------------------------------------------------------------------
@@ -15,26 +19,36 @@ drop view if exists public.vw_contratos_app;
 
 -- -----------------------------------------------------------------------------
 -- 1. Carteira: dois saldos em vez de um só. Backfill a partir do saldo antigo
---    e do modo (dinheiro/crédito) que o negócio operava.
+--    e do modo (dinheiro/crédito) que o negócio operava. O backfill é um
+--    UPDATE na carteira: precisa do motor ligado (trigger de proteção).
 -- -----------------------------------------------------------------------------
 alter table public.carteira
-  add column saldo_dinheiro numeric(15,2),
-  add column saldo_credito  numeric(15,2);
+  add column if not exists saldo_dinheiro numeric(15,2),
+  add column if not exists saldo_credito  numeric(15,2);
 
-update public.carteira w
-   set saldo_dinheiro = case when n.tipo_saldo = 'dinheiro' then w.saldo else 0 end,
-       saldo_credito  = case when n.tipo_saldo = 'credito'  then w.saldo else 0 end
-  from public.negocios n
- where n.id = w.negocio_id;
+do $$ begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'negocios' and column_name = 'tipo_saldo') then
+    perform set_config('erp.motor', 'on', true);
+    update public.carteira w
+       set saldo_dinheiro = coalesce(w.saldo_dinheiro, case when n.tipo_saldo = 'dinheiro' then w.saldo else 0 end),
+           saldo_credito  = coalesce(w.saldo_credito,  case when n.tipo_saldo = 'credito'  then w.saldo else 0 end)
+      from public.negocios n
+     where n.id = w.negocio_id;
+  end if;
+end $$;
+update public.carteira set saldo_dinheiro = 0 where saldo_dinheiro is null;
+update public.carteira set saldo_credito = 0 where saldo_credito is null;
 
 alter table public.carteira
   alter column saldo_dinheiro set not null,
   alter column saldo_dinheiro set default 0,
   alter column saldo_credito set not null,
-  alter column saldo_credito set default 0,
-  add constraint carteira_saldo_dinheiro_check check (saldo_dinheiro >= 0),
-  add constraint carteira_saldo_credito_check check (saldo_credito >= 0),
-  drop column saldo;
+  alter column saldo_credito set default 0;
+alter table public.carteira drop constraint if exists carteira_saldo_dinheiro_check;
+alter table public.carteira add constraint carteira_saldo_dinheiro_check check (saldo_dinheiro >= 0);
+alter table public.carteira drop constraint if exists carteira_saldo_credito_check;
+alter table public.carteira add constraint carteira_saldo_credito_check check (saldo_credito >= 0);
+alter table public.carteira drop column if exists saldo;
 comment on column public.carteira.saldo_dinheiro is 'Saldo em R$ disponível para ativar apps pagando com PIX/dinheiro.';
 comment on column public.carteira.saldo_credito is 'Saldo em créditos da plataforma (sem taxa fixa; cada recarga informa quanto recebeu).';
 
@@ -42,17 +56,29 @@ comment on column public.carteira.saldo_credito is 'Saldo em créditos da plataf
 -- 2. Transações: cada uma informa a forma de pagamento (dinheiro/crédito).
 --    valor_reais deixa de ser obrigatório (consumo em crédito não tem R$
 --    associado — o custo real já foi pago na recarga que trouxe o crédito).
+--    O backfill é um UPDATE: a trigger de proteção bloqueia QUALQUER update,
+--    mesmo com o motor ligado — precisa ser desativada só para este passo.
 -- -----------------------------------------------------------------------------
-alter table public.transacoes_carteira add column forma_pagamento public.tipo_saldo_app;
-update public.transacoes_carteira t
-   set forma_pagamento = coalesce(n.tipo_saldo, 'dinheiro')
-  from public.negocios n
- where n.id = t.negocio_id;
+alter table public.transacoes_carteira add column if not exists forma_pagamento public.tipo_saldo_app;
+do $$ begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'negocios' and column_name = 'tipo_saldo') then
+    alter table public.transacoes_carteira disable trigger transacoes_carteira_protecao;
+    update public.transacoes_carteira t
+       set forma_pagamento = coalesce(t.forma_pagamento, n.tipo_saldo, 'dinheiro')
+      from public.negocios n
+     where n.id = t.negocio_id;
+    alter table public.transacoes_carteira enable trigger transacoes_carteira_protecao;
+  end if;
+end $$;
+update public.transacoes_carteira set forma_pagamento = 'dinheiro' where forma_pagamento is null;
+
 alter table public.transacoes_carteira
   alter column forma_pagamento set not null,
-  alter column valor_reais drop not null,
-  add constraint transacoes_carteira_valor_reais_dinheiro_check check (forma_pagamento <> 'dinheiro' or valor_reais is not null),
-  add constraint transacoes_carteira_valor_reais_recarga_check check (tipo <> 'recarga' or valor_reais is not null);
+  alter column valor_reais drop not null;
+alter table public.transacoes_carteira drop constraint if exists transacoes_carteira_valor_reais_dinheiro_check;
+alter table public.transacoes_carteira add constraint transacoes_carteira_valor_reais_dinheiro_check check (forma_pagamento <> 'dinheiro' or valor_reais is not null);
+alter table public.transacoes_carteira drop constraint if exists transacoes_carteira_valor_reais_recarga_check;
+alter table public.transacoes_carteira add constraint transacoes_carteira_valor_reais_recarga_check check (tipo <> 'recarga' or valor_reais is not null);
 comment on column public.transacoes_carteira.forma_pagamento is 'Saldo debitado/creditado por esta transação: dinheiro ou crédito.';
 comment on column public.transacoes_carteira.valor is 'Valor em unidades da forma de pagamento: R$ se dinheiro, nº de créditos se crédito.';
 comment on column public.transacoes_carteira.valor_reais is 'Contrapartida em R$ (PIX). Sempre presente em recarga e em consumo pago com dinheiro; nulo em consumo pago com crédito.';
@@ -61,18 +87,26 @@ comment on column public.transacoes_carteira.valor_reais is 'Contrapartida em R$
 -- 3. Catálogo de apps: sem custo fixo (172 apps cujo preço varia). Cada
 --    ativação informa o valor pago na hora.
 -- -----------------------------------------------------------------------------
-alter table public.apps_catalogo drop column custo;
+alter table public.apps_catalogo drop column if exists custo;
 
 -- -----------------------------------------------------------------------------
 -- 4. Negócios: troca o modo único (dinheiro OU crédito + taxa) por uma
 --    simples habilitação do módulo — a carteira opera os dois saldos sempre.
 -- -----------------------------------------------------------------------------
-alter table public.negocios add column usa_carteira boolean not null default false;
-update public.negocios set usa_carteira = (tipo_saldo is not null);
+alter table public.negocios add column if not exists usa_carteira boolean;
+do $$ begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'negocios' and column_name = 'tipo_saldo') then
+    update public.negocios set usa_carteira = coalesce(usa_carteira, tipo_saldo is not null);
+  end if;
+end $$;
+update public.negocios set usa_carteira = false where usa_carteira is null;
+alter table public.negocios
+  alter column usa_carteira set not null,
+  alter column usa_carteira set default false;
 alter table public.negocios
   drop constraint if exists negocios_tipo_saldo_taxa_check,
-  drop column tipo_saldo,
-  drop column taxa_conversao;
+  drop column if exists tipo_saldo,
+  drop column if exists taxa_conversao;
 comment on column public.negocios.usa_carteira is 'Habilita o módulo Apps (carteira dinheiro + crédito) para este negócio.';
 
 -- -----------------------------------------------------------------------------
@@ -291,3 +325,5 @@ revoke all on function public.criar_app(uuid, text, numeric),
 grant execute on function public.criar_app(uuid, text, numeric),
   public.recarregar_carteira(uuid, public.tipo_saldo_app, numeric, numeric, uuid, date, text),
   public.ativar_app(uuid, uuid, uuid, public.tipo_saldo_app, numeric, date, numeric, integer, text) to authenticated;
+
+commit;

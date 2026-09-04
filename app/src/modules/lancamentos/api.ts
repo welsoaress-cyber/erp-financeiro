@@ -26,6 +26,22 @@ export function useLancamentos(mes: string) {
   })
 }
 
+/** Existe algum lançamento gerado a partir deste (próxima parcela/ocorrência já projetada)? */
+export function useTemProximaOcorrencia(id: string, habilitado: boolean) {
+  return useQuery({
+    queryKey: ['lancamentos', 'tem-proxima', id],
+    enabled: habilitado,
+    queryFn: async (): Promise<boolean> => {
+      const { count, error } = await supabase
+        .from('lancamentos')
+        .select('id', { count: 'exact', head: true })
+        .eq('lancamento_origem_id', id)
+      if (error) throw error
+      return (count ?? 0) > 0
+    },
+  })
+}
+
 /** Possíveis duplicados: mesma conta, mesmo valor, data ±1 dia, não cancelados. */
 export async function buscarPossiveisDuplicados(organizacaoId: string, d: DadosLancamento, ignorarId?: string): Promise<Lancamento[]> {
   const base = new Date(`${d.data_competencia}T00:00:00Z`)
@@ -90,13 +106,22 @@ function useInvalidarFinanceiro() {
   }
 }
 
+/** Meses projetados automaticamente ao criar uma recorrência: teto máximo aceito por projetar_lancamento (5 anos).
+ *  Para fixa, a cadeia continua se repondo sozinha a cada efetivação (gerar_proxima_parcela), então na prática nunca acaba. */
+const MESES_PROJECAO_AUTOMATICA = 60
+
 export function useCriarLancamento() {
   const invalidar = useInvalidarFinanceiro()
   return useMutation({
     mutationFn: async (d: DadosLancamento) => {
       const { data, error } = await supabase.rpc('criar_lancamento', { p_tipo: d.tipo, ...paramsDe(d) })
       if (error) throw error
-      return data as Lancamento
+      const lancamento = data as Lancamento
+      if (d.recorrente) {
+        const { error: erroProjecao } = await supabase.rpc('projetar_lancamento', { p_id: lancamento.id, p_meses: MESES_PROJECAO_AUTOMATICA })
+        if (erroProjecao) throw erroProjecao
+      }
+      return lancamento
     },
     onSuccess: invalidar,
   })

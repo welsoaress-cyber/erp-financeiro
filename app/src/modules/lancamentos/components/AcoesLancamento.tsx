@@ -3,6 +3,7 @@ import { Alerta } from '../../../core/ui/Alerta'
 import { Botao } from '../../../core/ui/Botao'
 import { Campo } from '../../../core/ui/Campo'
 import { formatarData, hojeISO } from '../../../core/formatos'
+import { useTemProximaOcorrencia } from '../api'
 import type { Lancamento } from '../tipos'
 
 interface Props {
@@ -21,6 +22,8 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
   const [dataEf, setDataEf] = useState(hojeISO())
   const [motivo, setMotivo] = useState('')
   const [meses, setMeses] = useState('6')
+  const fixa = lancamento.tipo_recorrencia === 'fixa'
+  const { data: temProxima } = useTemProximaOcorrencia(lancamento.id, lancamento.status !== 'cancelado' && lancamento.recorrente && fixa)
 
   if (lancamento.status === 'cancelado') {
     return (
@@ -30,13 +33,23 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
     )
   }
 
+  const ultimaProjetada = fixa && temProxima === false
+
   return (
     <div className="space-y-3 border-t border-line pt-4">
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
+      {ultimaProjetada && (
+        <Alerta tipo="info" titulo="Última ocorrência já gerada">
+          Esta despesa/receita fixa tem projeção só até aqui (60 meses). Gere mais 60 meses para a recorrência não parar.
+        </Alerta>
+      )}
       {modo === 'nenhum' && (
         <div className="flex flex-wrap gap-2">
           {lancamento.status === 'previsto' && <Botao type="button" onClick={() => setModo('efetivar')}>{lancamento.tipo === 'receita' ? 'Marcar como recebido' : 'Marcar como pago'}</Botao>}
-          {lancamento.recorrente && aoProjetar && <Botao type="button" variante="secundario" onClick={() => setModo('projetar')}>Projetar meses futuros</Botao>}
+          {lancamento.recorrente && aoProjetar && fixa && (
+            <Botao type="button" variante="secundario" onClick={() => aoProjetar(60)} carregando={ocupado}>Gerar próximas ocorrências</Botao>
+          )}
+          {lancamento.recorrente && aoProjetar && !fixa && <Botao type="button" variante="secundario" onClick={() => setModo('projetar')}>Projetar meses futuros</Botao>}
           <Botao type="button" variante="secundario" onClick={() => setModo('cancelar')}>Cancelar lançamento</Botao>
           {lancamento.status === 'previsto' && <Botao type="button" variante="perigo" onClick={() => setModo('excluir')}>Excluir</Botao>}
         </div>
@@ -48,7 +61,7 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
           <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
         </div>
       )}
-      {modo === 'projetar' && aoProjetar && (
+      {modo === 'projetar' && aoProjetar && !fixa && (
         <div className="space-y-2">
           <p className="text-sm text-ink-muted">Gera as próximas ocorrências já como previstas, sem precisar pagar as anteriores primeiro. Só valores, datas e a conta/categoria de hoje — nada é cobrado até você efetivar cada uma.</p>
           <div className="flex items-end gap-2">

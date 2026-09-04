@@ -7,7 +7,7 @@ Leia `docs/01-arquitetura.md` antes de propor mudanças de estrutura. Cada etapa
 - **Sem segredos no repositório.** Chaves só em `app/.env.local` (ignorado) e nas variáveis de build do Cloudflare. Nunca pedir credenciais pelo chat.
 - **Banco isolado.** Projeto Supabase novo e exclusivo. Os projetos legados `holding-financeiro` e `navalha-app` não são tocados (nem pausados, nem alterados).
 - **Só migrations versionadas alteram o banco.** Nenhuma outra ferramenta (DeepSeek, painel, scripts avulsos) cria objetos. Se uma migration falhar em produção, reportar o erro exato e parar; nunca contornar. Ver `docs/15-incidente-producao.md`.
-- **Uma etapa por vez.** Entregar migration + testes SQL + app + e2e + doc, commitar, enviar e PARAR para validação do proprietário. Não antecipar funcionalidades. MVP simples.
+- **Uma etapa por vez.** Entregar migration + testes SQL + app + e2e + doc, commitar, enviar, mergear na `main` (para o deploy do Cloudflare sair sozinho) e então pedir para o proprietário testar — não deixar em branch/PR parado esperando ação dele. Não antecipar funcionalidades. MVP simples.
 - **Avisar antes** de implementar algo que prejudique a arquitetura (regra 9), com o motivo em uma ou duas frases, e então entregar sob premissas explícitas.
 
 ## Stack e convenções

@@ -33,3 +33,4 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapas 11B/12/13: `docs/18-portal-servnet.md`, `docs/19-dominio-portal.md`, `docs/20-recorrencia-fixa-parcelada.md`, `docs/21-financeiro.md`. Lançamentos vivem em `/financeiro/lancamentos`; mês compartilhado em `core/periodo/usePeriodo.ts`.
 - Etapas 14/15: `docs/22-contratos-fornecedor.md`, `docs/23-resumo-financeiro-dashboard.md`.
 - Etapa 16: `docs/24-pendencias-projecao-edicao.md`.
+- Etapa 17: `docs/25-carteira-dupla-saldo.md`.

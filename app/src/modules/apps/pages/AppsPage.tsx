@@ -19,7 +19,7 @@ import { ConfiguracaoCarteira } from '../components/ConfiguracaoCarteira'
 import { Recarga } from '../components/Recarga'
 import { FormularioApp } from '../components/FormularioApp'
 import { AtivarApp } from '../components/AtivarApp'
-import { ROTULO_SITUACAO, formatarSaldo, type AppCatalogo, type SituacaoContratoApp } from '../tipos'
+import { ROTULO_SITUACAO, formatarValor, type AppCatalogo, type SituacaoContratoApp } from '../tipos'
 
 type Janela = { tipo: 'config' } | { tipo: 'recarga' } | { tipo: 'app'; app?: AppCatalogo } | { tipo: 'ativar' } | null
 const TOM_SITUACAO: Record<SituacaoContratoApp, 'ok' | 'alerta' | 'neutro'> = { ativo: 'ok', vencido: 'alerta', cancelado: 'neutro' }
@@ -73,7 +73,7 @@ export function AppsPage() {
 
       {!resumo && (
         <Alerta tipo="info" titulo="Nenhum negócio opera carteira">
-          No menu <Link to="/negocios" className="underline">Negócios</Link>, edite o negócio (ex.: "Ativação de App") e defina o saldo para ativação como Dinheiro ou Créditos.
+          No menu <Link to="/negocios" className="underline">Negócios</Link>, edite o negócio (ex.: "Ativação de App") e marque "Usa carteira para ativação de apps".
         </Alerta>
       )}
 
@@ -85,17 +85,18 @@ export function AppsPage() {
                 {lista.map((r) => <option key={r.negocio_id} value={r.negocio_id}>{r.negocio}</option>)}
               </select>
             )}
-            <span className="text-sm text-ink-muted">{resumo.negocio} · modo {resumo.tipo_saldo === 'credito' ? `créditos (${resumo.taxa_conversao} por R$ 1,00)` : 'dinheiro'}</span>
+            <span className="text-sm text-ink-muted">{resumo.negocio} · dinheiro e créditos</span>
             <Botao variante="secundario" className="ml-auto" onClick={() => setJanela({ tipo: 'config' })}>{configurada ? 'Configurar carteira' : 'Configurar carteira agora'}</Botao>
           </div>
 
           {!configurada && <Alerta tipo="info" titulo="Carteira não configurada">Defina a conta que guarda o dinheiro da carteira e a categoria da despesa de consumo para começar a recarregar.</Alerta>}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <Indicador rotulo="Saldo disponível" valor={formatarSaldo(resumo.saldo, resumo.tipo_saldo)} />
-            <Indicador rotulo="Total recargas" valor={formatarSaldo(resumo.total_recargas, resumo.tipo_saldo)} />
-            <Indicador rotulo="Total consumido" valor={formatarSaldo(resumo.total_consumos, resumo.tipo_saldo)} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Indicador rotulo="Saldo em dinheiro" valor={formatarValor(resumo.saldo_dinheiro, 'dinheiro')} detalhe={`recarga ${formatarValor(resumo.total_recargas_dinheiro, 'dinheiro')} · consumo ${formatarValor(resumo.total_consumos_dinheiro, 'dinheiro')}`} />
+            <Indicador rotulo="Saldo em créditos" valor={formatarValor(resumo.saldo_credito, 'credito')} detalhe={`recarga ${formatarValor(resumo.total_recargas_credito, 'credito')} · consumo ${formatarValor(resumo.total_consumos_credito, 'credito')}`} />
             <Indicador rotulo="Apps ativos" valor={String(resumo.apps_ativos)} detalhe="contratos ativos" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-1">
             <Indicador rotulo="Receita mensal" valor={formatarMoeda(resumo.anuidades_ativas / 12)} detalhe={`${formatarMoeda(resumo.anuidades_ativas)} em anuidades ativas`} />
           </div>
 
@@ -111,7 +112,7 @@ export function AppsPage() {
                     <li key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                       <button type="button" className="text-left" onClick={() => setJanela({ tipo: 'app', app: a })}>
                         <span className="font-medium">{a.nome}</span>
-                        <span className="text-ink-muted"> · custo {formatarSaldo(a.custo, resumo.tipo_saldo)} · anuidade {formatarMoeda(anuidadePlano.get(a.plano_id) ?? 0)}</span>
+                        <span className="text-ink-muted"> · anuidade {formatarMoeda(anuidadePlano.get(a.plano_id) ?? 0)}</span>
                       </button>
                       <Distintivo tom={a.ativo ? 'ok' : 'neutro'}>{a.ativo ? 'Ativo' : 'Inativo'}</Distintivo>
                     </li>
@@ -131,8 +132,8 @@ export function AppsPage() {
                         <tr key={t.id}>
                           <td className="py-2 pr-3 tabular-nums text-ink-muted">{formatarData(t.data)}</td>
                           <td className="py-2 pr-3"><Distintivo tom={t.tipo === 'recarga' ? 'ok' : 'neutro'}>{t.tipo === 'recarga' ? 'Recarga' : 'Consumo'}</Distintivo></td>
-                          <td className="py-2 pr-3 text-ink-muted">{t.tipo === 'consumo' ? `${nomeApp.get(t.app_id ?? '') ?? 'App'} · ${formatarMoeda(t.valor_reais)}` : `${formatarMoeda(t.valor_reais)} pagos`}{t.observacao ? ` · ${t.observacao}` : ''}</td>
-                          <td className={`py-2 text-right font-medium tabular-nums ${t.tipo === 'recarga' ? 'text-green-700' : 'text-red-700'}`}>{t.tipo === 'recarga' ? '+ ' : '− '}{formatarSaldo(t.valor, resumo.tipo_saldo)}</td>
+                          <td className="py-2 pr-3 text-ink-muted">{t.tipo === 'consumo' ? (nomeApp.get(t.app_id ?? '') ?? 'App') : (t.valor_reais !== null ? `${formatarMoeda(t.valor_reais)} via PIX` : '')}{t.observacao ? ` · ${t.observacao}` : ''}</td>
+                          <td className={`py-2 text-right font-medium tabular-nums ${t.tipo === 'recarga' ? 'text-green-700' : 'text-red-700'}`}>{t.tipo === 'recarga' ? '+ ' : '− '}{formatarValor(t.valor, t.forma_pagamento)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -147,7 +148,7 @@ export function AppsPage() {
             {(contratos.data ?? []).length === 0 ? <p className="px-6 py-8 text-center text-sm text-ink-muted">Nenhuma ativação ainda.</p> : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-6 py-3 font-medium">Contrato</th><th className="px-6 py-3 font-medium">Cliente</th><th className="px-6 py-3 font-medium">App</th><th className="px-6 py-3 text-right font-medium">Anuidade</th><th className="px-6 py-3 font-medium">Próximo vencimento</th><th className="px-6 py-3 font-medium">Situação</th></tr></thead>
+                  <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-6 py-3 font-medium">Contrato</th><th className="px-6 py-3 font-medium">Cliente</th><th className="px-6 py-3 font-medium">App</th><th className="px-6 py-3 text-right font-medium">Anuidade</th><th className="px-6 py-3 font-medium">Pago com</th><th className="px-6 py-3 font-medium">Próximo vencimento</th><th className="px-6 py-3 font-medium">Situação</th></tr></thead>
                   <tbody>
                     {(contratos.data ?? []).map((c) => (
                       <tr key={c.contrato_id} className="border-b border-line last:border-0">
@@ -155,6 +156,7 @@ export function AppsPage() {
                         <td className="px-6 py-3 font-medium">{nomePessoa.get(c.pessoa_id) ?? '—'}</td>
                         <td className="px-6 py-3">{c.app}</td>
                         <td className="px-6 py-3 text-right tabular-nums">{formatarMoeda(c.anuidade)}</td>
+                        <td className="px-6 py-3 text-ink-muted">{c.forma_pagamento && c.valor_pago !== null ? formatarValor(c.valor_pago, c.forma_pagamento) : '—'}</td>
                         <td className="px-6 py-3 tabular-nums text-ink-muted">{c.proximo_vencimento ? formatarData(c.proximo_vencimento) : '—'}</td>
                         <td className="px-6 py-3"><Distintivo tom={TOM_SITUACAO[c.situacao]}>{ROTULO_SITUACAO[c.situacao]}</Distintivo></td>
                       </tr>

@@ -18,7 +18,7 @@ import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjetarLancamento, useProximaParcela } from '../api'
+import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, type ProjecaoContrato } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
 import { ROTULO_PERIODICIDADE, ROTULO_STATUS, ROTULO_TIPO, rotuloParcela, type DadosLancamento, type Lancamento, type StatusLancamento, type TipoLancamento } from '../tipos'
@@ -36,6 +36,7 @@ export function LancamentosPage() {
   const [avisoDuplicidade, setAvisoDuplicidade] = useState<string | null>(null)
 
   const lancamentos = useLancamentos(mes)
+  const projecaoContratos = useProjecaoContratos(mes)
   const contas = useContas()
   const categorias = useCategorias()
   const negocios = useNegocios()
@@ -62,6 +63,11 @@ export function LancamentosPage() {
     (!filtroTipo || l.tipo === filtroTipo)
     && (!filtroStatus || l.status === filtroStatus)
     && (!filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio)))
+  // Meses futuros de contratos ativos: projeção derivada (nada gravado; o lançamento real nasce no mês certo).
+  const projetados = (projecaoContratos.data ?? []).filter((p) =>
+    (!filtroTipo || p.tipo === filtroTipo)
+    && (!filtroStatus || filtroStatus === 'previsto')
+    && (!filtroNegocio || (filtroNegocio === 'pessoal' ? p.negocio_id === null : p.negocio_id === filtroNegocio)))
   const totais = lista.reduce((t, l) => {
     if (l.status !== 'efetivado') return t
     if (l.tipo === 'receita') t.receitas += l.valor
@@ -97,10 +103,10 @@ export function LancamentosPage() {
   const erroAcao = efetivar.error ?? cancelar.error ?? excluir.error ?? projetar.error
   const ocupadoAcao = efetivar.isPending || cancelar.isPending || excluir.isPending || projetar.isPending
 
-  function descricaoSecundaria(l: Lancamento) {
+  function descricaoSecundaria(l: { tipo: TipoLancamento; conta_id: string | null; conta_destino_id?: string | null; categoria_id: string | null; negocio_id: string | null; pessoa_id: string | null; contrato_id: string | null }) {
     const base = l.tipo === 'transferencia'
-      ? `${nomeConta.get(l.conta_id) ?? '—'} → ${nomeConta.get(l.conta_destino_id ?? '') ?? '—'}`
-      : `${nomeCategoria.get(l.categoria_id ?? '') ?? '—'} · ${nomeConta.get(l.conta_id) ?? '—'}`
+      ? `${nomeConta.get(l.conta_id ?? '') ?? '—'} → ${nomeConta.get(l.conta_destino_id ?? '') ?? '—'}`
+      : `${nomeCategoria.get(l.categoria_id ?? '') ?? '—'} · ${nomeConta.get(l.conta_id ?? '') ?? '—'}`
     const comNegocio = l.negocio_id ? `${base} · ${nomeNegocio.get(l.negocio_id) ?? '—'}` : base
     const comPessoa = l.pessoa_id ? `${comNegocio} · ${nomePessoa.get(l.pessoa_id) ?? '—'}` : comNegocio
     const c = l.contrato_id ? contratoPorId.get(l.contrato_id) : undefined
@@ -157,7 +163,7 @@ export function LancamentosPage() {
 
       {lancamentos.isSuccess && contas.isSuccess && categorias.isSuccess && (
         <Cartao className="p-0">
-          {lista.length === 0 ? (
+          {lista.length === 0 && projetados.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
               <p className="text-sm font-medium">Nenhum lançamento neste período</p>
               <p className="text-sm text-ink-muted">Use "Novo lançamento" para registrar uma receita, despesa ou transferência.</p>
@@ -191,6 +197,23 @@ export function LancamentosPage() {
                         {l.tipo === 'despesa' ? '− ' : l.tipo === 'receita' ? '+ ' : ''}{formatarMoeda(l.valor)}
                       </td>
                       <td className="px-6 py-3"><Distintivo tom={TOM_STATUS[l.status]}>{ROTULO_STATUS[l.status]}</Distintivo></td>
+                    </tr>
+                  ))}
+                  {projetados.map((p: ProjecaoContrato) => (
+                    <tr key={`proj-${p.contrato_id}-${p.data_competencia}`} className="border-b border-line last:border-0" title="Projeção do contrato: o lançamento real é gerado automaticamente quando o mês chegar, com descontos e fidelidade aplicados.">
+                      <td className="whitespace-nowrap px-6 py-3 tabular-nums text-ink-muted">{formatarData(p.data_competencia)}</td>
+                      <td className="px-6 py-3">
+                        <div className="font-medium">
+                          {p.descricao}
+                          <span className="ml-2 align-middle"><Distintivo tom="neutro">Contrato · projetado</Distintivo></span>
+                        </div>
+                        <div className="text-xs text-ink-muted">{descricaoSecundaria(p)}</div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-3 text-ink-muted">{ROTULO_TIPO[p.tipo]}</td>
+                      <td className={`whitespace-nowrap px-6 py-3 text-right font-medium tabular-nums ${p.tipo === 'receita' ? 'text-green-700' : 'text-red-700'}`}>
+                        {p.tipo === 'despesa' ? '− ' : '+ '}{formatarMoeda(p.valor)}
+                      </td>
+                      <td className="px-6 py-3"><Distintivo tom="alerta">Previsto</Distintivo></td>
                     </tr>
                   ))}
                 </tbody>

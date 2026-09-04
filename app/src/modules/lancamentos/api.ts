@@ -26,6 +26,35 @@ export function useLancamentos(mes: string) {
   })
 }
 
+/** Projeção derivada dos contratos ativos: competências futuras ainda não faturadas, sempre com o valor atual do contrato. Nada é gravado. */
+export interface ProjecaoContrato {
+  contrato_id: string
+  negocio_id: string | null
+  pessoa_id: string | null
+  conta_id: string | null
+  categoria_id: string | null
+  tipo: 'receita' | 'despesa'
+  descricao: string
+  valor: number
+  data_competencia: string
+  data_vencimento: string
+}
+
+export function useProjecaoContratos(mes: string) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chaveLancamentos(organizacao.id), 'projecao-contratos', mes],
+    queryFn: async (): Promise<ProjecaoContrato[]> => {
+      const { data, error } = await supabase.rpc('projecao_contratos', { p_organizacao: organizacao.id, p_de: mes, p_ate: fimDoMes(mes) })
+      if (error) {
+        if (error.code === 'PGRST202') return [] // migration 0031 ainda não aplicada
+        throw error
+      }
+      return (data ?? []) as ProjecaoContrato[]
+    },
+  })
+}
+
 /** Existe algum lançamento gerado a partir deste (próxima parcela/ocorrência já projetada)? */
 export function useTemProximaOcorrencia(id: string, habilitado: boolean) {
   return useQuery({

@@ -18,12 +18,13 @@ import { useLancamentos } from '../../lancamentos/api'
 import { useResultadoPorNegocio, useSaldoInicial, useUltimosLancamentos } from '../api'
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 
-function Indicador({ rotulo, valor, tom = 'neutro' }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto' }) {
+function Indicador({ rotulo, valor, tom = 'neutro', detalhe }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto'; detalhe?: string }) {
   const cor = tom === 'positivo' ? 'text-green-700' : tom === 'negativo' ? 'text-red-700' : tom === 'auto' ? (valor < 0 ? 'text-red-700' : 'text-green-700') : ''
   return (
     <Cartao className="p-5">
       <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{rotulo}</p>
       <p className={`mt-2 text-2xl font-semibold tabular-nums ${cor}`}>{formatarMoeda(valor)}</p>
+      {detalhe && <p className="mt-1 text-xs tabular-nums text-ink-muted">{detalhe}</p>}
     </Cartao>
   )
 }
@@ -51,6 +52,13 @@ export function DashboardPage() {
   const linhas = (resultado.data ?? []).filter((r) => bate(r.negocio_id))
   const totais = linhas.reduce((t, r) => ({ receitas: t.receitas + r.receitas, despesas: t.despesas + r.despesas, resultado: t.resultado + r.resultado }), { receitas: 0, despesas: 0, resultado: 0 })
   const ultimosFiltrados = (ultimos.data ?? []).filter((l) => bate(l.negocio_id))
+  // Previsto do mês: lançamentos ainda não efetivados (fora cancelados), respeitando o filtro de negócio
+  const previstos = (lancamentosMes.data ?? []).filter((l) => l.status === 'previsto' && bate(l.negocio_id))
+  const prev = previstos.reduce((t, l) => {
+    if (l.tipo === 'receita') t.receitas += l.valor
+    if (l.tipo === 'despesa') t.despesas += l.valor
+    return t
+  }, { receitas: 0, despesas: 0 })
   const temNegocios = (negocios.data ?? []).length > 0
 
   const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending || lancamentosMes.isPending || saldoInicial.isPending
@@ -82,9 +90,9 @@ export function DashboardPage() {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Indicador rotulo="Saldo total" valor={saldoTotal} tom="auto" />
-            <Indicador rotulo="Receitas do mês" valor={totais.receitas} tom="positivo" />
-            <Indicador rotulo="Despesas do mês" valor={totais.despesas} tom="negativo" />
-            <Indicador rotulo="Resultado do mês" valor={totais.resultado} tom="auto" />
+            <Indicador rotulo="Receitas do mês" valor={totais.receitas} tom="positivo" detalhe={`Previsto: ${formatarMoeda(prev.receitas)}`} />
+            <Indicador rotulo="Despesas do mês" valor={totais.despesas} tom="negativo" detalhe={`Previsto: ${formatarMoeda(prev.despesas)}`} />
+            <Indicador rotulo="Resultado do mês" valor={totais.resultado} tom="auto" detalhe={`Projetado (com previstos): ${formatarMoeda(totais.resultado + prev.receitas - prev.despesas)}`} />
           </div>
 
           <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate} />

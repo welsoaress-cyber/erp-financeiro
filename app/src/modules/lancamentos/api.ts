@@ -90,13 +90,21 @@ function useInvalidarFinanceiro() {
   }
 }
 
+/** Meses projetados automaticamente ao criar uma recorrência (mesmo horizonte do botão "Projetar meses futuros"). */
+const MESES_PROJECAO_AUTOMATICA = 12
+
 export function useCriarLancamento() {
   const invalidar = useInvalidarFinanceiro()
   return useMutation({
     mutationFn: async (d: DadosLancamento) => {
       const { data, error } = await supabase.rpc('criar_lancamento', { p_tipo: d.tipo, ...paramsDe(d) })
       if (error) throw error
-      return data as Lancamento
+      const lancamento = data as Lancamento
+      if (d.recorrente) {
+        const { error: erroProjecao } = await supabase.rpc('projetar_lancamento', { p_id: lancamento.id, p_meses: MESES_PROJECAO_AUTOMATICA })
+        if (erroProjecao) throw erroProjecao
+      }
+      return lancamento
     },
     onSuccess: invalidar,
   })

@@ -55,3 +55,26 @@ export function useSaldoInicial(mes: string) {
     },
   })
 }
+
+/** Saúde dos avisos de WhatsApp: config por negócio + resumo do log dos últimos 7 dias. */
+export interface SaudeNotificacoes {
+  configs: { negocio_id: string; ativo: boolean; provedor: string }[]
+  log: { negocio_id: string; status: 'pendente' | 'simulado' | 'enviado' | 'erro'; criado_em: string; data_envio: string | null }[]
+}
+
+export function useSaudeNotificacoes() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: ['dashboard', organizacao.id, 'saude-notificacoes'],
+    queryFn: async (): Promise<SaudeNotificacoes> => {
+      const desde = new Date(Date.now() - 7 * 86_400_000).toISOString()
+      const [cfg, log] = await Promise.all([
+        supabase.from('notificacoes_config').select('negocio_id, ativo, provedor').eq('organizacao_id', organizacao.id),
+        supabase.from('notificacoes_log').select('negocio_id, status, criado_em, data_envio').eq('organizacao_id', organizacao.id).gte('criado_em', desde),
+      ])
+      if (cfg.error) throw cfg.error
+      if (log.error) throw log.error
+      return { configs: (cfg.data ?? []) as SaudeNotificacoes['configs'], log: (log.data ?? []) as SaudeNotificacoes['log'] }
+    },
+  })
+}

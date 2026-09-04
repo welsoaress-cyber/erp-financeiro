@@ -15,8 +15,9 @@ import { ROTULO_TIPO } from '../../lancamentos/tipos'
 import { useNegocios } from '../../negocios/api'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { useLancamentos } from '../../lancamentos/api'
-import { useResultadoPorNegocio, useSaldoInicial, useUltimosLancamentos } from '../api'
+import { useResultadoPorNegocio, useSaldoInicial, useSaudeNotificacoes, useUltimosLancamentos } from '../api'
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
+import { SaudeAvisos } from '../components/SaudeAvisos'
 
 function Indicador({ rotulo, valor, tom = 'neutro', detalhe }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto'; detalhe?: string }) {
   const cor = tom === 'positivo' ? 'text-green-700' : tom === 'negativo' ? 'text-red-700' : tom === 'auto' ? (valor < 0 ? 'text-red-700' : 'text-green-700') : ''
@@ -40,6 +41,7 @@ export function DashboardPage() {
   const ultimos = useUltimosLancamentos()
   const lancamentosMes = useLancamentos(mes)
   const saldoInicial = useSaldoInicial(mes)
+  const saudeNotificacoes = useSaudeNotificacoes()
 
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
@@ -94,6 +96,8 @@ export function DashboardPage() {
             <Indicador rotulo="Despesas do mês" valor={totais.despesas} tom="negativo" detalhe={`Previsto: ${formatarMoeda(prev.despesas)}`} />
             <Indicador rotulo="Resultado do mês" valor={totais.resultado} tom="auto" detalhe={`Projetado (com previstos): ${formatarMoeda(totais.resultado + prev.receitas - prev.despesas)}`} />
           </div>
+
+          <SaudeAvisos negocios={(negocios.data ?? []).filter((n) => bate(n.id))} saude={saudeNotificacoes.data} />
 
           <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate} />
 

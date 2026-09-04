@@ -3,6 +3,7 @@ import { Alerta } from '../../../core/ui/Alerta'
 import { Botao } from '../../../core/ui/Botao'
 import { Campo } from '../../../core/ui/Campo'
 import { formatarData, hojeISO } from '../../../core/formatos'
+import { useTemProximaOcorrencia } from '../api'
 import type { Lancamento } from '../tipos'
 
 interface Props {
@@ -21,6 +22,8 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
   const [dataEf, setDataEf] = useState(hojeISO())
   const [motivo, setMotivo] = useState('')
   const [meses, setMeses] = useState('6')
+  const fixa = lancamento.tipo_recorrencia === 'fixa'
+  const { data: temProxima } = useTemProximaOcorrencia(lancamento.id, lancamento.status !== 'cancelado' && lancamento.recorrente && fixa)
 
   if (lancamento.status === 'cancelado') {
     return (
@@ -30,11 +33,16 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
     )
   }
 
-  const fixa = lancamento.tipo_recorrencia === 'fixa'
+  const ultimaProjetada = fixa && temProxima === false
 
   return (
     <div className="space-y-3 border-t border-line pt-4">
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
+      {ultimaProjetada && (
+        <Alerta tipo="info" titulo="Última ocorrência já gerada">
+          Esta despesa/receita fixa tem projeção só até aqui (60 meses). Gere mais 60 meses para a recorrência não parar.
+        </Alerta>
+      )}
       {modo === 'nenhum' && (
         <div className="flex flex-wrap gap-2">
           {lancamento.status === 'previsto' && <Botao type="button" onClick={() => setModo('efetivar')}>{lancamento.tipo === 'receita' ? 'Marcar como recebido' : 'Marcar como pago'}</Botao>}

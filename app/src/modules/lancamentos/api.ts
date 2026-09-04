@@ -26,6 +26,22 @@ export function useLancamentos(mes: string) {
   })
 }
 
+/** Existe algum lançamento gerado a partir deste (próxima parcela/ocorrência já projetada)? */
+export function useTemProximaOcorrencia(id: string, habilitado: boolean) {
+  return useQuery({
+    queryKey: ['lancamentos', 'tem-proxima', id],
+    enabled: habilitado,
+    queryFn: async (): Promise<boolean> => {
+      const { count, error } = await supabase
+        .from('lancamentos')
+        .select('id', { count: 'exact', head: true })
+        .eq('lancamento_origem_id', id)
+      if (error) throw error
+      return (count ?? 0) > 0
+    },
+  })
+}
+
 /** Possíveis duplicados: mesma conta, mesmo valor, data ±1 dia, não cancelados. */
 export async function buscarPossiveisDuplicados(organizacaoId: string, d: DadosLancamento, ignorarId?: string): Promise<Lancamento[]> {
   const base = new Date(`${d.data_competencia}T00:00:00Z`)

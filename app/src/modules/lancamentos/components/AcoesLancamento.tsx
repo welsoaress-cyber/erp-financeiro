@@ -30,13 +30,18 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
     )
   }
 
+  const fixa = lancamento.tipo_recorrencia === 'fixa'
+
   return (
     <div className="space-y-3 border-t border-line pt-4">
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
       {modo === 'nenhum' && (
         <div className="flex flex-wrap gap-2">
           {lancamento.status === 'previsto' && <Botao type="button" onClick={() => setModo('efetivar')}>{lancamento.tipo === 'receita' ? 'Marcar como recebido' : 'Marcar como pago'}</Botao>}
-          {lancamento.recorrente && aoProjetar && <Botao type="button" variante="secundario" onClick={() => setModo('projetar')}>Projetar meses futuros</Botao>}
+          {lancamento.recorrente && aoProjetar && fixa && (
+            <Botao type="button" variante="secundario" onClick={() => aoProjetar(12)} carregando={ocupado}>Gerar próximas ocorrências</Botao>
+          )}
+          {lancamento.recorrente && aoProjetar && !fixa && <Botao type="button" variante="secundario" onClick={() => setModo('projetar')}>Projetar meses futuros</Botao>}
           <Botao type="button" variante="secundario" onClick={() => setModo('cancelar')}>Cancelar lançamento</Botao>
           {lancamento.status === 'previsto' && <Botao type="button" variante="perigo" onClick={() => setModo('excluir')}>Excluir</Botao>}
         </div>
@@ -48,7 +53,7 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
           <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
         </div>
       )}
-      {modo === 'projetar' && aoProjetar && (
+      {modo === 'projetar' && aoProjetar && !fixa && (
         <div className="space-y-2">
           <p className="text-sm text-ink-muted">Gera as próximas ocorrências já como previstas, sem precisar pagar as anteriores primeiro. Só valores, datas e a conta/categoria de hoje — nada é cobrado até você efetivar cada uma.</p>
           <div className="flex items-end gap-2">

@@ -27,3 +27,10 @@ Só descrição, valor e observação (os únicos campos editáveis numa recorr�
 
 ## Testes
 `supabase/tests/projecao_edicao_test.sql`; e2e `projecao.spec.mjs` (pendência aparece e some, projeção sem pagar, edição em lote "futuras").
+
+## Adendo (migration 0032): data editável na edição em lote
+Com a projeção automática (60 meses ao criar), toda recorrência nasce com parcelas geradas — a regra antiga travava a data na hora. Agora `atualizar_lancamento_recorrente` ganhou `p_data_vencimento` (6º parâmetro, default null):
+- **apenas esta**: muda a data desta parcela (só previsto), preservando o intervalo vencimento−competência.
+- **esta e as futuras**: esta recebe a nova data e as seguintes previstas deslocam mês a mês no novo dia âncora; parcelas pagas não movem, mas a régua avança por cima delas.
+- **todas**: data recusada (reescrever data de parcela paga não faz sentido).
+O trigger `tg_lancamentos_recorrencia` continua bloqueando data fora do motor; a flag de sessão `erp.editar_data` (ligada só dentro da função) libera exclusivamente as duas datas. Testes: `recorrencia_data_test.sql`. `verificar_tudo.sql`: 25 de 25.

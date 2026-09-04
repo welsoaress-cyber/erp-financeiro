@@ -30,7 +30,7 @@ interface Props {
   proximaGerada?: boolean
   aoSalvar: (dados: DadosLancamento, ignorarDuplicidade: boolean) => void
   /** edição de recorrente com parcela já gerada: salva descrição/valor/observação no escopo escolhido */
-  aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente }) => void
+  aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente; data_vencimento?: string | null }) => void
   aoCancelar: () => void
 }
 
@@ -124,7 +124,8 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       if (valor.trim() === '' || Number.isNaN(v) || v <= 0) novos.valor = 'Informe um valor maior que zero.'
       setErros(novos)
       if (Object.keys(novos).length > 0) return
-      aoSalvarLote({ descricao: descricao.trim(), valor: Math.round(v * 100) / 100, observacao: observacao.trim() || null, escopo })
+      const dataMudou = escopo !== 'todas' && lancamento?.status === 'previsto' && data !== lancamento.data_competencia
+      aoSalvarLote({ descricao: descricao.trim(), valor: Math.round(v * 100) / 100, observacao: observacao.trim() || null, escopo, data_vencimento: dataMudou ? data : null })
       return
     }
     const d = montar()
@@ -159,7 +160,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
 
       {travado && (
         <Alerta tipo="info" titulo="Parcelas já geradas">
-          Este lançamento recorrente já gerou a próxima parcela: só descrição, valor e observação podem ser alterados.
+          Este lançamento recorrente já gerou a próxima parcela: descrição, valor, observação e data podem ser alterados (data só em "apenas esta" ou "esta e as futuras" — as futuras deslocam junto para o novo dia).
           {aoSalvarLote && (
             <div role="radiogroup" aria-label="Alcance da alteração" className="mt-3 space-y-1.5">
               <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopo" checked={escopo === 'atual'} onChange={() => setEscopo('atual')} className="mt-0.5 accent-brand-600" /><span><b>Apenas esta parcela</b><span className="block text-xs text-ink-muted">Só esta ocorrência muda.</span></span></label>
@@ -173,7 +174,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       <Campo rotulo="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} erro={erros.descricao} autoFocus maxLength={140} />
       <div className="grid grid-cols-2 gap-4">
         <Campo rotulo="Valor (R$)" type="number" inputMode="decimal" step="0.01" min="0.01" value={valor} onChange={(e) => setValor(e.target.value)} erro={erros.valor} />
-        <Campo rotulo="Data" type="date" value={data} onChange={(e) => setData(e.target.value)} erro={erros.data} disabled={travado} />
+        <Campo rotulo="Data" type="date" value={data} onChange={(e) => setData(e.target.value)} erro={erros.data} disabled={travado && (escopo === 'todas' || lancamento?.status !== 'previsto')} />
       </div>
 
       <Selecao

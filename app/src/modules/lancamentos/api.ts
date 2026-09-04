@@ -231,12 +231,14 @@ export function useProjetarLancamento() {
 
 export type EscopoEdicaoRecorrente = 'atual' | 'futuras' | 'todas'
 
-/** Edita descrição/valor/observação em lote: só esta parcela, esta e as futuras, ou a cadeia inteira (inclusive já pagas). */
+/** Edita descrição/valor/observação (e data, nos escopos atual/futuras) em lote: só esta parcela, esta e as futuras, ou a cadeia inteira. */
 export function useAtualizarLancamentoRecorrente() {
   const invalidar = useInvalidarFinanceiro()
   return useMutation({
-    mutationFn: async ({ id, descricao, valor, observacao, escopo }: { id: string; descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente }) => {
-      const { data, error } = await supabase.rpc('atualizar_lancamento_recorrente', { p_id: id, p_descricao: descricao, p_valor: valor, p_observacao: observacao, p_escopo: escopo })
+    mutationFn: async ({ id, descricao, valor, observacao, escopo, data_vencimento }: { id: string; descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente; data_vencimento?: string | null }) => {
+      // p_data_vencimento só entra quando a data mudou (mantém compatibilidade com a função de 5 parâmetros)
+      const params = { p_id: id, p_descricao: descricao, p_valor: valor, p_observacao: observacao, p_escopo: escopo, ...(data_vencimento ? { p_data_vencimento: data_vencimento } : {}) }
+      const { data, error } = await supabase.rpc('atualizar_lancamento_recorrente', params)
       if (error) throw error
       return (data ?? []) as Lancamento[]
     },

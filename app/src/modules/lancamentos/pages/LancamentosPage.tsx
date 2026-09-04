@@ -33,6 +33,7 @@ export function LancamentosPage() {
   // 'ativos' = previstos + efetivados (padrão): cancelados só quando pedidos explicitamente
   const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | '' | 'ativos'>('ativos')
   const [filtroNegocio, setFiltroNegocio] = useState<string>('') // '' = todos, 'pessoal', ou id
+  const [busca, setBusca] = useState('')
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [avisoDuplicidade, setAvisoDuplicidade] = useState<string | null>(null)
 
@@ -60,15 +61,23 @@ export function LancamentosPage() {
   const contratoPorId = useMemo(() => new Map((contratos.data ?? []).map((c) => [c.id, c])), [contratos.data])
   const temNegocios = (negocios.data ?? []).length > 0
 
+  // Busca livre: descrição + conta, categoria, negócio e pessoa, sem diferenciar acento/maiúscula
+  const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const termo = normalizar(busca.trim())
+  const combina = (x: { descricao: string; conta_id: string | null; categoria_id: string | null; negocio_id: string | null; pessoa_id: string | null }) =>
+    !termo || normalizar([x.descricao, nomeConta.get(x.conta_id ?? ''), nomeCategoria.get(x.categoria_id ?? ''), nomeNegocio.get(x.negocio_id ?? ''), nomePessoa.get(x.pessoa_id ?? '')].filter(Boolean).join(' ')).includes(termo)
+
   const lista = (lancamentos.data ?? []).filter((l) =>
     (!filtroTipo || l.tipo === filtroTipo)
     && (filtroStatus === 'ativos' ? l.status !== 'cancelado' : (!filtroStatus || l.status === filtroStatus))
-    && (!filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio)))
+    && (!filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio))
+    && combina(l))
   // Meses futuros de contratos ativos: projeção derivada (nada gravado; o lançamento real nasce no mês certo).
   const projetados = (projecaoContratos.data ?? []).filter((p) =>
     (!filtroTipo || p.tipo === filtroTipo)
     && (!filtroStatus || filtroStatus === 'ativos' || filtroStatus === 'previsto')
-    && (!filtroNegocio || (filtroNegocio === 'pessoal' ? p.negocio_id === null : p.negocio_id === filtroNegocio)))
+    && (!filtroNegocio || (filtroNegocio === 'pessoal' ? p.negocio_id === null : p.negocio_id === filtroNegocio))
+    && combina(p))
   // Somas do mês em dois blocos: realizado (efetivados) e pendente (previstos + projeções de contrato)
   const totais = lista.reduce((t, l) => {
     if (l.status === 'efetivado') {
@@ -152,6 +161,14 @@ export function LancamentosPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SeletorMes mes={mes} aoMudar={setMes} />
+        <input
+          type="search"
+          aria-label="Pesquisar lançamentos"
+          placeholder="Pesquisar…"
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          className="h-10 w-48 rounded-md border border-line bg-white px-3 text-sm"
+        />
         <select aria-label="Filtrar por tipo" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value as TipoLancamento | '')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
           <option value="">Todos os tipos</option>
           <option value="receita">Receitas</option>

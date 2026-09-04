@@ -40,3 +40,6 @@ Enum `periodicidade` de planos/contratos ganhou `bimestral`, `trimestral` e `sem
 
 ## Adendo (migration 0034): pagamento atrasado reancora os vencimentos
 Regra do proprietário: pagou atrasado, o ciclo recomeça na data paga (venceu 30/08, pagou 04/09 → próximos 04/10, 04/11…). `efetivar_lancamento` agora, quando `data_efetivacao > data_vencimento`: recorrência → `reancorar_recorrencia` desloca as parcelas previstas da cadeia para o dia pago; cobrança de contrato (`origem = 'faturamento'`) → `contratos.dia_vencimento` vira o dia pago (faturamento futuro e projeção seguem sozinhos). Em dia ou adiantado, nada muda. Testes: `reancoragem_test.sql`; `recorrencias_test.sql` T1 ajustado à nova regra. `verificar_tudo.sql`: 27 de 27.
+
+## Adendo (migration 0035): excluir parcela exclui a cadeia prevista
+Com a projeção automática, excluir uma parcela batia na FK `lancamento_origem_id` (restrict). `excluir_lancamento` agora apaga a parcela E todas as seguintes, exigindo que todas sejam previstas (se alguma seguinte estiver paga/cancelada, orienta cancelar). Testes: `excluir_cadeia_test.sql`. `verificar_tudo.sql`: 28 de 28.

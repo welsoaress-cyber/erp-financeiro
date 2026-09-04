@@ -1,5 +1,5 @@
--- Verificação consolidada do esquema em produção (migrations 0001–0034). Somente leitura.
--- Esperado: todas as linhas PASS e "== TOTAL ==" com 27 de 27.
+-- Verificação consolidada do esquema em produção (migrations 0001–0035). Somente leitura.
+-- Esperado: todas as linhas PASS e "== TOTAL ==" com 28 de 28.
 with checks as (
   select '0001 fundação: organizacoes, membros, auditoria' item, (select count(*) from pg_tables where schemaname='public' and tablename in ('organizacoes','organizacao_membros','auditoria')) = 3 ok
   union all select '0002 contas + vw_saldo_contas', exists (select 1 from pg_views where viewname='vw_saldo_contas')
@@ -27,6 +27,7 @@ with checks as (
   union all select '0032 edição de data em recorrência (6 parâmetros)', (select count(*) from pg_proc where proname='atualizar_lancamento_recorrente' and pronargs = 6) = 1
   union all select '0033 periodicidades de contrato (6 valores no enum)', (select count(*) from pg_enum e join pg_type t on t.oid=e.enumtypid where t.typname='periodicidade') = 6
   union all select '0034 reancoragem de vencimento no pagamento atrasado', exists (select 1 from pg_proc where proname='reancorar_recorrencia') and not exists (select 1 from information_schema.routine_privileges where routine_name='reancorar_recorrencia' and grantee in ('anon','authenticated','PUBLIC'))
+  union all select '0035 excluir parcela exclui a cadeia prevista', exists (select 1 from pg_proc p where p.proname='excluir_lancamento' and pg_get_functiondef(p.oid) like '%cadeia%')
   union all select 'RLS ligado em todas as tabelas públicas', (select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r')
 )
 select item, ok, case when ok then 'PASS' else 'FALHOU' end as resultado from checks

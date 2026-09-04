@@ -10,9 +10,54 @@ import { montarArvore, type Categoria } from '../../categorias/tipos'
 import { TIPOS_LANCAMENTO, rotuloParcela, type DadosLancamento, type Lancamento, type TipoLancamento, type TipoRecorrencia } from '../tipos'
 import type { EscopoEdicaoRecorrente } from '../api'
 import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
-import type { Negocio } from '../../negocios/tipos'
+import { gerarSlug, type Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
 import { codigoContrato, type Contrato } from '../../contratos/tipos'
+import { useCriarConta } from '../../contas/api'
+import { useCriarCategoria } from '../../categorias/api'
+import { useCriarNegocio } from '../../negocios/api'
+import { useCriarPessoa } from '../../pessoas/api'
+import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
+
+/** Cadastro rápido sem sair do lançamento: "+ Criar…" abre um campo de nome e cria na hora. */
+function CriarRapido({ rotulo, aoCriar }: { rotulo: string; aoCriar: (nome: string) => Promise<void> }) {
+  const [aberto, setAberto] = useState(false)
+  const [nome, setNome] = useState('')
+  const [criando, setCriando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  if (!aberto) {
+    return <button type="button" className="-mt-3 block text-xs font-medium text-brand-600 hover:underline" onClick={() => setAberto(true)}>+ {rotulo}</button>
+  }
+  async function confirmar() {
+    if (nome.trim().length < 2 || criando) return
+    setCriando(true); setErro(null)
+    try {
+      await aoCriar(nome.trim())
+      setNome(''); setAberto(false)
+    } catch (e) {
+      setErro(mensagemDeErro(e))
+    } finally {
+      setCriando(false)
+    }
+  }
+  return (
+    <div className="-mt-2 space-y-1">
+      <div className="flex items-center gap-2">
+        <input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void confirmar() } }}
+          placeholder="Nome"
+          autoFocus
+          className="h-8 flex-1 rounded-md border border-line bg-white px-2 text-sm outline-none focus:border-brand-600"
+        />
+        <Botao type="button" onClick={() => void confirmar()} carregando={criando} disabled={nome.trim().length < 2}>Criar</Botao>
+        <Botao type="button" variante="secundario" onClick={() => { setAberto(false); setErro(null) }}>×</Botao>
+      </div>
+      {erro && <p className="text-xs text-red-600">{erro}</p>}
+    </div>
+  )
+}
 
 interface Props {
   lancamento?: Lancamento
@@ -72,6 +117,11 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   // com parcelas geradas só descrição e observação mudam (regra do banco)
   const travado = lancamento?.recorrente === true && proximaGerada
   const ehFaturamento = lancamento?.origem === 'faturamento'
+
+  const criarConta = useCriarConta()
+  const criarCategoria = useCriarCategoria()
+  const criarNegocio = useCriarNegocio()
+  const criarPessoa = useCriarPessoa()
 
   const contasDisponiveis = contas.filter((c) => c.ativo || c.id === lancamento?.conta_id || c.id === lancamento?.conta_destino_id)
   const arvore = montarArvore(categorias.filter((c) => c.tipo === tipo && (c.ativo || c.id === lancamento?.categoria_id)))
@@ -185,6 +235,12 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         disabled={travado}
       />
       {erros.conta && <p className="-mt-3 text-xs text-red-600">{erros.conta}</p>}
+      {!travado && (
+        <CriarRapido rotulo="Criar conta" aoCriar={async (nome) => {
+          const c = await criarConta.mutateAsync({ nome, tipo: 'corrente', saldo_inicial: 0, data_inicio: hojeISO(), ativo: true, negocio_id: negocioId })
+          setContaId(c.id)
+        }} />
+      )}
 
       {ehTransferencia ? (
         <>
@@ -212,6 +268,12 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
               ))}
           </select>
           {erros.categoria && <p className="text-xs text-red-600">{erros.categoria}</p>}
+          {!travado && (
+            <CriarRapido rotulo={`Criar categoria de ${tipo}`} aoCriar={async (nome) => {
+              const c = await criarCategoria.mutateAsync({ nome, tipo: tipo as 'receita' | 'despesa', categoria_pai_id: null, ativo: true })
+              setCategoriaId(c.id)
+            }} />
+          )}
         </div>
       )}
 
@@ -270,12 +332,24 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       {negocios.some((n) => n.ativo || n.id === lancamento?.negocio_id) && (
         <SelecaoNegocio negocios={negocios} valor={negocioId} aoMudar={(id) => { setNegocioId(id); setContratoId('') }} atualId={lancamento?.negocio_id} />
       )}
+      {!ehFaturamento && (
+        <CriarRapido rotulo="Criar negócio" aoCriar={async (nome) => {
+          const n = await criarNegocio.mutateAsync({ nome, slug: gerarSlug(nome), ativo: true, conta_padrao_id: null, categoria_receita_id: null, categoria_despesa_id: null, usa_carteira: false })
+          setNegocioId(n.id); setContratoId('')
+        }} />
+      )}
       {!ehTransferencia && contratosDisponiveis.length > 0 && (
         <Selecao rotulo="Contrato (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...contratosDisponiveis.map((c) => ({ valor: c.id, rotulo: `${codigoContrato(c)} · ${pessoas.find((p) => p.id === c.pessoa_id)?.nome ?? '—'}` }))]} value={contratoId} onChange={(e) => escolherContrato(e.target.value)} ajuda={contratoSel ? 'Negócio e pessoa seguem o contrato.' : 'Vincule ao contrato para medir a rentabilidade por contrato.'} />
       )}
 
       {pessoasDisponiveis.length > 0 && !ehTransferencia && (
         <Selecao rotulo="Pessoa (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhuma' }, ...pessoasDisponiveis.map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => setPessoaId(e.target.value)} disabled={Boolean(contratoSel)} ajuda={contratoSel ? 'Definida pelo contrato.' : 'Cliente ou fornecedor relacionado a este lançamento.'} />
+      )}
+      {!ehTransferencia && !contratoSel && (
+        <CriarRapido rotulo="Criar pessoa" aoCriar={async (nome) => {
+          const p = await criarPessoa.mutateAsync({ tipo: 'fisica', nome, documento: null, email: null, telefone: null, data_nascimento: null, observacao: null, ativo: true, receber_avisos: true })
+          setPessoaId(p.id)
+        }} />
       )}
 
       <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />

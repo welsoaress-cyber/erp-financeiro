@@ -7,7 +7,8 @@ import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useAtualizarContrato } from '../api'
-import { codigoContrato, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type ResultadoContrato } from '../tipos'
+import { Selecao } from '../../../core/ui/Selecao'
+import { codigoContrato, PERIODICIDADES, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type Periodicidade, type ResultadoContrato } from '../tipos'
 import { FaturamentoContrato } from './FaturamentoContrato'
 import type { Conta } from '../../contas/tipos'
 
@@ -27,6 +28,7 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   const encerrado = contrato.status === 'encerrado'
   const [valor, setValor] = useState(String(contrato.valor))
   const [dia, setDia] = useState(String(contrato.dia_vencimento))
+  const [periodicidade, setPeriodicidade] = useState<Periodicidade>(contrato.periodicidade)
   const [observacao, setObservacao] = useState(contrato.observacao ?? '')
   const [modo, setModo] = useState<'nenhum' | 'encerrar'>('nenhum')
   // Encerramento nunca pode ser antes do início do contrato (check do banco)
@@ -36,7 +38,7 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   function salvar() {
     const v = Number(valor.replace(',', '.')); const d = Number(dia)
     if (Number.isNaN(v) || v < 0 || !Number.isInteger(d) || d < 1 || d > 31) return
-    atualizar.mutate({ id: contrato.id, valor: Math.round(v * 100) / 100, dia_vencimento: d, observacao: observacao.trim() || null }, { onSuccess: aoFechar })
+    atualizar.mutate({ id: contrato.id, valor: Math.round(v * 100) / 100, dia_vencimento: d, periodicidade, observacao: observacao.trim() || null }, { onSuccess: aoFechar })
   }
 
   return (
@@ -63,9 +65,10 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
         <Alerta tipo="info">Contrato encerrado. Não pode ser alterado; o histórico permanece na rentabilidade.</Alerta>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Campo rotulo="Valor negociado (R$)" type="number" inputMode="decimal" step="0.01" min="0" value={valor} onChange={(e) => setValor(e.target.value)} />
             <Campo rotulo="Dia de vencimento" type="number" min={1} max={31} value={dia} onChange={(e) => setDia(e.target.value)} />
+            <Selecao rotulo="Periodicidade" opcoes={PERIODICIDADES} value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value as Periodicidade)} />
           </div>
           <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
           <div className="flex flex-wrap justify-between gap-2 border-t border-line pt-3">

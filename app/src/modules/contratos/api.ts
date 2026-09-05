@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { Contrato, DadosNovoContrato, DadosPlano, ExecucaoFaturamento, Faturamento, Plano, ReceitaRecorrente, ResultadoContrato, StatusContrato } from './tipos'
+import type { Contrato, DadosNovoContrato, Periodicidade, DadosPlano, ExecucaoFaturamento, Faturamento, Plano, ReceitaRecorrente, ResultadoContrato, StatusContrato } from './tipos'
 
 const chavePlanos = (org: string) => ['planos', org] as const
 const chaveContratos = (org: string) => ['contratos', org] as const
@@ -143,7 +143,7 @@ export function useCriarContrato() {
 export function useAtualizarContrato() {
   const invalidar = useInvalidarContratos()
   return useMutation({
-    mutationFn: async ({ id, ...d }: { id: string; valor?: number; dia_vencimento?: number; observacao?: string | null; status?: StatusContrato; data_fim?: string | null; faturamento_automatico?: boolean; faturar_desde?: string | null; conta_id?: string | null }) => {
+    mutationFn: async ({ id, ...d }: { id: string; valor?: number; dia_vencimento?: number; periodicidade?: Periodicidade; observacao?: string | null; status?: StatusContrato; data_fim?: string | null; faturamento_automatico?: boolean; faturar_desde?: string | null; conta_id?: string | null }) => {
       const { data, error } = await supabase.from('contratos').update(d).eq('id', id).select().single()
       if (error) throw error
       return data as Contrato

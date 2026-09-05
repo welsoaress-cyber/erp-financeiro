@@ -1,5 +1,5 @@
--- Verificação consolidada do esquema em produção (migrations 0001–0037). Somente leitura.
--- Esperado: todas as linhas PASS e "== TOTAL ==" com 30 de 30.
+-- Verificação consolidada do esquema em produção (migrations 0001–0038). Somente leitura.
+-- Esperado: todas as linhas PASS e "== TOTAL ==" com 31 de 31.
 with checks as (
   select '0001 fundação: organizacoes, membros, auditoria' item, (select count(*) from pg_tables where schemaname='public' and tablename in ('organizacoes','organizacao_membros','auditoria')) = 3 ok
   union all select '0002 contas + vw_saldo_contas', exists (select 1 from pg_views where viewname='vw_saldo_contas')
@@ -30,6 +30,7 @@ with checks as (
   union all select '0035 excluir parcela exclui a cadeia prevista', exists (select 1 from pg_proc p where p.proname='excluir_lancamento' and pg_get_functiondef(p.oid) like '%cadeia%')
   union all select '0036 importação com documento e plano opcionais', exists (select 1 from pg_proc p where p.proname='importar_clientes' and pg_get_functiondef(p.oid) like '%v_doc is not null and not public.documento_valido%')
   union all select '0037 importação só com nome obrigatório', exists (select 1 from pg_proc p where p.proname='importar_clientes' and pg_get_functiondef(p.oid) like '%v_tel is not null and v_tel !~%')
+  union all select '0038 cartão de crédito (config, faturas, funções)', (select count(*) from pg_tables where schemaname='public' and tablename in ('cartoes_config','faturas','fatura_itens')) = 3 and (select count(*) from pg_proc where proname in ('fechar_fatura_cartao','fechar_faturas_cartoes','fechar_faturas_agora','pagar_fatura')) = 4 and exists (select 1 from pg_enum e join pg_type t on t.oid=e.enumtypid where t.typname='tipo_conta' and e.enumlabel='credito')
   union all select 'RLS ligado em todas as tabelas públicas', (select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r')
 )
 select item, ok, case when ok then 'PASS' else 'FALHOU' end as resultado from checks

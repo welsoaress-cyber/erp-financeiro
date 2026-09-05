@@ -4,6 +4,7 @@ export const TIPOS_CONTA = [
   { valor: 'dinheiro', rotulo: 'Dinheiro' },
   { valor: 'carteira_digital', rotulo: 'Carteira digital' },
   { valor: 'investimento', rotulo: 'Investimento' },
+  { valor: 'credito', rotulo: 'Cartão de crédito' },
 ] as const
 
 export type TipoConta = (typeof TIPOS_CONTA)[number]['valor']

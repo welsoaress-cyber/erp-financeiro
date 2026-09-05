@@ -1,9 +1,10 @@
 import type { SVGProps } from 'react'
 
-export type NomeIcone = 'painel' | 'financeiro' | 'lancamentos' | 'contas' | 'categorias' | 'negocios' | 'pessoas' | 'contratos' | 'apps' | 'notificacoes' | 'portal' | 'configuracoes' | 'sair'
+export type NomeIcone = 'painel' | 'financeiro' | 'lancamentos' | 'contas' | 'cartao' | 'categorias' | 'negocios' | 'pessoas' | 'contratos' | 'apps' | 'notificacoes' | 'portal' | 'configuracoes' | 'sair'
 
 const CAMINHOS: Record<NomeIcone, string> = {
   painel: 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z',
+  cartao: 'M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 4H4V6h16v2Zm0 10H4v-6h16v6ZM6 15h4v2H6v-2Z',
   financeiro: 'M3 5h18v14H3V5Zm0 4h18M7 14h4M12 2v3M12 19v3',
   lancamentos: 'M4 6h16M4 12h10M4 18h7M17 15l3 3-3 3',
   contas: 'M3 7h18v12H3V7Zm0 4h18M7 15h3',

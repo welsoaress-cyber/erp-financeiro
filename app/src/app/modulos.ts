@@ -2,6 +2,7 @@ import type { DefinicaoModulo } from '../core/modulos/tipos'
 import { moduloDashboard } from '../modules/dashboard'
 import { moduloFinanceiro } from '../modules/financeiro'
 import { moduloContas } from '../modules/contas'
+import { moduloCartoes } from '../modules/cartoes'
 import { moduloCategorias } from '../modules/categorias'
 import { moduloNegocios } from '../modules/negocios'
 import { moduloPessoas } from '../modules/pessoas'
@@ -16,6 +17,7 @@ export const MODULOS: DefinicaoModulo[] = [
   moduloDashboard,
   moduloFinanceiro,
   moduloContas,
+  moduloCartoes,
   moduloCategorias,
   moduloNegocios,
   moduloPessoas,

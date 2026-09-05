@@ -33,14 +33,17 @@ do $$ declare v_rel jsonb; n int; begin
   assert n = 1, 'T2 pessoa não duplicada';
 end $$;
 
--- T3: telefone continua obrigatório; documento presente ainda é validado
-do $$ declare v_rel jsonb; begin
+-- T3: nada obrigatório além do nome (0037): sem telefone/dia/início importa com padrões; o que vier errado ainda rejeita
+do $$ declare v_rel jsonb; v_ct public.contratos%rowtype; begin
   v_rel := public.importar_clientes((select id from public.negocios where slug='iptv-teste'), jsonb_build_array(
-    jsonb_build_object('nome', 'Sem Fone', 'valor', '30', 'dia_vencimento', '5', 'data_inicio', '2026-09-05'),
+    jsonb_build_object('nome', 'So Nome'),
     jsonb_build_object('nome', 'Doc Ruim', 'telefone', '14991230002', 'documento', '12345678900',
-                       'valor', '30', 'dia_vencimento', '5', 'data_inicio', '2026-09-05')
+                       'valor', '30', 'dia_vencimento', '5', 'data_inicio', '2026-09-05'),
+    jsonb_build_object('nome', 'Dia Ruim', 'telefone', '14991230003', 'dia_vencimento', '32')
   ), false);
-  assert (v_rel->>'rejeitadas')::int = 2, 'T3 duas rejeitadas: ' || v_rel::text;
+  assert (v_rel->>'importadas')::int = 1 and (v_rel->>'rejeitadas')::int = 2, 'T3 padrões e validações: ' || v_rel::text;
+  select c.* into v_ct from public.contratos c join public.pessoas p on p.id = c.pessoa_id where p.nome = 'So Nome';
+  assert v_ct.dia_vencimento = 10 and v_ct.data_inicio = current_date, 'T3 padrões dia 10 e início hoje';
 end $$;
 
 rollback;

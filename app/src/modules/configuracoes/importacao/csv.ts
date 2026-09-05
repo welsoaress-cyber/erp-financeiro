@@ -49,13 +49,13 @@ export const CAMPOS = [
   { chave: 'nome', rotulo: 'Nome', obrigatorio: true, pistas: ['nome', 'cliente', 'razao'] },
   { chave: 'documento', rotulo: 'CPF/CNPJ (opcional)', obrigatorio: false, pistas: ['cpf/cnpj', 'cpf', 'documento', 'doc', 'cnpj'] },
   { chave: 'documento2', rotulo: 'CNPJ (se estiver em outra coluna)', obrigatorio: false, pistas: ['cnpj'] },
-  { chave: 'telefone', rotulo: 'Telefone', obrigatorio: true, pistas: ['telefone', 'celular', 'fone', 'whatsapp'] },
+  { chave: 'telefone', rotulo: 'Telefone (vazio = sem aviso WhatsApp)', obrigatorio: false, pistas: ['telefone', 'celular', 'fone', 'whatsapp'] },
   { chave: 'email', rotulo: 'E-mail', obrigatorio: false, pistas: ['email', 'e-mail'] },
   { chave: 'plano', rotulo: 'Plano (vazio = nome do negócio)', obrigatorio: false, pistas: ['plano', 'velocidade', 'servico', 'produto'] },
   { chave: 'valor', rotulo: 'Valor da cobrança', obrigatorio: false, pistas: ['valor', 'mensalidade', 'preco'] },
   { chave: 'periodicidade', rotulo: 'Periodicidade (mensal, bimestral…)', obrigatorio: false, pistas: ['periodicidade', 'ciclo', 'frequencia'] },
-  { chave: 'dia_vencimento', rotulo: 'Vencimento (dia ou data)', obrigatorio: true, pistas: ['vencimento', 'dia'] },
-  { chave: 'data_inicio', rotulo: 'Data de início de cobrança', obrigatorio: true, pistas: ['inicio', 'início', 'cobranca', 'cadastro', 'adesao'] },
+  { chave: 'dia_vencimento', rotulo: 'Vencimento (vazio = dia 10)', obrigatorio: false, pistas: ['vencimento', 'dia'] },
+  { chave: 'data_inicio', rotulo: 'Data de início (vazio = hoje)', obrigatorio: false, pistas: ['inicio', 'início', 'cobranca', 'cadastro', 'adesao'] },
   { chave: 'data_fim', rotulo: 'Data do cancelamento', obrigatorio: false, pistas: ['cancelamento', 'cancel', 'fim', 'encerramento'] },
 ] as const
 export type ChaveCampo = (typeof CAMPOS)[number]['chave']

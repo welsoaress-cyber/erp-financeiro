@@ -24,11 +24,11 @@ function problemasLocais(l: LinhaImportacao): string[] {
   const doc = somenteDigitos(l.documento)
   if (doc && !documentoValido(doc)) p.push('CPF/CNPJ inválido')
   const tel = somenteDigitos(l.telefone)
-  if (tel.length < 10 || tel.length > 13) p.push('telefone')
+  if (tel && (tel.length < 10 || tel.length > 13)) p.push('telefone')
   if (l.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(l.email.toLowerCase())) p.push('e-mail')
-  const dia = Number(somenteDigitos(l.dia_vencimento))
-  if (!dia || dia < 1 || dia > 31) p.push('dia de vencimento')
-  if (!/^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4})/.test(l.data_inicio)) p.push('data de início')
+  const dia = somenteDigitos(l.dia_vencimento)
+  if (dia && (Number(dia) < 1 || Number(dia) > 31)) p.push('dia de vencimento')
+  if (l.data_inicio && !/^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4})/.test(l.data_inicio)) p.push('data de início')
   if (l.data_fim && !/^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4})/.test(l.data_fim)) p.push('data de cancelamento')
   return p
 }

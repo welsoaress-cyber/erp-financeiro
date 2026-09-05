@@ -46,3 +46,6 @@ Com a projeção automática, excluir uma parcela batia na FK `lancamento_origem
 
 ## Adendo (migration 0036): importação com CPF/CNPJ e plano opcionais
 Clientes de servidor não têm CPF cadastrado. `importar_clientes` agora: documento opcional (valida só quando presente; pessoa sem documento é reaproveitada pelo nome), plano opcional (vazio = nome do negócio). Telefone segue obrigatório (lembrete no WhatsApp). Tela de importação ajustada (rótulos e validação local). Testes: `importacao_opcional_test.sql` + `importacao_test.sql` atualizado. `verificar_tudo.sql`: 29 de 29.
+
+## Adendo (migration 0037): importação só com nome obrigatório
+Padrões quando vazio: telefone → sem aviso de WhatsApp até preencher na tela de Pessoas; dia de vencimento → 10; data de início → hoje. O que vier preenchido continua validado. Leitura de Excel corrigida: datas saem DD/MM/AAAA (antes o formato americano da célula, ex. 9/1/26, rejeitava tudo). Testes: `importacao_opcional_test.sql` atualizado. `verificar_tudo.sql`: 30 de 30.

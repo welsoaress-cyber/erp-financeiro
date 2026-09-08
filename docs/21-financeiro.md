@@ -32,3 +32,6 @@ Escolha: **depois**. Metas por mês são um módulo à parte (tabela `orcamentos
 
 ## Testes
 `supabase/tests/financeiro_test.sql` (baixa parcial simples, dupla, em despesa fixa, inválidos); e2e `financeiro.spec.mjs` (menu, redirecionamento, previsto/realizado/saldo, baixa parcial, mês compartilhado, pop-up ≥ 800px).
+
+## Encargos ao pagar com atraso (migration 0040)
+Na baixa de um lançamento vencido (Contas a pagar/receber), o modal "Marcar como pago/recebido" mostra o campo opcional **Encargos por atraso (R$)** quando a data da baixa é posterior ao vencimento. O valor é somado só nesta parcela (`efetivar_lancamento(p_id, p_data_efetivacao, p_encargos)`), registrado na observação ("Encargos por atraso: R$ …") e refletido nos movimentos; as parcelas futuras da recorrência mantêm o valor normal. Encargos negativos são recusados. Testes: `supabase/tests/encargos_test.sql`.

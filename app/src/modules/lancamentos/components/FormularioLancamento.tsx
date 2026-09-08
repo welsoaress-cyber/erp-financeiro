@@ -61,6 +61,53 @@ function CriarRapido({ rotulo, aoCriar }: { rotulo: string; aoCriar: (nome: stri
   )
 }
 
+/** Criação rápida de categoria com pai opcional: sem pai = categoria; com pai = subcategoria. */
+function CriarRapidoCategoria({ tipo, raizes, aoCriar }: { tipo: 'receita' | 'despesa'; raizes: Categoria[]; aoCriar: (nome: string, paiId: string | null) => Promise<void> }) {
+  const [aberto, setAberto] = useState(false)
+  const [nome, setNome] = useState('')
+  const [paiId, setPaiId] = useState('')
+  const [criando, setCriando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  if (!aberto) {
+    return <button type="button" className="block text-xs font-medium text-brand-600 hover:underline" onClick={() => setAberto(true)}>+ Criar categoria de {tipo}</button>
+  }
+  async function confirmar() {
+    if (nome.trim().length < 2 || criando) return
+    setCriando(true); setErro(null)
+    try {
+      await aoCriar(nome.trim(), paiId || null)
+      setNome(''); setPaiId(''); setAberto(false)
+    } catch (e) {
+      setErro(mensagemDeErro(e))
+    } finally {
+      setCriando(false)
+    }
+  }
+  return (
+    <div className="space-y-2 rounded-md border border-line bg-surface/60 p-2">
+      <div className="flex items-center gap-2">
+        <input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void confirmar() } }}
+          placeholder="Nome"
+          autoFocus
+          className="h-8 flex-1 rounded-md border border-line bg-white px-2 text-sm outline-none focus:border-brand-600"
+        />
+        <Botao type="button" onClick={() => void confirmar()} carregando={criando} disabled={nome.trim().length < 2}>Criar</Botao>
+        <Botao type="button" variante="secundario" onClick={() => { setAberto(false); setErro(null) }}>×</Botao>
+      </div>
+      {raizes.length > 0 && (
+        <select aria-label="Categoria pai (opcional)" value={paiId} onChange={(e) => setPaiId(e.target.value)} className="h-8 w-full rounded-md border border-line bg-white px-2 text-sm outline-none focus:border-brand-600">
+          <option value="">Sem pai (categoria principal)</option>
+          {raizes.map((c) => <option key={c.id} value={c.id}>Subcategoria de: {c.nome}</option>)}
+        </select>
+      )}
+      {erro && <p className="text-xs text-red-600">{erro}</p>}
+    </div>
+  )
+}
+
 interface Props {
   lancamento?: Lancamento
   contas: Conta[]
@@ -288,10 +335,14 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
           </select>
           {erros.categoria && <p className="text-xs text-red-600">{erros.categoria}</p>}
           {!travado && (
-            <CriarRapido rotulo={`Criar categoria de ${tipo}`} aoCriar={async (nome) => {
-              const c = await criarCategoria.mutateAsync({ nome, tipo: tipo as 'receita' | 'despesa', categoria_pai_id: null, ativo: true })
-              setCategoriaId(c.id)
-            }} />
+            <CriarRapidoCategoria
+              tipo={tipo as 'receita' | 'despesa'}
+              raizes={arvore.map(({ raiz }) => raiz)}
+              aoCriar={async (nome, paiId) => {
+                const c = await criarCategoria.mutateAsync({ nome, tipo: tipo as 'receita' | 'despesa', categoria_pai_id: paiId, ativo: true })
+                setCategoriaId(c.id)
+              }}
+            />
           )}
         </div>
       )}

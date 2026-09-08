@@ -57,7 +57,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const lancamentos = useLancamentos(mes); const pessoas = usePessoas(); const contratos = useContratos()
   const efetivar = useEfetivarLancamento(); const parcial = useBaixaParcial(); const cancelar = useCancelarLancamento()
   const [filtroPessoa, setFiltroPessoa] = useState(''); const [filtroSituacao, setFiltroSituacao] = useState<Situacao | ''>('')
-  const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState('')
+  const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState(''); const [encargos, setEncargos] = useState('')
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const contratoPorId = useMemo(() => new Map((contratos.data ?? []).map((c) => [c.id, c])), [contratos.data])
   const base = (lancamentos.data ?? []).filter((l) => l.tipo === tipo && l.status !== 'cancelado')
@@ -69,10 +69,11 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const pessoasComLanc = (pessoas.data ?? []).filter((p) => base.some((l) => l.pessoa_id === p.id))
   const erro = efetivar.error ?? parcial.error ?? cancelar.error
   const ocupado = efetivar.isPending || parcial.isPending || cancelar.isPending
-  function fechar() { efetivar.reset(); parcial.reset(); cancelar.reset(); setAcao(null); setValorParcial(''); setMotivo(''); setDataBaixa(hojeISO()) }
+  function fechar() { efetivar.reset(); parcial.reset(); cancelar.reset(); setAcao(null); setValorParcial(''); setMotivo(''); setDataBaixa(hojeISO()); setEncargos('') }
+  const vEncargos = Math.round(Number(encargos.replace(',', '.')) * 100) / 100
   function confirmar() {
     if (!acao) return
-    if (acao.tipo === 'baixa') efetivar.mutate({ id: acao.l.id, data_efetivacao: dataBaixa }, { onSuccess: fechar })
+    if (acao.tipo === 'baixa') efetivar.mutate({ id: acao.l.id, data_efetivacao: dataBaixa, encargos: vEncargos > 0 ? vEncargos : undefined }, { onSuccess: fechar })
     if (acao.tipo === 'parcial') parcial.mutate({ id: acao.l.id, valor: Math.round(Number(valorParcial.replace(',', '.')) * 100) / 100, data_efetivacao: dataBaixa }, { onSuccess: fechar })
     if (acao.tipo === 'cancelar') cancelar.mutate({ id: acao.l.id, motivo }, { onSuccess: fechar })
   }
@@ -124,6 +125,12 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
             {erro && <Alerta tipo="erro">{mensagemDeErro(erro)}</Alerta>}
             <p className="text-sm"><span className="font-medium">{acao.l.descricao}</span> · {formatarMoeda(acao.l.valor)} · vence {formatarData(acao.l.data_vencimento)}</p>
             {acao.tipo !== 'cancelar' && <Campo rotulo={receber ? 'Data do recebimento' : 'Data do pagamento'} type="date" value={dataBaixa} onChange={(e) => setDataBaixa(e.target.value)} />}
+            {acao.tipo === 'baixa' && dataBaixa > acao.l.data_vencimento && (
+              <>
+                <Campo rotulo="Encargos por atraso — juros/multa (R$, opcional)" type="number" step="0.01" min="0" value={encargos} onChange={(e) => setEncargos(e.target.value)} />
+                <p className="text-xs text-ink-muted">Total {receber ? 'recebido' : 'pago'}: {formatarMoeda(acao.l.valor + (vEncargos > 0 ? vEncargos : 0))}. Os encargos entram só nesta parcela e ficam registrados na observação.</p>
+              </>
+            )}
             {acao.tipo === 'parcial' && <><Campo rotulo={receber ? 'Valor recebido (R$)' : 'Valor pago (R$)'} type="number" step="0.01" min="0.01" value={valorParcial} onChange={(e) => setValorParcial(e.target.value)} autoFocus /><p className="text-xs text-ink-muted">O restante ({parcialValido ? formatarMoeda(Math.round((acao.l.valor - vParcial) * 100) / 100) : '…'}) continua previsto com o mesmo vencimento.</p></>}
             {acao.tipo === 'cancelar' && <Campo rotulo="Motivo (opcional)" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={200} />}
             <div className="flex justify-end gap-2"><Botao variante="secundario" onClick={fechar}>Voltar</Botao><Botao variante={acao.tipo === 'cancelar' ? 'perigo' : 'primario'} onClick={confirmar} carregando={ocupado} disabled={acao.tipo === 'parcial' && !parcialValido}>Confirmar</Botao></div>

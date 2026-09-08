@@ -171,8 +171,8 @@ export function useAtualizarLancamento() {
 export function useEfetivarLancamento() {
   const invalidar = useInvalidarFinanceiro()
   return useMutation({
-    mutationFn: async ({ id, data_efetivacao }: { id: string; data_efetivacao: string }) => {
-      const { data, error } = await supabase.rpc('efetivar_lancamento', { p_id: id, p_data_efetivacao: data_efetivacao })
+    mutationFn: async ({ id, data_efetivacao, encargos }: { id: string; data_efetivacao: string; encargos?: number }) => {
+      const { data, error } = await supabase.rpc('efetivar_lancamento', { p_id: id, p_data_efetivacao: data_efetivacao, ...(encargos ? { p_encargos: encargos } : {}) })
       if (error) throw error
       return data as Lancamento
     },

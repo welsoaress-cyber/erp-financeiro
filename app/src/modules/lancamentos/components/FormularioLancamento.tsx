@@ -14,6 +14,8 @@ import { gerarSlug, type Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
 import { codigoContrato, type Contrato } from '../../contratos/tipos'
 import { useCriarConta } from '../../contas/api'
+import { useCartoesConfig } from '../../cartoes/api'
+import type { CartaoConfig } from '../../cartoes/tipos'
 import { useCriarCategoria } from '../../categorias/api'
 import { useCriarNegocio } from '../../negocios/api'
 import { useCriarPessoa } from '../../pessoas/api'
@@ -79,6 +81,16 @@ interface Props {
   aoCancelar: () => void
 }
 
+/** Vencimento da fatura em que uma compra na data informada entra (mesma regra do fechamento no banco). */
+function vencimentoFatura(dataISO: string, cfg: CartaoConfig): string {
+  const [ano, mes, dia] = dataISO.split('-').map(Number)
+  let fAno = ano
+  let fMes = mes
+  if (dia > cfg.dia_fechamento) { fMes++; if (fMes > 12) { fMes = 1; fAno++ } }
+  if (cfg.dia_vencimento <= cfg.dia_fechamento) { fMes++; if (fMes > 12) { fMes = 1; fAno++ } }
+  return `${fAno}-${String(fMes).padStart(2, '0')}-${String(cfg.dia_vencimento).padStart(2, '0')}`
+}
+
 interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string; recorrencia?: string }
 
 export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoSalvarLote, aoCancelar }: Props) {
@@ -127,6 +139,13 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   const arvore = montarArvore(categorias.filter((c) => c.tipo === tipo && (c.ativo || c.id === lancamento?.categoria_id)))
   const ehTransferencia = tipo === 'transferencia'
 
+  // Compra no cartão de crédito: entra na fatura, sem "já pago" nem vencimento manual
+  const configCartoes = useCartoesConfig().data ?? []
+  const contaSel = contas.find((c) => c.id === contaId)
+  const cartaoCfg = contaSel?.tipo === 'credito' ? configCartoes.find((k) => k.conta_id === contaSel.id) : undefined
+  const ehCartao = !ehTransferencia && contaSel?.tipo === 'credito' && (!lancamento || lancamento.status === 'previsto')
+  const vencCartao = ehCartao && cartaoCfg && data ? vencimentoFatura(data, cartaoCfg) : null
+
   function montar(): DadosLancamento | null {
     const novos: Erros = {}
     const v = Number(valor.replace(',', '.'))
@@ -149,8 +168,8 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       descricao: descricao.trim(),
       valor: Math.round(v * 100) / 100,
       data_competencia: data,
-      data_vencimento: vencimento || data,
-      data_efetivacao: efetivado ? (dataEfetivacao || data) : null,
+      data_vencimento: ehCartao ? (vencCartao ?? data) : (vencimento || data),
+      data_efetivacao: ehCartao ? null : efetivado ? (dataEfetivacao || data) : null,
       conta_id: contaId,
       conta_destino_id: ehTransferencia ? destinoId : null,
       categoria_id: ehTransferencia ? null : categoriaId,
@@ -277,6 +296,14 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         </div>
       )}
 
+      {ehCartao ? (
+        <div className="rounded-md border border-line bg-surface/60 p-3 text-sm">
+          <p className="font-medium">Compra no cartão de crédito</p>
+          {vencCartao
+            ? <p className="mt-1 text-xs text-ink-muted">Entra na fatura com vencimento em {vencCartao.split('-').reverse().join('/')} e é efetivada no fechamento do cartão.</p>
+            : <p className="mt-1 text-xs text-amber-800">Cartão sem configuração de fechamento/vencimento: configure em Cartões. Por enquanto o vencimento fica na data da compra.</p>}
+        </div>
+      ) : (
       <div className="rounded-md border border-line bg-surface/60 p-3">
         <label className="flex items-center gap-2 text-sm font-medium">
           <input type="checkbox" checked={efetivado} onChange={(e) => setEfetivado(e.target.checked)} className="size-4 accent-brand-600" />
@@ -289,6 +316,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         </div>
         {!efetivado && <p className="mt-2 text-xs text-ink-muted">Lançamento previsto: não altera o saldo até ser efetivado.</p>}
       </div>
+      )}
 
       {!ehFaturamento && (
         <div className="rounded-md border border-line bg-surface/60 p-3">

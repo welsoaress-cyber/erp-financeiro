@@ -41,5 +41,16 @@ do $$ declare v r%rowtype; l public.lancamentos; begin
   assert l.valor = 50 and l.observacao is null, 'T3 zero não altera nada';
 end $$;
 
+-- T4 (0041): pagar por outra conta → movimento sai da conta escolhida; próxima parcela mantém a original
+do $$ declare v r%rowtype; v_outra uuid; l public.lancamentos; begin
+  select * into v from r;
+  insert into public.contas (organizacao_id, nome, tipo) values (v.org, 'Outra Conta Baixa', 'corrente') returning id into v_outra;
+  l := public.criar_lancamento('despesa', 'Baixa Outra Conta', 80, date '2026-09-05', date '2026-09-05', null, v.conta, null, v.moradia, null, null, null, null, true, 'mensal', null, null);
+  l := public.efetivar_lancamento(l.id, date '2026-09-05', 0, v_outra);
+  assert l.conta_id = v_outra, 'T4 conta trocada na parcela paga';
+  assert exists (select 1 from public.movimentos m where m.lancamento_id = l.id and m.conta_id = v_outra), 'T4 movimento na conta escolhida';
+  assert (select f.conta_id from public.lancamentos f where f.lancamento_origem_id = l.id) = v.conta, 'T4 próxima parcela na conta original';
+end $$;
+
 rollback;
 \echo OK

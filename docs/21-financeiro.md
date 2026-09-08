@@ -35,3 +35,6 @@ Escolha: **depois**. Metas por mês são um módulo à parte (tabela `orcamentos
 
 ## Encargos ao pagar com atraso (migration 0040)
 Na baixa de um lançamento vencido (Contas a pagar/receber), o modal "Marcar como pago/recebido" mostra o campo opcional **Encargos por atraso (R$)** quando a data da baixa é posterior ao vencimento. O valor é somado só nesta parcela (`efetivar_lancamento(p_id, p_data_efetivacao, p_encargos)`), registrado na observação ("Encargos por atraso: R$ …") e refletido nos movimentos; as parcelas futuras da recorrência mantêm o valor normal. Encargos negativos são recusados. Testes: `supabase/tests/encargos_test.sql`.
+
+## Baixa com valor pago e conta escolhida (migration 0041)
+No modal de baixa em atraso o campo é **Valor pago com encargos (R$)**: os encargos são a diferença sobre o valor do lançamento (mostrada na hora); valor menor manda para "Baixa parcial". Também dá para escolher a **conta do pagamento/recebimento** (exceto transferências e cartões): `efetivar_lancamento(p_id, p_data_efetivacao, p_encargos, p_conta_id)` troca a conta só desta parcela sob a flag `erp.trocar_conta`; a próxima parcela mantém a conta original.

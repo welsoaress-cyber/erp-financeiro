@@ -31,7 +31,8 @@ with checks as (
   union all select '0036 importação com documento e plano opcionais', exists (select 1 from pg_proc p where p.proname='importar_clientes' and pg_get_functiondef(p.oid) like '%v_doc is not null and not public.documento_valido%')
   union all select '0037 importação só com nome obrigatório', exists (select 1 from pg_proc p where p.proname='importar_clientes' and pg_get_functiondef(p.oid) like '%v_tel is not null and v_tel !~%')
   union all select '0038 cartão de crédito (config, faturas, funções)', (select count(*) from pg_tables where schemaname='public' and tablename in ('cartoes_config','faturas','fatura_itens')) = 3 and (select count(*) from pg_proc where proname in ('fechar_fatura_cartao','fechar_faturas_cartoes','fechar_faturas_agora','pagar_fatura')) = 4 and exists (select 1 from pg_enum e join pg_type t on t.oid=e.enumtypid where t.typname='tipo_conta' and e.enumlabel='credito')
-  union all select '0040 encargos ao pagar com atraso (efetivar com 3 parâmetros)', (select count(*) from pg_proc where proname='efetivar_lancamento' and pronargs = 3) = 1 and (select count(*) from pg_proc where proname='efetivar_lancamento') = 1
+  union all select '0040 encargos ao pagar com atraso', (select count(*) from pg_proc where proname='efetivar_lancamento') = 1 and exists (select 1 from pg_proc p where p.proname='efetivar_lancamento' and pg_get_functiondef(p.oid) like '%p_encargos%')
+  union all select '0041 conta escolhida na baixa (efetivar com 4 parâmetros)', (select count(*) from pg_proc where proname='efetivar_lancamento' and pronargs = 4) = 1
   union all select 'RLS ligado em todas as tabelas públicas', (select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r')
 )
 select item, ok, case when ok then 'PASS' else 'FALHOU' end as resultado from checks

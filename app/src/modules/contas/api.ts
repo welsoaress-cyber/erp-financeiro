@@ -39,6 +39,42 @@ export function useCriarConta() {
   })
 }
 
+/** Ajuste de saldo: lançamento efetivado da diferença (o saldo é derivado dos movimentos, nunca gravado). */
+export function useAjustarSaldo() {
+  const { organizacao } = useOrganizacao()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ contaId, diferenca }: { contaId: string; diferenca: number }) => {
+      const tipo = diferenca > 0 ? 'receita' : 'despesa'
+      let { data: cat } = await supabase.from('categorias').select('id').eq('organizacao_id', organizacao.id).eq('nome', 'Ajuste de saldo').eq('tipo', tipo).maybeSingle()
+      if (!cat) {
+        const { data: nova, error: e1 } = await supabase.from('categorias').insert({ organizacao_id: organizacao.id, nome: 'Ajuste de saldo', tipo, ativo: true }).select('id').single()
+        if (e1) throw e1
+        cat = nova
+      }
+      const hoje = new Date().toISOString().slice(0, 10)
+      const { data, error } = await supabase.rpc('criar_lancamento', {
+        p_tipo: tipo,
+        p_descricao: 'Ajuste de saldo',
+        p_valor: Math.round(Math.abs(diferenca) * 100) / 100,
+        p_data_competencia: hoje,
+        p_data_vencimento: hoje,
+        p_data_efetivacao: hoje,
+        p_conta_id: contaId,
+        p_categoria_id: cat.id,
+        p_observacao: 'Ajuste manual para igualar o saldo real da conta.',
+      })
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: chave(organizacao.id) })
+      void qc.invalidateQueries({ queryKey: ['lancamentos', organizacao.id] })
+      void qc.invalidateQueries({ queryKey: ['categorias', organizacao.id] })
+    },
+  })
+}
+
 export function useAtualizarConta() {
   const { organizacao } = useOrganizacao()
   const qc = useQueryClient()

@@ -13,11 +13,28 @@ import { supabase } from '../../../core/supabase/client'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas, useAtualizarPessoa } from '../../pessoas/api'
 import { formatarTelefone, somenteDigitos, type Pessoa } from '../../pessoas/tipos'
-import { useCriarLancamento } from '../../lancamentos/api'
+import { useCriarLancamento, useAtualizarLancamentoRecorrente } from '../../lancamentos/api'
 import { useCriarDisparo, useDisparos, useItensDisparo, useModelosDisparo, useProcessarDisparos, useReenviarFalhas, useSalvarModeloDisparo } from '../api'
 import { lerTextoPdf, ROTULO_STATUS_DISPARO, type Disparo } from '../tipos'
 
-interface Alvo { pessoa: Pessoa; marcado: boolean; telefoneNovo: string; valor: string; vencimento: string }
+interface CobrancaExistente { id: string; valor: number; data_vencimento: string; descricao: string; observacao: string | null }
+interface Alvo { pessoa: Pessoa; marcado: boolean; telefoneNovo: string; valor: string; vencimento: string; existente: CobrancaExistente | null }
+
+/** Próxima cobrança recorrente prevista de cada pessoa (a cadeia é o espelho do PDF). */
+async function buscarCobrancasExistentes(pessoaIds: string[]): Promise<Map<string, CobrancaExistente>> {
+  const mapa = new Map<string, CobrancaExistente>()
+  if (pessoaIds.length === 0) return mapa
+  const { data } = await supabase
+    .from('lancamentos')
+    .select('id, pessoa_id, valor, data_vencimento, descricao, observacao')
+    .eq('tipo', 'receita').eq('status', 'previsto').eq('recorrente', true)
+    .in('pessoa_id', pessoaIds)
+    .order('data_vencimento')
+  for (const l of data ?? []) {
+    if (!mapa.has(l.pessoa_id)) mapa.set(l.pessoa_id, { id: l.id, valor: Number(l.valor), data_vencimento: l.data_vencimento, descricao: l.descricao, observacao: l.observacao })
+  }
+  return mapa
+}
 
 /** Chave de match no PDF: login do servidor ou, na falta, o próprio nome quando é um login (sem espaços). */
 function chaveLogin(p: Pessoa): string | null {
@@ -80,6 +97,7 @@ export function DisparosPage() {
   const salvarModelo = useSalvarModeloDisparo()
   const atualizarPessoa = useAtualizarPessoa()
   const criarLancamento = useCriarLancamento()
+  const atualizarRecorrente = useAtualizarLancamentoRecorrente()
 
   const [negocioId, setNegocioId] = useState('')
   const [modeloId, setModeloId] = useState('')
@@ -110,10 +128,17 @@ export function DisparosPage() {
     try {
       const textoPdf = (await lerTextoPdf(await arquivo.arrayBuffer())).toLowerCase()
       const achados = comLogin.filter((p) => textoPdf.includes(chaveLogin(p)!))
-      setAlvos(achados.map((p) => ({ pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: '', valor: '', vencimento: hojeISO() })))
+      const existentes = await buscarCobrancasExistentes(achados.map((p) => p.id))
+      setAlvos(achados.map((p) => {
+        const ex = existentes.get(p.id) ?? null
+        return { pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: '', valor: ex ? String(ex.valor) : '', vencimento: ex?.data_vencimento ?? hojeISO(), existente: ex }
+      }))
       setNaoReconhecidos(0)
       if (achados.length === 0) setAviso('Nenhum login do cadastro foi encontrado no PDF. Vincule o "Login do servidor" nas pessoas (editar pessoa) e tente de novo.')
-      else setAviso(`${achados.length} cliente(s) reconhecido(s) pelo login do servidor.`)
+      else {
+        const jaLancadas = achados.filter((p) => existentes.has(p.id)).length
+        setAviso(`${achados.length} cliente(s) reconhecido(s).${jaLancadas > 0 ? ` ${jaLancadas} já tem cobrança lançada (valor/vencimento preenchidos da cobrança atual): confira antes de disparar — a mensagem será reenviada para todos os marcados.` : ''}`)
+      }
     } catch (e) {
       setErro(mensagemDeErro(e))
     } finally {
@@ -121,10 +146,11 @@ export function DisparosPage() {
     }
   }
 
-  function adicionarManual() {
+  async function adicionarManual() {
     const p = (pessoas.data ?? []).find((x) => x.id === adicionarId)
     if (!p || alvos.some((a) => a.pessoa.id === p.id)) return
-    setAlvos((xs) => [...xs, { pessoa: p, marcado: true, telefoneNovo: '', valor: '', vencimento: hojeISO() }])
+    const ex = (await buscarCobrancasExistentes([p.id])).get(p.id) ?? null
+    setAlvos((xs) => [...xs, { pessoa: p, marcado: true, telefoneNovo: '', valor: ex ? String(ex.valor) : '', vencimento: ex?.data_vencimento ?? hojeISO(), existente: ex }])
     setAdicionarId('')
   }
 
@@ -145,6 +171,7 @@ export function DisparosPage() {
     setDisparando(true)
     try {
       let cobrancasCriadas = 0
+      let cobrancasAtualizadas = 0
       if (lancarCobranca) {
         const semDados = marcados.filter((a) => !(Number(a.valor.replace(',', '.')) > 0) || !a.vencimento)
         if (semDados.length > 0) { setErro(`Informe valor e vencimento de: ${semDados.map((a) => primeiroNome(a.pessoa.nome)).join(', ')}.`); setDisparando(false); return }
@@ -152,16 +179,24 @@ export function DisparosPage() {
         if (!neg?.conta_padrao_id || !neg?.categoria_receita_id) { setErro('O negócio precisa de conta padrão e categoria de receita (tela Negócios) para lançar a cobrança.'); setDisparando(false); return }
         for (const a of marcados) {
           const v = Math.round(Number(a.valor.replace(',', '.')) * 100) / 100
-          const { data: existentes } = await supabase.from('lancamentos').select('id').eq('pessoa_id', a.pessoa.id).eq('tipo', 'receita').eq('status', 'previsto').eq('data_vencimento', a.vencimento).limit(1)
-          if ((existentes ?? []).length > 0) continue // já lançado: não duplica
-          await criarLancamento.mutateAsync({
-            tipo: 'receita', descricao: `Mensalidade servidor · ${primeiroNome(a.pessoa.nome)}`, valor: v,
-            data_competencia: a.vencimento, data_vencimento: a.vencimento, data_efetivacao: null,
-            conta_id: neg.conta_padrao_id, conta_destino_id: null, categoria_id: neg.categoria_receita_id,
-            observacao: `Login: ${a.pessoa.login_servidor ?? '—'}`, negocio_id: negocioId, pessoa_id: a.pessoa.id, contrato_id: null,
-            recorrente: true, periodicidade: 'mensal', numero_parcelas: null, data_fim_recorrencia: null,
-          })
-          cobrancasCriadas++
+          if (a.existente) {
+            // já lançado: sem mudança não duplica; com mudança, o PDF é o espelho — atualiza esta e as próximas
+            if (v === a.existente.valor && a.vencimento === a.existente.data_vencimento) continue
+            await atualizarRecorrente.mutateAsync({
+              id: a.existente.id, descricao: a.existente.descricao, valor: v, observacao: a.existente.observacao,
+              escopo: 'futuras', data_vencimento: a.vencimento !== a.existente.data_vencimento ? a.vencimento : null,
+            })
+            cobrancasAtualizadas++
+          } else {
+            await criarLancamento.mutateAsync({
+              tipo: 'receita', descricao: `Mensalidade servidor · ${primeiroNome(a.pessoa.nome)}`, valor: v,
+              data_competencia: a.vencimento, data_vencimento: a.vencimento, data_efetivacao: null,
+              conta_id: neg.conta_padrao_id, conta_destino_id: null, categoria_id: neg.categoria_receita_id,
+              observacao: `Login: ${a.pessoa.login_servidor ?? '—'}`, negocio_id: negocioId, pessoa_id: a.pessoa.id, contrato_id: null,
+              recorrente: true, periodicidade: 'mensal', numero_parcelas: null, data_fim_recorrencia: null,
+            })
+            cobrancasCriadas++
+          }
         }
       }
       const d = await criar.mutateAsync({
@@ -172,7 +207,7 @@ export function DisparosPage() {
       processar.mutate()
       setDetalhe(d)
       setAlvos([])
-      setAviso(lancarCobranca ? `Disparo iniciado. Cobranças novas lançadas: ${cobrancasCriadas} (fixas mensais, sem marcar como pagas).` : 'Disparo iniciado.')
+      setAviso(lancarCobranca ? `Disparo iniciado. Cobranças novas: ${cobrancasCriadas} · atualizadas (esta e as próximas): ${cobrancasAtualizadas} (fixas mensais, sem marcar como pagas).` : 'Disparo iniciado.')
     } catch (e) {
       setErro(mensagemDeErro(e))
     } finally {
@@ -221,7 +256,7 @@ export function DisparosPage() {
               <option value="">Adicionar cliente…</option>
               {(pessoas.data ?? []).filter((p) => p.ativo && !alvos.some((a) => a.pessoa.id === p.id)).map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
             </select>
-            <Botao variante="secundario" onClick={adicionarManual} disabled={!adicionarId}>Adicionar</Botao>
+            <Botao variante="secundario" onClick={() => void adicionarManual()} disabled={!adicionarId}>Adicionar</Botao>
           </div>
         </div>
         {alvos.length === 0 ? (
@@ -246,7 +281,16 @@ export function DisparosPage() {
                   {lancarCobranca && (
                     <>
                       <td className="px-4 py-2"><input type="number" step="0.01" min="0.01" value={a.valor} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, valor: e.target.value } : x)))} placeholder="0,00" className="h-8 w-24 rounded-md border border-line bg-white px-2 text-sm" /></td>
-                      <td className="px-4 py-2"><input type="date" value={a.vencimento} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, vencimento: e.target.value } : x)))} className="h-8 w-36 rounded-md border border-line bg-white px-2 text-sm" /></td>
+                      <td className="px-4 py-2">
+                        <input type="date" value={a.vencimento} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, vencimento: e.target.value } : x)))} className="h-8 w-36 rounded-md border border-line bg-white px-2 text-sm" />
+                        <p className="mt-0.5 text-xs text-ink-muted">
+                          {!a.existente
+                            ? 'Nova cobrança'
+                            : Number(a.valor.replace(',', '.')) === a.existente.valor && a.vencimento === a.existente.data_vencimento
+                              ? `Já lançada (venc. ${formatarData(a.existente.data_vencimento)}) — não duplica`
+                              : 'Mudou: atualiza esta e as próximas'}
+                        </p>
+                      </td>
                     </>
                   )}
                   <td className="px-4 py-2 text-right">

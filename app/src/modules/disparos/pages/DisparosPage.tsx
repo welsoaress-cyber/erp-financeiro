@@ -16,6 +16,7 @@ import { useContas } from '../../contas/api'
 import { usePessoas, useAtualizarPessoa } from '../../pessoas/api'
 import { formatarTelefone, normalizarTelefone, telefoneValido, type Pessoa } from '../../pessoas/tipos'
 import { useCriarLancamento, useAtualizarLancamentoRecorrente } from '../../lancamentos/api'
+import { useContratos, useAtualizarContrato, useGerarFaturamento } from '../../contratos/api'
 import { useCriarDisparo, useDisparos, useItensDisparo, useModelosDisparo, useProcessarDisparos, useReenviarFalhas, useSalvarModeloDisparo } from '../api'
 import { lerTextoPdf, ROTULO_STATUS_DISPARO, type Disparo } from '../tipos'
 
@@ -148,6 +149,9 @@ export function DisparosPage() {
   const atualizarPessoa = useAtualizarPessoa()
   const criarLancamento = useCriarLancamento()
   const atualizarRecorrente = useAtualizarLancamentoRecorrente()
+  const contratos = useContratos()
+  const atualizarContrato = useAtualizarContrato()
+  const gerarFaturamento = useGerarFaturamento()
 
   const [negocioId, setNegocioId] = useState('')
   const [modeloId, setModeloId] = useState('')
@@ -238,6 +242,7 @@ export function DisparosPage() {
       }
       let cobrancasCriadas = 0
       let cobrancasAtualizadas = 0
+      let contratosAjustados = 0
       if (lancarCobranca) {
         const semDados = marcados.filter((a) => !(Number(a.valor.replace(',', '.')) > 0) || !a.vencimento)
         if (semDados.length > 0) { setErro(`Informe valor e vencimento de: ${semDados.map((a) => primeiroNome(a.pessoa.nome)).join(', ')}.`); setDisparando(false); return }
@@ -246,6 +251,17 @@ export function DisparosPage() {
         if (semFallback) { setErro('O negócio precisa de conta padrão e categoria de receita (tela Negócios) para lançar cobranças sem conta/categoria no PDF.'); setDisparando(false); return }
         for (const a of marcados) {
           const v = Math.round(Number(a.valor.replace(',', '.')) * 100) / 100
+          // cliente com CONTRATO ativo no negócio: o PDF corrige o contrato (valor e dia) e a
+          // cobrança nasce do faturamento do contrato — sem lançamento próprio (evita duplicar)
+          const ct = (contratos.data ?? []).find((c) => c.pessoa_id === a.pessoa.id && c.negocio_id === negocioId && c.status === 'ativo')
+          if (ct) {
+            const dia = Number(a.vencimento.slice(8, 10))
+            if (ct.valor !== v || ct.dia_vencimento !== dia) {
+              await atualizarContrato.mutateAsync({ id: ct.id, valor: v, dia_vencimento: dia })
+              contratosAjustados++
+            }
+            continue
+          }
           if (a.existente) {
             // já lançado: sem mudança não duplica; com mudança, o PDF é o espelho — atualiza esta e as próximas
             if (v === a.existente.valor && a.vencimento === a.existente.data_vencimento) continue
@@ -265,6 +281,7 @@ export function DisparosPage() {
             cobrancasCriadas++
           }
         }
+        if (contratosAjustados > 0) await gerarFaturamento.mutateAsync(undefined)
       }
       const d = await criar.mutateAsync({
         negocio_id: negocioId,
@@ -274,7 +291,9 @@ export function DisparosPage() {
       processar.mutate()
       setDetalhe(d)
       setAlvos([])
-      setAviso(lancarCobranca ? `Disparo iniciado. Cobranças novas: ${cobrancasCriadas} · atualizadas (esta e as próximas): ${cobrancasAtualizadas} (fixas mensais, sem marcar como pagas).` : 'Disparo iniciado.')
+      setAviso(lancarCobranca
+        ? `Disparo iniciado. Contratos ajustados (valor/dia, faturamento gerado): ${contratosAjustados} · cobranças avulsas novas: ${cobrancasCriadas} · atualizadas: ${cobrancasAtualizadas}.`
+        : 'Disparo iniciado.')
     } catch (e) {
       setErro(mensagemDeErro(e))
     } finally {
@@ -347,11 +366,14 @@ export function DisparosPage() {
                       <td className="px-4 py-2">
                         <input type="date" value={a.vencimento} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, vencimento: e.target.value } : x)))} className="h-8 w-36 rounded-md border border-line bg-white px-2 text-sm" />
                         <p className="mt-0.5 text-xs text-ink-muted">
-                          {!a.existente
-                            ? 'Nova cobrança'
-                            : Number(a.valor.replace(',', '.')) === a.existente.valor && a.vencimento === a.existente.data_vencimento
+                          {(() => {
+                            const ct = (contratos.data ?? []).find((c) => c.pessoa_id === a.pessoa.id && c.negocio_id === negocioId && c.status === 'ativo')
+                            if (ct) return `Contrato #${String(ct.codigo).padStart(3, '0')}: ajusta valor/dia e fatura`
+                            if (!a.existente) return 'Nova cobrança'
+                            return Number(a.valor.replace(',', '.')) === a.existente.valor && a.vencimento === a.existente.data_vencimento
                               ? `Já lançada (venc. ${formatarData(a.existente.data_vencimento)}) — não duplica`
-                              : 'Mudou: atualiza esta e as próximas'}
+                              : 'Mudou: atualiza esta e as próximas'
+                          })()}
                         </p>
                       </td>
                     </>

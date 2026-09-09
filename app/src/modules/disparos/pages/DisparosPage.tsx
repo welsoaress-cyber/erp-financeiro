@@ -24,9 +24,11 @@ interface Alvo { pessoa: Pessoa; marcado: boolean; telefoneNovo: string; valor: 
 function dadosDoPdf(textoPdf: string, chave: string): { vencimento: string | null; valor: string | null } {
   const i = textoPdf.indexOf(chave)
   if (i < 0) return { vencimento: null, valor: null }
-  const janela = textoPdf.slice(Math.max(0, i - 60), i + chave.length + 160)
-  const d = janela.match(/(\d{2})\/(\d{2})\/(\d{4})/)
-  const v = janela.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/)
+  const depois = textoPdf.slice(i + chave.length, i + chave.length + 160)
+  // colunas do relatório: Valor | Lançamento | Vencimento — a 2ª data após o login é o vencimento
+  const datas = [...depois.matchAll(/(\d{2})\/(\d{2})\/(\d{4})/g)]
+  const d = datas[1] ?? datas[0]
+  const v = depois.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/)
   return {
     vencimento: d ? `${d[3]}-${d[2]}-${d[1]}` : null,
     valor: v ? v[1].replaceAll('.', '').replace(',', '.') : null,

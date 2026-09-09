@@ -97,6 +97,8 @@ function DetalheDisparo({ disparo, nomePessoa, aoFechar }: { disparo: Disparo; n
   const reprocessar = processar.mutate
   // fila anda 3 por chamada da Edge; enquanto houver pendentes, re-aciona a cada 50 s
   useEffect(() => {
+    // 1º tick só marca o relógio: quem abre o modal logo após disparar não re-aciona a Edge de imediato
+    if (ultimoTick.current === 0) { ultimoTick.current = Date.now(); return }
     if (pendentes > 0 && Date.now() - ultimoTick.current > 50000) {
       ultimoTick.current = Date.now()
       reprocessar()

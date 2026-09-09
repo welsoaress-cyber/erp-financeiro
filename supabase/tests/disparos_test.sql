@@ -67,6 +67,8 @@ do $$ declare v r%rowtype; d public.disparos; v_id uuid; v_n int; begin
   d := public.criar_disparo(v.neg, 'Lembrete de vencimento', jsonb_build_array(jsonb_build_object('pessoa_id', v.pa, 'mensagem', 'mensagem para fila de envio')));
   reset role;
   assert (select count(*) from public.disparos_para_envio(50)) >= 1, 'T4 fila com pendentes';
+  -- 0044: itens reivindicados não aparecem para uma segunda execução simultânea (sem duplicata)
+  assert (select count(*) from public.disparos_para_envio(50)) = 0, 'T4 fila reivindicada não repete';
   select id into v_id from public.disparo_itens where disparo_id = d.id;
   perform public.registrar_resultado_disparo(v_id, false, 'falha 1', null, true);
   perform public.registrar_resultado_disparo(v_id, false, 'f2', null, true);

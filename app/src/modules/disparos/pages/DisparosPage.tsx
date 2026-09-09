@@ -20,6 +20,19 @@ import { lerTextoPdf, ROTULO_STATUS_DISPARO, type Disparo } from '../tipos'
 interface CobrancaExistente { id: string; valor: number; data_vencimento: string; descricao: string; observacao: string | null }
 interface Alvo { pessoa: Pessoa; marcado: boolean; telefoneNovo: string; valor: string; vencimento: string; existente: CobrancaExistente | null }
 
+/** Vencimento e valor que aparecem no PDF perto do login (janela de texto ao redor da ocorrência). */
+function dadosDoPdf(textoPdf: string, chave: string): { vencimento: string | null; valor: string | null } {
+  const i = textoPdf.indexOf(chave)
+  if (i < 0) return { vencimento: null, valor: null }
+  const janela = textoPdf.slice(Math.max(0, i - 60), i + chave.length + 160)
+  const d = janela.match(/(\d{2})\/(\d{2})\/(\d{4})/)
+  const v = janela.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/)
+  return {
+    vencimento: d ? `${d[3]}-${d[2]}-${d[1]}` : null,
+    valor: v ? v[1].replaceAll('.', '').replace(',', '.') : null,
+  }
+}
+
 /** Próxima cobrança recorrente prevista de cada pessoa (a cadeia é o espelho do PDF). */
 async function buscarCobrancasExistentes(pessoaIds: string[]): Promise<Map<string, CobrancaExistente>> {
   const mapa = new Map<string, CobrancaExistente>()
@@ -136,7 +149,13 @@ export function DisparosPage() {
       const existentes = await buscarCobrancasExistentes(achados.map((p) => p.id))
       setAlvos(achados.map((p) => {
         const ex = existentes.get(p.id) ?? null
-        return { pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: p.telefone ? formatarTelefone(p.telefone) : '', valor: ex ? String(ex.valor) : '', vencimento: ex?.data_vencimento ?? hojeISO(), existente: ex }
+        const pdf = dadosDoPdf(textoPdf, chaveLogin(p)!)
+        return {
+          pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: p.telefone ? formatarTelefone(p.telefone) : '',
+          valor: pdf.valor ?? (ex ? String(ex.valor) : ''),
+          vencimento: pdf.vencimento ?? ex?.data_vencimento ?? hojeISO(),
+          existente: ex,
+        }
       }))
       setNaoReconhecidos(0)
       if (achados.length === 0) setAviso('Nenhum login do cadastro foi encontrado no PDF. Vincule o "Login do servidor" nas pessoas (editar pessoa) e tente de novo.')

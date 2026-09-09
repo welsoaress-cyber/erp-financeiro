@@ -45,8 +45,9 @@ function chaveLogin(p: Pessoa): string | null {
 
 function primeiroNome(nome: string) { return nome.trim().split(/\s+/)[0] ?? nome }
 
-/** Cadastro só com o login (sem nome real): exibe o login na coluna própria e deixa o nome em branco. */
-const ehLoginComoNome = (p: Pessoa) => !p.login_servidor && !p.nome.trim().includes(' ')
+/** Cliente do servidor: a identidade é o login; sem nome real cadastrado, o nome fica em branco. */
+const ehLoginComoNome = (p: Pessoa) =>
+  p.login_servidor ? p.nome.trim().toLowerCase() === p.login_servidor.toLowerCase() : !p.nome.trim().includes(' ')
 const loginDe = (p: Pessoa) => p.login_servidor ?? (ehLoginComoNome(p) ? p.nome.trim() : null)
 
 /** Progresso e histórico de um disparo, com reenvio das falhas. */

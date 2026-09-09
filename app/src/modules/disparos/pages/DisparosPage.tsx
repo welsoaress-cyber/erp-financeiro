@@ -3,7 +3,6 @@ import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
 import { Alerta } from '../../../core/ui/Alerta'
-import { Campo } from '../../../core/ui/Campo'
 import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { AreaTexto } from '../../../core/ui/AreaTexto'
@@ -18,7 +17,14 @@ import { useCriarLancamento } from '../../lancamentos/api'
 import { useCriarDisparo, useDisparos, useItensDisparo, useModelosDisparo, useProcessarDisparos, useReenviarFalhas, useSalvarModeloDisparo } from '../api'
 import { lerTextoPdf, ROTULO_STATUS_DISPARO, type Disparo } from '../tipos'
 
-interface Alvo { pessoa: Pessoa; marcado: boolean; telefoneNovo: string }
+interface Alvo { pessoa: Pessoa; marcado: boolean; telefoneNovo: string; valor: string; vencimento: string }
+
+/** Chave de match no PDF: login do servidor ou, na falta, o próprio nome quando é um login (sem espaços). */
+function chaveLogin(p: Pessoa): string | null {
+  if (p.login_servidor) return p.login_servidor.toLowerCase()
+  const nome = p.nome.trim()
+  return !nome.includes(' ') && nome.length >= 4 ? nome.toLowerCase() : null
+}
 
 function primeiroNome(nome: string) { return nome.trim().split(/\s+/)[0] ?? nome }
 
@@ -85,13 +91,11 @@ export function DisparosPage() {
   const [aviso, setAviso] = useState<string | null>(null)
   const [adicionarId, setAdicionarId] = useState('')
   const [lancarCobranca, setLancarCobranca] = useState(false)
-  const [valorCobranca, setValorCobranca] = useState('')
-  const [vencimentoCobranca, setVencimentoCobranca] = useState(hojeISO())
   const [detalhe, setDetalhe] = useState<Disparo | null>(null)
   const [disparando, setDisparando] = useState(false)
 
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
-  const comLogin = useMemo(() => (pessoas.data ?? []).filter((p) => p.login_servidor), [pessoas.data])
+  const comLogin = useMemo(() => (pessoas.data ?? []).filter((p) => p.ativo && chaveLogin(p)), [pessoas.data])
   const marcados = alvos.filter((a) => a.marcado)
   const modelo = (modelos.data ?? []).find((m) => m.id === modeloId)
 
@@ -105,10 +109,10 @@ export function DisparosPage() {
     setLendoPdf(true); setErro(null); setAviso(null)
     try {
       const textoPdf = (await lerTextoPdf(await arquivo.arrayBuffer())).toLowerCase()
-      const achados = comLogin.filter((p) => textoPdf.includes(p.login_servidor!.toLowerCase()))
-      setAlvos(achados.map((p) => ({ pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: '' })))
+      const achados = comLogin.filter((p) => textoPdf.includes(chaveLogin(p)!))
+      setAlvos(achados.map((p) => ({ pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: '', valor: '', vencimento: hojeISO() })))
       setNaoReconhecidos(0)
-      if (achados.length === 0) setAviso('Nenhum login do cadastro foi encontrado no PDF. Cadastre o "Login do servidor" nas pessoas (tela Pessoas) e tente de novo.')
+      if (achados.length === 0) setAviso('Nenhum login do cadastro foi encontrado no PDF. Vincule o "Login do servidor" nas pessoas (editar pessoa) e tente de novo.')
       else setAviso(`${achados.length} cliente(s) reconhecido(s) pelo login do servidor.`)
     } catch (e) {
       setErro(mensagemDeErro(e))
@@ -120,7 +124,7 @@ export function DisparosPage() {
   function adicionarManual() {
     const p = (pessoas.data ?? []).find((x) => x.id === adicionarId)
     if (!p || alvos.some((a) => a.pessoa.id === p.id)) return
-    setAlvos((xs) => [...xs, { pessoa: p, marcado: true, telefoneNovo: '' }])
+    setAlvos((xs) => [...xs, { pessoa: p, marcado: true, telefoneNovo: '', valor: '', vencimento: hojeISO() }])
     setAdicionarId('')
   }
 
@@ -129,7 +133,7 @@ export function DisparosPage() {
     if (tel.length < 10 || tel.length > 13) { setErro('Telefone com DDD, 10 ou 11 dígitos.'); return }
     const p = a.pessoa
     const salvo = await atualizarPessoa.mutateAsync({ id: p.id, tipo: p.tipo, nome: p.nome, documento: p.documento, email: p.email, telefone: tel, login_servidor: p.login_servidor, data_nascimento: p.data_nascimento, observacao: p.observacao, ativo: p.ativo, receber_avisos: p.receber_avisos })
-    setAlvos((xs) => xs.map((x) => (x.pessoa.id === p.id ? { pessoa: { ...p, telefone: (salvo as Pessoa).telefone ?? tel }, marcado: true, telefoneNovo: '' } : x)))
+    setAlvos((xs) => xs.map((x) => (x.pessoa.id === p.id ? { ...x, pessoa: { ...p, telefone: (salvo as Pessoa).telefone ?? tel }, marcado: true, telefoneNovo: '' } : x)))
   }
 
   async function disparar() {
@@ -142,16 +146,17 @@ export function DisparosPage() {
     try {
       let cobrancasCriadas = 0
       if (lancarCobranca) {
-        const v = Math.round(Number(valorCobranca.replace(',', '.')) * 100) / 100
-        if (!(v > 0) || !vencimentoCobranca) { setErro('Informe valor e vencimento da cobrança.'); setDisparando(false); return }
+        const semDados = marcados.filter((a) => !(Number(a.valor.replace(',', '.')) > 0) || !a.vencimento)
+        if (semDados.length > 0) { setErro(`Informe valor e vencimento de: ${semDados.map((a) => primeiroNome(a.pessoa.nome)).join(', ')}.`); setDisparando(false); return }
         const neg = (negocios.data ?? []).find((n) => n.id === negocioId)
         if (!neg?.conta_padrao_id || !neg?.categoria_receita_id) { setErro('O negócio precisa de conta padrão e categoria de receita (tela Negócios) para lançar a cobrança.'); setDisparando(false); return }
         for (const a of marcados) {
-          const { data: existentes } = await supabase.from('lancamentos').select('id').eq('pessoa_id', a.pessoa.id).eq('tipo', 'receita').eq('status', 'previsto').eq('data_vencimento', vencimentoCobranca).limit(1)
+          const v = Math.round(Number(a.valor.replace(',', '.')) * 100) / 100
+          const { data: existentes } = await supabase.from('lancamentos').select('id').eq('pessoa_id', a.pessoa.id).eq('tipo', 'receita').eq('status', 'previsto').eq('data_vencimento', a.vencimento).limit(1)
           if ((existentes ?? []).length > 0) continue // já lançado: não duplica
           await criarLancamento.mutateAsync({
             tipo: 'receita', descricao: `Mensalidade servidor · ${primeiroNome(a.pessoa.nome)}`, valor: v,
-            data_competencia: vencimentoCobranca, data_vencimento: vencimentoCobranca, data_efetivacao: null,
+            data_competencia: a.vencimento, data_vencimento: a.vencimento, data_efetivacao: null,
             conta_id: neg.conta_padrao_id, conta_destino_id: null, categoria_id: neg.categoria_receita_id,
             observacao: `Login: ${a.pessoa.login_servidor ?? '—'}`, negocio_id: negocioId, pessoa_id: a.pessoa.id, contrato_id: null,
             recorrente: true, periodicidade: 'mensal', numero_parcelas: null, data_fim_recorrencia: null,
@@ -204,12 +209,7 @@ export function DisparosPage() {
             <input type="checkbox" checked={lancarCobranca} onChange={(e) => setLancarCobranca(e.target.checked)} className="size-4 accent-brand-600" />
             Lançar cobrança no contas a receber (fixa mensal, sem marcar como paga; não duplica se já existir no vencimento)
           </label>
-          {lancarCobranca && (
-            <div className="mt-3 grid grid-cols-2 gap-4">
-              <Campo rotulo="Valor (R$)" type="number" step="0.01" min="0.01" value={valorCobranca} onChange={(e) => setValorCobranca(e.target.value)} />
-              <Campo rotulo="Vencimento" type="date" value={vencimentoCobranca} onChange={(e) => setVencimentoCobranca(e.target.value)} />
-            </div>
-          )}
+          {lancarCobranca && <p className="mt-1 text-xs text-ink-muted">Cada cliente tem seu valor e vencimento: preencha nas colunas da lista abaixo.</p>}
         </div>
       </Cartao>
 
@@ -228,7 +228,7 @@ export function DisparosPage() {
           <p className="px-6 py-10 text-center text-sm text-ink-muted">Envie o PDF (ou adicione clientes manualmente) para montar a lista.</p>
         ) : (
           <div className="overflow-x-auto"><table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2"></th><th className="px-4 py-2 font-medium">Cliente</th><th className="px-4 py-2 font-medium">Login</th><th className="px-4 py-2 font-medium">Telefone</th></tr></thead>
+            <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2"></th><th className="px-4 py-2 font-medium">Cliente</th><th className="px-4 py-2 font-medium">Login</th><th className="px-4 py-2 font-medium">Telefone</th>{lancarCobranca && <><th className="px-4 py-2 font-medium">Valor (R$)</th><th className="px-4 py-2 font-medium">Vencimento</th></>}<th className="px-4 py-2"></th></tr></thead>
             <tbody>
               {alvos.map((a) => (
                 <tr key={a.pessoa.id} className="border-b border-line last:border-0">
@@ -242,6 +242,15 @@ export function DisparosPage() {
                         <Botao variante="secundario" carregando={atualizarPessoa.isPending} disabled={!a.telefoneNovo.trim()} onClick={() => void salvarTelefone(a)}>Salvar</Botao>
                       </span>
                     )}
+                  </td>
+                  {lancarCobranca && (
+                    <>
+                      <td className="px-4 py-2"><input type="number" step="0.01" min="0.01" value={a.valor} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, valor: e.target.value } : x)))} placeholder="0,00" className="h-8 w-24 rounded-md border border-line bg-white px-2 text-sm" /></td>
+                      <td className="px-4 py-2"><input type="date" value={a.vencimento} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, vencimento: e.target.value } : x)))} className="h-8 w-36 rounded-md border border-line bg-white px-2 text-sm" /></td>
+                    </>
+                  )}
+                  <td className="px-4 py-2 text-right">
+                    <button type="button" aria-label={`Remover ${a.pessoa.nome}`} className="text-ink-muted hover:text-red-700" onClick={() => setAlvos((xs) => xs.filter((x) => x.pessoa.id !== a.pessoa.id))}>×</button>
                   </td>
                 </tr>
               ))}

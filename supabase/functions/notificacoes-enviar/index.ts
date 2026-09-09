@@ -58,7 +58,8 @@ Deno.serve(async (req) => {
   if (!EVO_URL || !EVO_KEY) return json({ ok: false, erro: 'EVOLUTION_API_URL/EVOLUTION_API_KEY não configurados' }, 500)
 
   const sb = createClient(SB_URL, SB_SERVICE)
-  const { data: fila, error } = await sb.rpc('notificacoes_para_envio', { p_limite: 50 })
+  // lote pequeno + pausa longa entre mensagens: proteção do número contra bloqueio do WhatsApp
+  const { data: fila, error } = await sb.rpc('notificacoes_para_envio', { p_limite: 8 })
   if (error) return json({ ok: false, erro: error.message }, 500)
   const itens = (fila ?? []) as Array<{ id: string; instancia: string; numero_destino: string; mensagem: string; tipo: string }>
   if (itens.length === 0) return json({ ok: true, enviados: 0, erros: 0, pulados: 0, msg: 'Nada pendente.' })
@@ -80,7 +81,8 @@ Deno.serve(async (req) => {
     await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: r.ok, p_erro: r.erro ?? null, p_resposta: r.resposta ?? null })
     if (r.ok) { enviados++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'enviado' }) }
     else { erros++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'erro', motivo: r.erro }) }
-    await sleep(1000)
+    await sleep(15000) // 15 s entre mensagens (anti-bloqueio); o cron de 5 em 5 min esvazia a fila
+
   }
   const resumo = { ok: true, enviados, erros, pulados, resultados }
   console.log('notificacoes-enviar', JSON.stringify({ enviados, erros, pulados }))

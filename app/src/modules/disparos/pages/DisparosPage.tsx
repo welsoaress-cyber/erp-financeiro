@@ -114,7 +114,12 @@ function DetalheDisparo({ disparo, nomePessoa, aoFechar }: { disparo: Disparo; n
               <tr key={i.id} className="border-b border-line last:border-0">
                 <td className="px-3 py-2">{nomePessoa.get(i.pessoa_id) ?? '—'}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-ink-muted">{i.numero_destino}</td>
-                <td className="whitespace-nowrap px-3 py-2"><Distintivo tom={i.status === 'enviado' ? 'ok' : i.status === 'erro' ? 'alerta' : 'info'}>{ROTULO_STATUS_DISPARO[i.status]}</Distintivo>{i.erro && <p className="max-w-56 truncate text-xs text-red-700" title={i.erro}>{i.erro}</p>}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-ink-muted">{i.vencimento ? `venc. ${formatarData(i.vencimento)}` : '—'}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <Distintivo tom={i.status === 'enviado' ? 'ok' : i.status === 'erro' ? 'alerta' : 'info'}>{ROTULO_STATUS_DISPARO[i.status]}</Distintivo>
+                  {i.data_envio && <span className="ml-1 text-xs text-ink-muted">{new Date(i.data_envio).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>}
+                  {i.erro && <p className="max-w-56 truncate text-xs text-red-700" title={i.erro}>{i.erro}</p>}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -264,7 +269,7 @@ export function DisparosPage() {
       const d = await criar.mutateAsync({
         negocio_id: negocioId,
         modelo_nome: modelo?.nome ?? 'Mensagem avulsa',
-        itens: marcados.map((a) => ({ pessoa_id: a.pessoa.id, mensagem: texto.replaceAll('{nome}', primeiroNome(a.pessoa.nome)) })),
+        itens: marcados.map((a) => ({ pessoa_id: a.pessoa.id, mensagem: texto.replaceAll('{nome}', primeiroNome(a.pessoa.nome)), vencimento: a.vencimento || null })),
       })
       processar.mutate()
       setDetalhe(d)
@@ -368,14 +373,28 @@ export function DisparosPage() {
         <p className="border-b border-line px-4 py-3 text-sm font-medium">Histórico de disparos</p>
         {(disparos.data ?? []).length === 0 ? <p className="px-6 py-8 text-center text-sm text-ink-muted">Nenhum disparo ainda.</p> : (
           <ul className="divide-y divide-line">
-            {(disparos.data ?? []).map((d) => (
-              <li key={d.id}>
-                <button type="button" className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-surface" onClick={() => setDetalhe(d)}>
-                  <span>{d.modelo_nome}</span>
-                  <span className="text-ink-muted">{formatarData(d.criado_em.slice(0, 10))}</span>
-                </button>
-              </li>
-            ))}
+            {(disparos.data ?? []).map((d) => {
+              const its = d.disparo_itens ?? []
+              const enviados = its.filter((i) => i.status === 'enviado').length
+              const errosN = its.filter((i) => i.status === 'erro').length
+              const pend = its.length - enviados - errosN
+              const nomes = its.slice(0, 3).map((i) => primeiroNome(nomePessoa.get(i.pessoa_id) ?? '—')).join(', ')
+              const vencs = [...new Set(its.map((i) => i.vencimento).filter(Boolean))] as string[]
+              return (
+                <li key={d.id}>
+                  <button type="button" className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left text-sm hover:bg-surface" onClick={() => setDetalhe(d)}>
+                    <span>
+                      <span className="font-medium">{d.modelo_nome}</span>
+                      <span className="block text-xs text-ink-muted">{its.length} destinatário(s): {nomes}{its.length > 3 ? ` +${its.length - 3}` : ''}{vencs.length > 0 && ` · venc. ${vencs.map((v) => formatarData(v)).join(', ')}`}</span>
+                    </span>
+                    <span className="text-right text-xs text-ink-muted">
+                      {new Date(d.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      <span className="block">{enviados > 0 && <span className="text-green-700">{enviados} enviado(s)</span>}{errosN > 0 && <span className="ml-1 text-red-700">{errosN} erro(s)</span>}{pend > 0 && <span className="ml-1">{pend} pendente(s)</span>}</span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </Cartao>

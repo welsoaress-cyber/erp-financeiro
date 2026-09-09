@@ -38,7 +38,7 @@ export function useDisparos() {
   return useQuery({
     queryKey: [...chave(organizacao.id), 'lista'],
     queryFn: async (): Promise<Disparo[]> => {
-      const { data, error } = await supabase.from('disparos').select('*').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }).limit(50)
+      const { data, error } = await supabase.from('disparos').select('*, disparo_itens(status, pessoa_id, vencimento)').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }).limit(50)
       if (error) throw error
       return (data ?? []) as Disparo[]
     },

@@ -15,6 +15,8 @@ export interface Disparo {
   negocio_id: string
   modelo_nome: string
   criado_em: string
+  /** resumo dos itens (vem aninhado na listagem) */
+  disparo_itens?: { status: StatusDisparo; pessoa_id: string; vencimento: string | null }[]
 }
 
 export interface DisparoItem {
@@ -27,6 +29,7 @@ export interface DisparoItem {
   tentativas: number
   erro: string | null
   data_envio: string | null
+  vencimento: string | null
 }
 
 /** Lê o texto de todas as páginas de um PDF no navegador (pdfjs). */

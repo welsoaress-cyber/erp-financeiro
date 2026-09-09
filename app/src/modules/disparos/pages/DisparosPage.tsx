@@ -45,6 +45,10 @@ function chaveLogin(p: Pessoa): string | null {
 
 function primeiroNome(nome: string) { return nome.trim().split(/\s+/)[0] ?? nome }
 
+/** Cadastro só com o login (sem nome real): exibe o login na coluna própria e deixa o nome em branco. */
+const ehLoginComoNome = (p: Pessoa) => !p.login_servidor && !p.nome.trim().includes(' ')
+const loginDe = (p: Pessoa) => p.login_servidor ?? (ehLoginComoNome(p) ? p.nome.trim() : null)
+
 /** Progresso e histórico de um disparo, com reenvio das falhas. */
 function DetalheDisparo({ disparo, nomePessoa, aoFechar }: { disparo: Disparo; nomePessoa: Map<string, string>; aoFechar: () => void }) {
   const itens = useItensDisparo(disparo.id, true)
@@ -199,7 +203,7 @@ export function DisparosPage() {
               tipo: 'receita', descricao: `Mensalidade servidor · ${primeiroNome(a.pessoa.nome)}`, valor: v,
               data_competencia: a.vencimento, data_vencimento: a.vencimento, data_efetivacao: null,
               conta_id: neg.conta_padrao_id, conta_destino_id: null, categoria_id: neg.categoria_receita_id,
-              observacao: `Login: ${a.pessoa.login_servidor ?? '—'}`, negocio_id: negocioId, pessoa_id: a.pessoa.id, contrato_id: null,
+              observacao: `Login: ${loginDe(a.pessoa) ?? '—'}`, negocio_id: negocioId, pessoa_id: a.pessoa.id, contrato_id: null,
               recorrente: true, periodicidade: 'mensal', numero_parcelas: null, data_fim_recorrencia: null,
             })
             cobrancasCriadas++
@@ -275,8 +279,8 @@ export function DisparosPage() {
               {alvos.map((a) => (
                 <tr key={a.pessoa.id} className="border-b border-line last:border-0">
                   <td className="px-4 py-2"><input type="checkbox" checked={a.marcado} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, marcado: e.target.checked } : x)))} className="size-4 accent-brand-600" /></td>
-                  <td className="px-4 py-2 font-medium">{a.pessoa.nome}{!a.pessoa.receber_avisos && <span className="ml-2 text-xs text-amber-700">avisos desativados</span>}</td>
-                  <td className="px-4 py-2 font-mono text-xs text-ink-muted">{a.pessoa.login_servidor ?? '—'}</td>
+                  <td className="px-4 py-2 font-medium">{ehLoginComoNome(a.pessoa) ? <span className="text-ink-muted font-normal">—</span> : a.pessoa.nome}{!a.pessoa.receber_avisos && <span className="ml-2 text-xs text-amber-700">avisos desativados</span>}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-ink-muted">{loginDe(a.pessoa) ?? '—'}</td>
                   <td className="px-4 py-2">
                     <input value={a.telefoneNovo} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, telefoneNovo: e.target.value } : x)))} placeholder="(11) 99999-9999" className="h-8 w-40 rounded-md border border-line bg-white px-2 text-sm" />
                     {somenteDigitos(a.telefoneNovo) !== (a.pessoa.telefone ?? '') && <p className="mt-0.5 text-xs text-ink-muted">Será gravado no cadastro ao disparar</p>}

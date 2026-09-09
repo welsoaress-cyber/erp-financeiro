@@ -11,6 +11,8 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, hojeISO } from '../../../core/formatos'
 import { supabase } from '../../../core/supabase/client'
 import { useNegocios } from '../../negocios/api'
+import { useCategorias } from '../../categorias/api'
+import { useContas } from '../../contas/api'
 import { usePessoas, useAtualizarPessoa } from '../../pessoas/api'
 import { formatarTelefone, somenteDigitos, type Pessoa } from '../../pessoas/tipos'
 import { useCriarLancamento, useAtualizarLancamentoRecorrente } from '../../lancamentos/api'
@@ -18,13 +20,30 @@ import { useCriarDisparo, useDisparos, useItensDisparo, useModelosDisparo, usePr
 import { lerTextoPdf, ROTULO_STATUS_DISPARO, type Disparo } from '../tipos'
 
 interface CobrancaExistente { id: string; valor: number; data_vencimento: string; descricao: string; observacao: string | null }
-interface Alvo { pessoa: Pessoa; marcado: boolean; telefoneNovo: string; valor: string; vencimento: string; existente: CobrancaExistente | null }
+interface Alvo {
+  pessoa: Pessoa; marcado: boolean; telefoneNovo: string; valor: string; vencimento: string; existente: CobrancaExistente | null
+  // colunas do relatório casadas com o cadastro (fallback: padrões do negócio)
+  descricao?: string | null; categoriaId?: string | null; contaId?: string | null
+}
+
+/** Nome cadastrado (categoria/conta) que aparece na janela de texto da linha do PDF; prefere o nome mais longo (subcategoria). */
+function casarNome<T extends { id: string; nome: string }>(janela: string, itens: T[]): T | null {
+  let melhor: T | null = null
+  for (const it of itens) {
+    const n = it.nome.trim().toLowerCase()
+    if (n.length >= 3 && janela.includes(n) && (!melhor || n.length > melhor.nome.trim().length)) melhor = it
+  }
+  return melhor
+}
 
 /** Vencimento e valor que aparecem no PDF perto do login (janela de texto ao redor da ocorrência). */
-function dadosDoPdf(textoPdf: string, chave: string): { vencimento: string | null; valor: string | null } {
+function dadosDoPdf(textoPdf: string, chave: string): { vencimento: string | null; valor: string | null; descricao: string | null; janela: string } {
   const i = textoPdf.indexOf(chave)
-  if (i < 0) return { vencimento: null, valor: null }
+  if (i < 0) return { vencimento: null, valor: null, descricao: null, janela: '' }
   const depois = textoPdf.slice(i + chave.length, i + chave.length + 160)
+  // descrição do relatório: "Natv | zelia0812a" → o prefixo antes do "|" na mesma linha
+  const antes = textoPdf.slice(Math.max(0, i - 50), i)
+  const mDesc = antes.match(/([\p{L}0-9][\p{L}0-9 ._-]{0,38})\s*\|\s*$/u)
   // colunas do relatório: Valor | Lançamento | Vencimento — a 2ª data após o login é o vencimento
   const datas = [...depois.matchAll(/(\d{2})\/(\d{2})\/(\d{4})/g)]
   const d = datas[1] ?? datas[0]
@@ -32,6 +51,8 @@ function dadosDoPdf(textoPdf: string, chave: string): { vencimento: string | nul
   return {
     vencimento: d ? `${d[3]}-${d[2]}-${d[1]}` : null,
     valor: v ? v[1].replaceAll('.', '').replace(',', '.') : null,
+    descricao: mDesc ? `${mDesc[1].trim()} | ${chave}` : null,
+    janela: depois,
   }
 }
 
@@ -110,6 +131,8 @@ function DetalheDisparo({ disparo, nomePessoa, aoFechar }: { disparo: Disparo; n
 export function DisparosPage() {
   const negocios = useNegocios()
   const pessoas = usePessoas()
+  const categorias = useCategorias()
+  const contas = useContas()
   const modelos = useModelosDisparo()
   const disparos = useDisparos()
   const criar = useCriarDisparo()
@@ -152,11 +175,14 @@ export function DisparosPage() {
       setAlvos(achados.map((p) => {
         const ex = existentes.get(p.id) ?? null
         const pdf = dadosDoPdf(textoPdf, chaveLogin(p)!)
+        const categoria = casarNome(pdf.janela, (categorias.data ?? []).filter((c) => c.tipo === 'receita' && c.ativo))
+        const conta = casarNome(pdf.janela, (contas.data ?? []).filter((c) => c.ativo && c.tipo !== 'credito'))
         return {
           pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: p.telefone ? formatarTelefone(p.telefone) : '',
           valor: pdf.valor ?? (ex ? String(ex.valor) : ''),
           vencimento: pdf.vencimento ?? ex?.data_vencimento ?? hojeISO(),
           existente: ex,
+          descricao: pdf.descricao, categoriaId: categoria?.id ?? null, contaId: conta?.id ?? null,
         }
       }))
       setNaoReconhecidos(0)
@@ -209,7 +235,8 @@ export function DisparosPage() {
         const semDados = marcados.filter((a) => !(Number(a.valor.replace(',', '.')) > 0) || !a.vencimento)
         if (semDados.length > 0) { setErro(`Informe valor e vencimento de: ${semDados.map((a) => primeiroNome(a.pessoa.nome)).join(', ')}.`); setDisparando(false); return }
         const neg = (negocios.data ?? []).find((n) => n.id === negocioId)
-        if (!neg?.conta_padrao_id || !neg?.categoria_receita_id) { setErro('O negócio precisa de conta padrão e categoria de receita (tela Negócios) para lançar a cobrança.'); setDisparando(false); return }
+        const semFallback = marcados.some((a) => (!a.contaId && !neg?.conta_padrao_id) || (!a.categoriaId && !neg?.categoria_receita_id))
+        if (semFallback) { setErro('O negócio precisa de conta padrão e categoria de receita (tela Negócios) para lançar cobranças sem conta/categoria no PDF.'); setDisparando(false); return }
         for (const a of marcados) {
           const v = Math.round(Number(a.valor.replace(',', '.')) * 100) / 100
           if (a.existente) {
@@ -222,9 +249,9 @@ export function DisparosPage() {
             cobrancasAtualizadas++
           } else {
             await criarLancamento.mutateAsync({
-              tipo: 'receita', descricao: `Mensalidade servidor · ${primeiroNome(a.pessoa.nome)}`, valor: v,
+              tipo: 'receita', descricao: a.descricao ?? `Mensalidade servidor · ${primeiroNome(a.pessoa.nome)}`, valor: v,
               data_competencia: a.vencimento, data_vencimento: a.vencimento, data_efetivacao: null,
-              conta_id: neg.conta_padrao_id, conta_destino_id: null, categoria_id: neg.categoria_receita_id,
+              conta_id: (a.contaId ?? neg?.conta_padrao_id)!, conta_destino_id: null, categoria_id: (a.categoriaId ?? neg?.categoria_receita_id)!,
               observacao: `Login: ${loginDe(a.pessoa) ?? '—'}`, negocio_id: negocioId, pessoa_id: a.pessoa.id, contrato_id: null,
               recorrente: true, periodicidade: 'mensal', numero_parcelas: null, data_fim_recorrencia: null,
             })

@@ -108,7 +108,7 @@ function DetalheDisparo({ disparo, nomePessoa, aoFechar }: { disparo: Disparo; n
   return (
     <div className="space-y-3">
       <p className="text-sm text-ink-muted">{disparo.modelo_nome} · {formatarData(disparo.criado_em.slice(0, 10))}{pendentes > 0 && ` · enviando… (${pendentes} na fila, ~15 s entre mensagens)`}</p>
-      <div className="max-h-80 overflow-y-auto rounded-md border border-line">
+      <div className="max-h-96 overflow-y-auto rounded-md border border-line">
         <table className="w-full text-sm">
           <tbody>
             {(itens.data ?? []).map((i) => (
@@ -421,7 +421,7 @@ export function DisparosPage() {
         )}
       </Cartao>
 
-      <Modal aberto={detalhe !== null} aoFechar={() => setDetalhe(null)} largura="md" titulo="Disparo">
+      <Modal aberto={detalhe !== null} aoFechar={() => setDetalhe(null)} largura="xl" titulo="Disparo">
         {detalhe && <DetalheDisparo disparo={detalhe} nomePessoa={nomePessoa} aoFechar={() => setDetalhe(null)} />}
       </Modal>
     </>

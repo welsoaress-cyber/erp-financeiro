@@ -21,6 +21,7 @@ export interface Pessoa {
   documento: string | null
   email: string | null
   telefone: string | null
+  login_servidor: string | null
   data_nascimento: string | null
   observacao: string | null
   ativo: boolean
@@ -35,6 +36,7 @@ export interface DadosPessoa {
   documento: string | null
   email: string | null
   telefone: string | null
+  login_servidor?: string | null
   data_nascimento: string | null
   observacao: string | null
   ativo: boolean

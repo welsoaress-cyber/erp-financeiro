@@ -25,7 +25,7 @@ cd app && npx tsc --noEmit -p tsconfig.app.json && npx oxlint src && npm run bui
 E2E: Playwright com API mock (`mock.mjs`, porta 54321) e `vite preview --port 4173`; um spec por módulo. Rodar os specs dos módulos tocados.
 
 ## Produção
-- Verificação consolidada: `supabase/tests/verificar_tudo.sql` (esperado 33 de 33). Diagnóstico somente leitura: `supabase/scripts/diagnostico_contratos.sql`.
+- Verificação consolidada: `supabase/tests/verificar_tudo.sql` (esperado 34 de 34). Diagnóstico somente leitura: `supabase/scripts/diagnostico_contratos.sql`.
 - O ambiente remoto não alcança `*.supabase.co` nem `workers.dev`: o proprietário aplica SQL pelo SQL Editor e reporta o resultado.
 
 ## Estilo de resposta
@@ -35,3 +35,4 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 16: `docs/24-pendencias-projecao-edicao.md`.
 - Etapa 17: `docs/25-carteira-dupla-saldo.md`.
 - Etapas 18-25: `docs/26-projecao-contratos.md`, `docs/27-cartao-credito.md` (meses futuros de contrato são projeção derivada, nunca lançamentos pré-gerados).
+- Etapa 26: `docs/28-disparos.md` (disparos WhatsApp manuais a partir do PDF de receitas; login do servidor em pessoas).

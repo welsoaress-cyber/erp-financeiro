@@ -14,7 +14,7 @@ import { useNegocios } from '../../negocios/api'
 import { useCategorias } from '../../categorias/api'
 import { useContas } from '../../contas/api'
 import { usePessoas, useAtualizarPessoa } from '../../pessoas/api'
-import { formatarTelefone, somenteDigitos, type Pessoa } from '../../pessoas/tipos'
+import { formatarTelefone, normalizarTelefone, telefoneValido, type Pessoa } from '../../pessoas/tipos'
 import { useCriarLancamento, useAtualizarLancamentoRecorrente } from '../../lancamentos/api'
 import { useCriarDisparo, useDisparos, useItensDisparo, useModelosDisparo, useProcessarDisparos, useReenviarFalhas, useSalvarModeloDisparo } from '../api'
 import { lerTextoPdf, ROTULO_STATUS_DISPARO, type Disparo } from '../tipos'
@@ -215,7 +215,7 @@ export function DisparosPage() {
 
   /** Grava o telefone digitado na linha no cadastro da pessoa (vinculado ao login para os próximos disparos). */
   async function salvarTelefone(a: Alvo): Promise<Pessoa> {
-    const tel = somenteDigitos(a.telefoneNovo)
+    const tel = normalizarTelefone(a.telefoneNovo)
     const p = a.pessoa
     const salvo = await atualizarPessoa.mutateAsync({ id: p.id, tipo: p.tipo, nome: p.nome, documento: p.documento, email: p.email, telefone: tel, login_servidor: p.login_servidor, data_nascimento: p.data_nascimento, observacao: p.observacao, ativo: p.ativo, receber_avisos: p.receber_avisos })
     const atualizada = { ...p, telefone: (salvo as Pessoa).telefone ?? tel }
@@ -228,13 +228,13 @@ export function DisparosPage() {
     if (!negocioId) { setErro('Escolha o negócio (define a instância do WhatsApp).'); return }
     if (texto.trim().length < 10) { setErro('Escreva a mensagem (mínimo 10 caracteres).'); return }
     if (marcados.length === 0 || marcados.length > 30) { setErro('Marque de 1 a 30 clientes.'); return }
-    const telInvalidos = marcados.filter((a) => { const t = somenteDigitos(a.telefoneNovo); return t.length < 10 || t.length > 13 })
-    if (telInvalidos.length > 0) { setErro(`Telefone inválido (DDD + número) de: ${telInvalidos.map((a) => primeiroNome(a.pessoa.nome)).join(', ')}.`); return }
+    const telInvalidos = marcados.filter((a) => !telefoneValido(normalizarTelefone(a.telefoneNovo)))
+    if (telInvalidos.length > 0) { setErro(`Telefone inválido (DDD + número, ou internacional com "+") de: ${telInvalidos.map((a) => primeiroNome(a.pessoa.nome)).join(', ')}.`); return }
     setDisparando(true)
     try {
       // telefones alterados na linha são gravados na pessoa antes do envio
       for (const a of marcados) {
-        if (somenteDigitos(a.telefoneNovo) !== (a.pessoa.telefone ?? '')) await salvarTelefone(a)
+        if (normalizarTelefone(a.telefoneNovo) !== (a.pessoa.telefone ?? '')) await salvarTelefone(a)
       }
       let cobrancasCriadas = 0
       let cobrancasAtualizadas = 0
@@ -339,7 +339,7 @@ export function DisparosPage() {
                   <td className="px-4 py-2 font-mono text-xs text-ink-muted">{loginDe(a.pessoa) ?? '—'}</td>
                   <td className="px-4 py-2">
                     <input value={a.telefoneNovo} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, telefoneNovo: e.target.value } : x)))} placeholder="(11) 99999-9999" className="h-8 w-40 rounded-md border border-line bg-white px-2 text-sm" />
-                    {somenteDigitos(a.telefoneNovo) !== (a.pessoa.telefone ?? '') && <p className="mt-0.5 text-xs text-ink-muted">Será gravado no cadastro ao disparar</p>}
+                    {normalizarTelefone(a.telefoneNovo) !== (a.pessoa.telefone ?? '') && <p className="mt-0.5 text-xs text-ink-muted">Será gravado no cadastro ao disparar</p>}
                   </td>
                   {lancarCobranca && (
                     <>

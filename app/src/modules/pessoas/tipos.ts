@@ -62,6 +62,10 @@ export function formatarDocumento(doc: string | null): string {
   return doc
 }
 
+/** Mantém o "+" de número internacional; sem "+", só dígitos (brasileiro com DDD). */
+export const normalizarTelefone = (v: string) => (v.trim().startsWith('+') ? '+' + somenteDigitos(v) : somenteDigitos(v))
+export const telefoneValido = (t: string) => /^[0-9]{10,13}$/.test(t) || /^\+[0-9]{8,15}$/.test(t)
+
 export function formatarTelefone(tel: string | null): string {
   if (!tel) return ''
   if (tel.length === 11) return tel.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')

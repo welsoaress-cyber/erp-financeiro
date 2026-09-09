@@ -61,6 +61,15 @@ do $$ declare v r%rowtype; v_itens jsonb; begin
   exception when insufficient_privilege then null; end;
 end $$;
 
+-- T3b (0046): número internacional com "+" é aceito e vai como está para a fila
+do $$ declare v r%rowtype; d public.disparos; begin
+  select * into v from r;
+  insert into public.pessoas (organizacao_id, nome, telefone, login_servidor) values (v.org, 'Cliente EUA', '+16893162446', 'clienteusa04');
+  d := public.criar_disparo(v.neg, 'x', jsonb_build_array(jsonb_build_object('pessoa_id',
+        (select id from public.pessoas where login_servidor='clienteusa04'), 'mensagem', 'mensagem internacional valida')));
+  assert (select numero_destino from public.disparo_itens where disparo_id = d.id) = '+16893162446', 'T3b E.164 internacional preservado';
+end $$;
+
 -- T4: fila para envio (service_role) e resultado; reenviar falhas
 do $$ declare v r%rowtype; d public.disparos; v_id uuid; v_n int; begin
   select * into v from r;

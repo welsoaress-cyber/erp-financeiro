@@ -3,7 +3,7 @@ import { Alerta } from '../../../core/ui/Alerta'
 import { Botao } from '../../../core/ui/Botao'
 import { Campo } from '../../../core/ui/Campo'
 import { AreaTexto } from '../../../core/ui/AreaTexto'
-import { documentoValido, formatarDocumento, formatarTelefone, somenteDigitos, TIPOS_PESSOA, type DadosPessoa, type Pessoa, type TipoPessoa } from '../tipos'
+import { documentoValido, formatarDocumento, formatarTelefone, normalizarTelefone, somenteDigitos, telefoneValido, TIPOS_PESSOA, type DadosPessoa, type Pessoa, type TipoPessoa } from '../tipos'
 
 interface Props {
   pessoa?: Pessoa
@@ -31,7 +31,7 @@ export function FormularioPessoa({ pessoa, salvando, erro, aoSalvar, aoCancelar 
     e.preventDefault()
     const novos: typeof erros = {}
     const doc = somenteDigitos(documento)
-    const tel = somenteDigitos(telefone)
+    const tel = normalizarTelefone(telefone)
     if (nome.trim().length < 2) novos.nome = 'Informe o nome (mínimo 2 caracteres).'
     if (doc) {
       if (tipo === 'fisica' && doc.length !== 11) novos.documento = 'CPF deve ter 11 dígitos.'
@@ -39,7 +39,7 @@ export function FormularioPessoa({ pessoa, salvando, erro, aoSalvar, aoCancelar 
       else if (!documentoValido(doc)) novos.documento = tipo === 'fisica' ? 'CPF inválido.' : 'CNPJ inválido.'
     }
     if (email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) novos.email = 'E-mail inválido.'
-    if (tel && (tel.length < 10 || tel.length > 13)) novos.telefone = 'Telefone com DDD, 10 ou 11 dígitos.'
+    if (tel && !telefoneValido(tel)) novos.telefone = 'Telefone com DDD (10–11 dígitos) ou internacional com "+" (ex.: +16893162446).'
     setErros(novos)
     if (Object.keys(novos).length > 0) return
     aoSalvar({ tipo, nome: nome.trim(), documento: doc || null, email: email.trim().toLowerCase() || null, telefone: tel || null, login_servidor: loginServidor.trim() || null, data_nascimento: nascimento || null, observacao: observacao.trim() || null, ativo, receber_avisos: receberAvisos })
@@ -57,7 +57,7 @@ export function FormularioPessoa({ pessoa, salvando, erro, aoSalvar, aoCancelar 
       <Campo rotulo={tipo === 'fisica' ? 'Nome completo' : 'Razão social / nome'} value={nome} onChange={(e) => setNome(e.target.value)} erro={erros.nome} autoFocus maxLength={120} />
       <div className="grid grid-cols-2 gap-4">
         <Campo rotulo={tipo === 'fisica' ? 'CPF' : 'CNPJ'} value={documento} inputMode="numeric" onChange={(e) => setDocumento(e.target.value)} onBlur={() => setDocumento(formatarDocumento(somenteDigitos(documento) || null) === '—' ? '' : formatarDocumento(somenteDigitos(documento)))} erro={erros.documento} placeholder={tipo === 'fisica' ? '000.000.000-00' : '00.000.000/0000-00'} />
-        <Campo rotulo="Telefone" value={telefone} inputMode="tel" onChange={(e) => setTelefone(e.target.value)} onBlur={() => setTelefone(formatarTelefone(somenteDigitos(telefone) || null))} erro={erros.telefone} placeholder="(11) 99999-9999" />
+        <Campo rotulo="Telefone" value={telefone} inputMode="tel" onChange={(e) => setTelefone(e.target.value)} onBlur={() => setTelefone(formatarTelefone(normalizarTelefone(telefone) || null))} erro={erros.telefone} placeholder="(11) 99999-9999" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <Campo rotulo="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} erro={erros.email} />

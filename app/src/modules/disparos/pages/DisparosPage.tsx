@@ -131,7 +131,7 @@ export function DisparosPage() {
       const existentes = await buscarCobrancasExistentes(achados.map((p) => p.id))
       setAlvos(achados.map((p) => {
         const ex = existentes.get(p.id) ?? null
-        return { pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: '', valor: ex ? String(ex.valor) : '', vencimento: ex?.data_vencimento ?? hojeISO(), existente: ex }
+        return { pessoa: p, marcado: Boolean(p.telefone) && p.receber_avisos, telefoneNovo: p.telefone ? formatarTelefone(p.telefone) : '', valor: ex ? String(ex.valor) : '', vencimento: ex?.data_vencimento ?? hojeISO(), existente: ex }
       }))
       setNaoReconhecidos(0)
       if (achados.length === 0) setAviso('Nenhum login do cadastro foi encontrado no PDF. Vincule o "Login do servidor" nas pessoas (editar pessoa) e tente de novo.')
@@ -150,16 +150,18 @@ export function DisparosPage() {
     const p = (pessoas.data ?? []).find((x) => x.id === adicionarId)
     if (!p || alvos.some((a) => a.pessoa.id === p.id)) return
     const ex = (await buscarCobrancasExistentes([p.id])).get(p.id) ?? null
-    setAlvos((xs) => [...xs, { pessoa: p, marcado: true, telefoneNovo: '', valor: ex ? String(ex.valor) : '', vencimento: ex?.data_vencimento ?? hojeISO(), existente: ex }])
+    setAlvos((xs) => [...xs, { pessoa: p, marcado: true, telefoneNovo: p.telefone ? formatarTelefone(p.telefone) : '', valor: ex ? String(ex.valor) : '', vencimento: ex?.data_vencimento ?? hojeISO(), existente: ex }])
     setAdicionarId('')
   }
 
-  async function salvarTelefone(a: Alvo) {
+  /** Grava o telefone digitado na linha no cadastro da pessoa (vinculado ao login para os próximos disparos). */
+  async function salvarTelefone(a: Alvo): Promise<Pessoa> {
     const tel = somenteDigitos(a.telefoneNovo)
-    if (tel.length < 10 || tel.length > 13) { setErro('Telefone com DDD, 10 ou 11 dígitos.'); return }
     const p = a.pessoa
     const salvo = await atualizarPessoa.mutateAsync({ id: p.id, tipo: p.tipo, nome: p.nome, documento: p.documento, email: p.email, telefone: tel, login_servidor: p.login_servidor, data_nascimento: p.data_nascimento, observacao: p.observacao, ativo: p.ativo, receber_avisos: p.receber_avisos })
-    setAlvos((xs) => xs.map((x) => (x.pessoa.id === p.id ? { ...x, pessoa: { ...p, telefone: (salvo as Pessoa).telefone ?? tel }, marcado: true, telefoneNovo: '' } : x)))
+    const atualizada = { ...p, telefone: (salvo as Pessoa).telefone ?? tel }
+    setAlvos((xs) => xs.map((x) => (x.pessoa.id === p.id ? { ...x, pessoa: atualizada } : x)))
+    return atualizada
   }
 
   async function disparar() {
@@ -167,9 +169,14 @@ export function DisparosPage() {
     if (!negocioId) { setErro('Escolha o negócio (define a instância do WhatsApp).'); return }
     if (texto.trim().length < 10) { setErro('Escreva a mensagem (mínimo 10 caracteres).'); return }
     if (marcados.length === 0 || marcados.length > 30) { setErro('Marque de 1 a 30 clientes.'); return }
-    if (marcados.some((a) => !a.pessoa.telefone)) { setErro('Há cliente marcado sem telefone: informe e salve o telefone antes.'); return }
+    const telInvalidos = marcados.filter((a) => { const t = somenteDigitos(a.telefoneNovo); return t.length < 10 || t.length > 13 })
+    if (telInvalidos.length > 0) { setErro(`Telefone inválido (DDD + número) de: ${telInvalidos.map((a) => primeiroNome(a.pessoa.nome)).join(', ')}.`); return }
     setDisparando(true)
     try {
+      // telefones alterados na linha são gravados na pessoa antes do envio
+      for (const a of marcados) {
+        if (somenteDigitos(a.telefoneNovo) !== (a.pessoa.telefone ?? '')) await salvarTelefone(a)
+      }
       let cobrancasCriadas = 0
       let cobrancasAtualizadas = 0
       if (lancarCobranca) {
@@ -267,16 +274,12 @@ export function DisparosPage() {
             <tbody>
               {alvos.map((a) => (
                 <tr key={a.pessoa.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-2"><input type="checkbox" checked={a.marcado} disabled={!a.pessoa.telefone} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, marcado: e.target.checked } : x)))} className="size-4 accent-brand-600" /></td>
+                  <td className="px-4 py-2"><input type="checkbox" checked={a.marcado} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, marcado: e.target.checked } : x)))} className="size-4 accent-brand-600" /></td>
                   <td className="px-4 py-2 font-medium">{a.pessoa.nome}{!a.pessoa.receber_avisos && <span className="ml-2 text-xs text-amber-700">avisos desativados</span>}</td>
                   <td className="px-4 py-2 font-mono text-xs text-ink-muted">{a.pessoa.login_servidor ?? '—'}</td>
                   <td className="px-4 py-2">
-                    {a.pessoa.telefone ? formatarTelefone(a.pessoa.telefone) : (
-                      <span className="flex items-center gap-2">
-                        <input value={a.telefoneNovo} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, telefoneNovo: e.target.value } : x)))} placeholder="(11) 99999-9999" className="h-8 w-40 rounded-md border border-line bg-white px-2 text-sm" />
-                        <Botao variante="secundario" carregando={atualizarPessoa.isPending} disabled={!a.telefoneNovo.trim()} onClick={() => void salvarTelefone(a)}>Salvar</Botao>
-                      </span>
-                    )}
+                    <input value={a.telefoneNovo} onChange={(e) => setAlvos((xs) => xs.map((x) => (x.pessoa.id === a.pessoa.id ? { ...x, telefoneNovo: e.target.value } : x)))} placeholder="(11) 99999-9999" className="h-8 w-40 rounded-md border border-line bg-white px-2 text-sm" />
+                    {somenteDigitos(a.telefoneNovo) !== (a.pessoa.telefone ?? '') && <p className="mt-0.5 text-xs text-ink-muted">Será gravado no cadastro ao disparar</p>}
                   </td>
                   {lancarCobranca && (
                     <>

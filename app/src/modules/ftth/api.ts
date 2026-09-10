@@ -118,6 +118,19 @@ export function useRotaCliente() {
   })
 }
 
+/** Lacre numerado do drop dentro da CTO (único na organização; vazio remove). */
+export function useLacrePorta() {
+  const invalidar = useInvalidarFtth()
+  return useMutation({
+    mutationFn: async (d: { porta_id: string; lacre: string }) => {
+      const { data, error } = await supabase.rpc('lacre_porta_cto', { p_porta_id: d.porta_id, p_lacre: d.lacre })
+      if (error) throw error
+      return data as CtoPorta
+    },
+    onSuccess: invalidar,
+  })
+}
+
 export function useVincularPorta() {
   const invalidar = useInvalidarFtth()
   return useMutation({

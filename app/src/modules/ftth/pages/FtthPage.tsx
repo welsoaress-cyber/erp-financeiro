@@ -14,7 +14,7 @@ import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
-import { useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
+import { useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLacrePorta, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
 import { MapaCtos } from '../components/MapaCtos'
 import { buscarEndereco, ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
 
@@ -108,12 +108,13 @@ function DiagramaSplitter({ cto, pop, portas, nomePessoa }: { cto: CtoOcupacao; 
         {portas.map((p, i) => {
           const y = yPorta(i)
           const cor = COR_FIO(p)
+          const lacreTxt = p.lacre ? ` · lacre ${p.lacre}` : ''
           const rotulo = p.defeito ? 'defeito' : p.status === 'ocupada' ? (p.pessoa_id ? nomePessoa.get(p.pessoa_id) ?? 'ocupada' : 'ocupada') : p.status === 'reservada' ? `reservada${p.pessoa_id ? ` · ${nomePessoa.get(p.pessoa_id) ?? ''}` : ''}` : p.drop_disponivel ? 'livre · drop disponível' : 'livre'
           return (
             <g key={p.id}>
               <path d={`M 236 ${ySplitter} C 280 ${ySplitter}, 280 ${y}, 320 ${y}`} fill="none" stroke={cor} strokeWidth="1.8" opacity={p.status === 'livre' && !p.drop_disponivel && !p.defeito ? 0.45 : 0.95} />
               <circle cx="326" cy={y} r="4" fill={cor} />
-              <text x="336" y={y + 4} fill="#374151"><tspan fontWeight="700">P{p.numero}</tspan> · {rotulo}</text>
+              <text x="336" y={y + 4} fill="#374151"><tspan fontWeight="700">P{p.numero}</tspan> · {rotulo}{lacreTxt}</text>
             </g>
           )
         })}
@@ -129,7 +130,8 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
   const contratos = useContratos()
   const ctos = useCtos()
   const vincular = useVincularPorta(); const liberar = useLiberarPorta(); const trocar = useTrocarPorta(); const defeito = useDefeitoPorta()
-  const rotaCliente = useRotaCliente(); const rotaPop = useRotaPop()
+  const rotaCliente = useRotaCliente(); const rotaPop = useRotaPop(); const lacre = useLacrePorta()
+  const [lacreTexto, setLacreTexto] = useState('')
   const [porta, setPorta] = useState<CtoPorta | null>(null)
   const [marcandoLocal, setMarcandoLocal] = useState(false)
   const [pontosCliente, setPontosCliente] = useState<[number, number][]>([])
@@ -144,8 +146,8 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
     const comContrato = new Set((contratos.data ?? []).filter((c) => c.negocio_id === cto.negocio_id && c.status === 'ativo').map((c) => c.pessoa_id))
     return (pessoas.data ?? []).filter((p) => comContrato.has(p.id))
   }, [contratos.data, pessoas.data, cto.negocio_id])
-  const erro = vincular.error ?? liberar.error ?? trocar.error ?? defeito.error ?? rotaCliente.error ?? rotaPop.error
-  const ocupado = vincular.isPending || liberar.isPending || trocar.isPending || defeito.isPending || rotaCliente.isPending || rotaPop.isPending
+  const erro = vincular.error ?? liberar.error ?? trocar.error ?? defeito.error ?? rotaCliente.error ?? rotaPop.error ?? lacre.error
+  const ocupado = vincular.isPending || liberar.isPending || trocar.isPending || defeito.isPending || rotaCliente.isPending || rotaPop.isPending || lacre.isPending
   const pop = (ctos.data ?? []).find((c) => c.id === cto.pop_id) ?? null
   const { pct, tom } = ocupacaoDe(cto)
 
@@ -193,10 +195,10 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
       {cto.tipo === 'pop' ? <p className="text-sm text-ink-muted">POP (central do provedor): sem portas de cliente. Os fios até as CTOs são desenhados no detalhe de cada CTO.</p> : portas.isPending ? <Carregando /> : (
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
           {(portas.data ?? []).map((p) => (
-            <button key={p.id} type="button" onClick={() => { fecharPorta(); setPorta(p) }} className={`rounded-md border p-2 text-center text-xs ${COR_PORTA(p)} ${porta?.id === p.id ? 'ring-2 ring-brand-600' : ''}`}>
+            <button key={p.id} type="button" onClick={() => { fecharPorta(); setPorta(p); setLacreTexto(p.lacre ?? '') }} className={`rounded-md border p-2 text-center text-xs ${COR_PORTA(p)} ${porta?.id === p.id ? 'ring-2 ring-brand-600' : ''}`}>
               <span className="block text-sm font-semibold">{p.numero}</span>
               {p.defeito ? 'defeito' : p.status === 'livre' ? (p.drop_disponivel ? 'drop livre' : 'livre') : p.status === 'reservada' ? 'reservada' : 'ocupada'}
-              {p.pessoa_id && <span className="block truncate" title={nomePessoa.get(p.pessoa_id)}>{nomePessoa.get(p.pessoa_id)}</span>}
+              {p.pessoa_id && <span className="block truncate" title={nomePessoa.get(p.pessoa_id)}>{nomePessoa.get(p.pessoa_id)}</span>}{p.lacre && <span className="block font-mono text-[10px] text-ink-muted">lacre {p.lacre}</span>}
             </button>
           ))}
         </div>
@@ -233,7 +235,14 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
               </div>
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-end gap-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-ink">Lacre (nº do drop na caixa)</label>
+              <span className="flex gap-2">
+                <input value={lacreTexto} onChange={(e) => setLacreTexto(e.target.value)} placeholder="Ex.: 0678901" maxLength={20} className="h-9 w-36 rounded-md border border-line bg-white px-2 font-mono text-sm" />
+                <Botao variante="secundario" carregando={ocupado} disabled={(porta.lacre ?? '') === lacreTexto.trim().toUpperCase()} onClick={() => lacre.mutate({ porta_id: porta.id, lacre: lacreTexto.trim() }, { onSuccess: (pt) => setPorta(pt) })}>Salvar lacre</Botao>
+              </span>
+            </div>
             <Botao variante={porta.defeito ? 'secundario' : 'perigo'} carregando={ocupado} onClick={() => defeito.mutate({ porta_id: porta.id, defeito: !porta.defeito }, { onSuccess: fecharPorta })}>{porta.defeito ? 'Marcar reparada' : 'Marcar defeito'}</Botao>
             {porta.status !== 'livre' && (
               <Botao variante="secundario" onClick={() => { setMarcandoLocal((v) => !v); setPontosCliente([]) }}>{marcandoLocal ? 'Cancelar desenho' : porta.rota_cliente ? 'Redesenhar fio até o cliente' : 'Desenhar fio até o cliente'}</Botao>

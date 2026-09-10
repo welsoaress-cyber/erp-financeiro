@@ -45,6 +45,7 @@ export interface CtoPorta {
   cliente_latitude: number | null
   cliente_longitude: number | null
   rota_cliente: [number, number][] | null
+  lacre: string | null
 }
 
 /** Ponto de cliente ligado a uma CTO (fio CTO→cliente no mapa). */

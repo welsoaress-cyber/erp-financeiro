@@ -135,5 +135,21 @@ do $$ declare v r%rowtype; v_cto uuid; v_porta uuid; c public.ctos; pt public.ct
   assert pt.cliente_latitude = -23.553 and jsonb_array_length(pt.rota_cliente) = 3, 'T6 rota do cliente com último ponto';
 end $$;
 
+-- T7 (0051): lacre numerado único por organização
+do $$ declare v r%rowtype; v_cto uuid; v_p1 uuid; v_p2 uuid; pt public.cto_portas; begin
+  select * into v from r;
+  select id into v_cto from public.ctos where codigo = 'CTO-901';
+  select id into v_p1 from public.cto_portas where cto_id = v_cto and numero = 1;
+  select id into v_p2 from public.cto_portas where cto_id = v_cto and numero = 2;
+  pt := public.lacre_porta_cto(v_p1, '0678901');
+  assert pt.lacre = '0678901', 'T7 lacre gravado';
+  begin
+    perform public.lacre_porta_cto(v_p2, '0678901');
+    raise exception 'T7 lacre duplicado deveria falhar';
+  exception when unique_violation then null; end;
+  pt := public.lacre_porta_cto(v_p1, '');
+  assert pt.lacre is null, 'T7 lacre removido';
+end $$;
+
 rollback;
 \echo OK

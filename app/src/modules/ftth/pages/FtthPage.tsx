@@ -121,7 +121,7 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
         {cto.com_defeito > 0 && <span className="text-red-700">{cto.com_defeito} porta(s) com defeito</span>}
         {cto.drops_disponiveis > 0 && <span className="text-green-700">{cto.drops_disponiveis} drop(s) disponível(is)</span>}
         <span className="text-ink-muted">{cto.endereco ?? ''}{cto.referencia ? ` · ${cto.referencia}` : ''}</span>
-        <Botao variante="secundario" onClick={aoEditar}>Editar CTO</Botao>
+        <Botao variante="secundario" onClick={aoEditar}>{cto.tipo === 'pop' ? 'Editar POP' : 'Editar CTO'}</Botao>
       </div>
       {tom !== 'ok' && <Alerta tipo={tom === 'lotada' ? 'erro' : 'info'} titulo={tom === 'lotada' ? 'CTO lotada' : 'CTO quase lotada (≥90%)'}>Planeje uma nova CTO ou libere portas nesta região.</Alerta>}
       {erro != null && <Alerta tipo="erro">{mensagemDeErro(erro)}</Alerta>}
@@ -214,7 +214,7 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
       )}
 
       <div>
-        <p className="mb-1 text-sm font-medium">Histórico desta CTO</p>
+        <p className="mb-1 text-sm font-medium">Histórico deste ponto</p>
         {(historico.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Sem movimentações.</p> : (
           <ul className="max-h-48 divide-y divide-line overflow-y-auto rounded-md border border-line text-sm">
             {(historico.data ?? []).map((h) => (
@@ -258,7 +258,7 @@ export function FtthPage() {
   return (
     <>
       <CabecalhoPagina titulo="Rede FTTH" descricao="CTOs, portas ópticas e vínculo de clientes"
-        acoes={<span className="flex gap-2"><Botao variante="secundario" onClick={() => setEditando('novo-pop')}>Novo POP</Botao><Botao onClick={() => setEditando('nova')}>Nova CTO</Botao></span>} />
+        acoes={<span className="flex gap-2"><Botao onClick={() => setEditando('novo-pop')}>Novo POP</Botao><Botao onClick={() => setEditando('nova')}>Nova CTO</Botao></span>} />
 
       {criticas.length > 0 && (
         <div className="mb-4"><Alerta tipo="erro" titulo={`${criticas.length} CTO(s) lotada(s) ou ≥90%`}>

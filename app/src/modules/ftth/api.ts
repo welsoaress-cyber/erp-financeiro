@@ -67,6 +67,31 @@ export function useHistoricoCto(ctoId: string | null) {
   })
 }
 
+/** Portas ocupadas/reservadas com localização do cliente (fios CTO→cliente no mapa). */
+export function useClientesMapa() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'clientes-mapa'],
+    queryFn: async (): Promise<CtoPorta[]> => {
+      const { data, error } = await supabase.from('cto_portas').select('*').eq('organizacao_id', organizacao.id).not('cliente_latitude', 'is', null)
+      if (error) throw error
+      return (data ?? []).map((p) => ({ ...p, cliente_latitude: Number(p.cliente_latitude), cliente_longitude: Number(p.cliente_longitude) })) as CtoPorta[]
+    },
+  })
+}
+
+export function useLocalClientePorta() {
+  const invalidar = useInvalidarFtth()
+  return useMutation({
+    mutationFn: async (d: { porta_id: string; latitude: number; longitude: number }) => {
+      const { data, error } = await supabase.rpc('local_cliente_porta', { p_porta_id: d.porta_id, p_latitude: d.latitude, p_longitude: d.longitude })
+      if (error) throw error
+      return data as CtoPorta
+    },
+    onSuccess: invalidar,
+  })
+}
+
 export function useVincularPorta() {
   const invalidar = useInvalidarFtth()
   return useMutation({

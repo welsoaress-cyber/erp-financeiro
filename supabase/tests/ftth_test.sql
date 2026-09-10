@@ -99,5 +99,26 @@ do $$ declare v r%rowtype; v_cto uuid; v_p1 uuid; v_p5 uuid; pt public.cto_porta
   assert (select drops_disponiveis from public.vw_ctos_ocupacao where id = v_cto) = 2, 'T4 drops disponíveis na view';
 end $$;
 
+-- T5 (0048): POP, fio POP→CTO e local do cliente na porta
+do $$ declare v r%rowtype; v_pop uuid; v_cto uuid; v_porta uuid; pt public.cto_portas; begin
+  select * into v from r;
+  insert into public.ctos (organizacao_id, negocio_id, codigo, latitude, longitude, quantidade_portas, tipo)
+  values (v.org, v.neg, 'POP-01', -23.50, -46.60, 1, 'pop') returning id into v_pop;
+  select id into v_cto from public.ctos where codigo = 'CTO-901';
+  update public.ctos set pop_id = v_pop where id = v_cto;
+  assert (select pop_id from public.ctos where id = v_cto) = v_pop, 'T5 fio POP→CTO';
+  begin
+    update public.ctos set pop_id = v_cto where id = v_cto;
+    raise exception 'T5 apontar para si mesma deveria falhar';
+  exception when check_violation then null; end;
+  select p.id into v_porta from public.cto_portas p where p.cto_id = v_cto and p.status = 'ocupada' limit 1;
+  pt := public.local_cliente_porta(v_porta, -23.51, -46.61);
+  assert pt.cliente_latitude = -23.51, 'T5 local do cliente gravado';
+  begin
+    perform public.local_cliente_porta((select p.id from public.cto_portas p where p.cto_id = v_cto and p.status = 'livre' limit 1), -23.5, -46.6);
+    raise exception 'T5 local em porta livre deveria falhar';
+  exception when check_violation then null; end;
+end $$;
+
 rollback;
 \echo OK

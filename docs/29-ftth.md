@@ -20,3 +20,9 @@ Busca por CEP + número (Nominatim) com sugestão de CTO mais próxima; CTO/port
 
 ## Testes
 `supabase/tests/ftth_test.sql`: geração/aumento/redução de portas, contrato encerrado recusado, 1 porta por cliente, escrita direta bloqueada, defeito bloqueia, reserva→ocupada, troca com histórico dos dois lados, liberação com drop, view de ocupação.
+
+## Etapa 27B (migration 0048) — POP, fios e clientes no mapa
+- **Busca de endereço** no mapa (Nominatim): digite "rua, número, cidade" e o mapa dá zoom com um pino roxo no ponto.
+- **POP**: cadastrado como ponto da rede (`ctos.tipo = 'pop'`, pino azul grande). Cada CTO pode apontar "Fibra vem do POP" (`pop_id`, validado: POP do mesmo negócio) — o mapa desenha o fio tracejado POP→CTO.
+- **Clientes no mapa**: no detalhe da porta ocupada/reservada, "Marcar local do cliente no mapa" (busca + clique) grava `cliente_latitude/longitude` via `local_cliente_porta` (motor); o mapa geral desenha o fio CTO→cliente com o nome na dica.
+- Premissa: fios em **linha reta** entre os pontos (sem vértices de poste nesta versão).

@@ -3,10 +3,14 @@ export const ROTULO_STATUS_CTO: Record<StatusCto, string> = { ativa: 'Ativa', ma
 
 export type StatusPorta = 'livre' | 'ocupada' | 'reservada'
 
+export type TipoPontoRede = 'cto' | 'pop'
+
 export interface Cto {
   id: string
   organizacao_id: string
   negocio_id: string
+  tipo: TipoPontoRede
+  pop_id: string | null
   codigo: string
   endereco: string | null
   referencia: string | null
@@ -37,6 +41,21 @@ export interface CtoPorta {
   contrato_id: string | null
   data_ocupacao: string | null
   observacao: string | null
+  cliente_latitude: number | null
+  cliente_longitude: number | null
+}
+
+/** Ponto de cliente ligado a uma CTO (fio CTO→cliente no mapa). */
+export interface ClienteNoMapa { lat: number; lng: number; nome: string; ctoLat: number; ctoLng: number; porta: number }
+
+/** Busca de endereço (Nominatim/OpenStreetMap, gratuito, ~1 req/s). */
+export async function buscarEndereco(q: string): Promise<{ lat: number; lng: number; rotulo: string } | null> {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(q)}`
+  const res = await fetch(url, { headers: { Accept: 'application/json' } })
+  if (!res.ok) return null
+  const lista = (await res.json()) as { lat: string; lon: string; display_name: string }[]
+  const r = lista[0]
+  return r ? { lat: Number(r.lat), lng: Number(r.lon), rotulo: r.display_name } : null
 }
 
 export type EventoPorta = 'ocupacao' | 'reserva' | 'liberacao' | 'troca' | 'defeito' | 'reparo'
@@ -57,6 +76,8 @@ export interface CtoHistorico {
 
 export interface DadosCto {
   negocio_id: string
+  tipo: TipoPontoRede
+  pop_id: string | null
   codigo: string
   endereco: string | null
   referencia: string | null

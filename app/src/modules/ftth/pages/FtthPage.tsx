@@ -14,9 +14,9 @@ import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
-import { useCtos, useDefeitoPorta, useHistoricoCto, useLiberarPorta, usePortasCto, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
+import { useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLiberarPorta, useLocalClientePorta, usePortasCto, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
 import { MapaCtos } from '../components/MapaCtos'
-import { ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto } from '../tipos'
+import { ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
 
 type Aba = 'mapa' | 'ctos' | 'historico'
 
@@ -24,7 +24,10 @@ function FormularioCto({ cto, negocioServnet, ctos, salvando, erro, aoSalvar, ao
   cto?: CtoOcupacao; negocioServnet: string; ctos: CtoOcupacao[]; salvando: boolean; erro: string | null
   aoSalvar: (d: DadosCto & { id?: string }) => void; aoCancelar: () => void
 }) {
-  const proximo = `CTO-${String(ctos.length + 1).padStart(3, '0')}`
+  const [tipo, setTipo] = useState<TipoPontoRede>(cto?.tipo ?? 'cto')
+  const [popId, setPopId] = useState(cto?.pop_id ?? '')
+  const pops = ctos.filter((c) => c.tipo === 'pop')
+  const proximo = `CTO-${String(ctos.filter((c) => c.tipo === 'cto').length + 1).padStart(3, '0')}`
   const [codigo, setCodigo] = useState(cto?.codigo ?? proximo)
   const [endereco, setEndereco] = useState(cto?.endereco ?? '')
   const [referencia, setReferencia] = useState(cto?.referencia ?? '')
@@ -41,25 +44,33 @@ function FormularioCto({ cto, negocioServnet, ctos, salvando, erro, aoSalvar, ao
     if (!ponto) { setErroForm('Clique no mapa para marcar a localização da CTO.'); return }
     if (!Number.isInteger(n) || n < 1 || n > 64) { setErroForm('Quantidade de portas entre 1 e 64.'); return }
     setErroForm(null)
-    aoSalvar({ id: cto?.id, negocio_id: cto?.negocio_id ?? negocioServnet, codigo: codigo.trim(), endereco: endereco.trim() || null, referencia: referencia.trim() || null, latitude: ponto[0], longitude: ponto[1], quantidade_portas: n, splitter: splitter || null, status, observacao: observacao.trim() || null })
+    aoSalvar({ id: cto?.id, negocio_id: cto?.negocio_id ?? negocioServnet, codigo: codigo.trim(), endereco: endereco.trim() || null, referencia: referencia.trim() || null, latitude: ponto[0], longitude: ponto[1], quantidade_portas: tipo === 'pop' ? 1 : n, splitter: tipo === 'pop' ? null : splitter || null, status, observacao: observacao.trim() || null, tipo, pop_id: tipo === 'cto' ? popId || null : null })
   }
 
   return (
     <div className="space-y-4">
       {(erro ?? erroForm) && <Alerta tipo="erro">{erro ?? erroForm}</Alerta>}
       <div className="grid grid-cols-2 gap-4">
-        <Campo rotulo="Código" value={codigo} onChange={(e) => setCodigo(e.target.value)} maxLength={20} />
+        <Selecao rotulo="Tipo" opcoes={[{ valor: 'cto', rotulo: 'CTO (caixa de terminação)' }, { valor: 'pop', rotulo: 'POP (central do provedor)' }]} value={tipo} onChange={(e) => { setTipo(e.target.value as TipoPontoRede); if (e.target.value === 'pop' && !cto) setCodigo('POP-01') }} disabled={Boolean(cto)} />
         <Selecao rotulo="Status" opcoes={Object.entries(ROTULO_STATUS_CTO).map(([valor, rotulo]) => ({ valor, rotulo }))} value={status} onChange={(e) => setStatus(e.target.value as StatusCto)} />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Campo rotulo="Quantidade de portas" type="number" min={1} max={64} value={portas} onChange={(e) => setPortas(e.target.value)} />
-        <Selecao rotulo="Splitter" opcoes={['1x2', '1x4', '1x8', '1x16', '1x32', '1x64'].map((s) => ({ valor: s, rotulo: s }))} value={splitter} onChange={(e) => { setSplitter(e.target.value); setPortas(e.target.value.split('x')[1]) }} />
+        <Campo rotulo="Código" value={codigo} onChange={(e) => setCodigo(e.target.value)} maxLength={20} />
+        {tipo === 'cto' && (
+          <Selecao rotulo="Fibra vem do POP" opcoes={[{ valor: '', rotulo: pops.length === 0 ? 'Cadastre o POP primeiro' : 'Sem fio no mapa' }, ...pops.map((p) => ({ valor: p.id, rotulo: p.codigo }))]} value={popId} onChange={(e) => setPopId(e.target.value)} />
+        )}
       </div>
+      {tipo === 'cto' && (
+        <div className="grid grid-cols-2 gap-4">
+          <Campo rotulo="Quantidade de portas" type="number" min={1} max={64} value={portas} onChange={(e) => setPortas(e.target.value)} />
+          <Selecao rotulo="Splitter" opcoes={['1x2', '1x4', '1x8', '1x16', '1x32', '1x64'].map((s) => ({ valor: s, rotulo: s }))} value={splitter} onChange={(e) => { setSplitter(e.target.value); setPortas(e.target.value.split('x')[1]) }} />
+        </div>
+      )}
       <Campo rotulo="Endereço (opcional)" value={endereco} onChange={(e) => setEndereco(e.target.value)} maxLength={200} placeholder="Rua, número, bairro" />
       <Campo rotulo="Referência (opcional)" value={referencia} onChange={(e) => setReferencia(e.target.value)} maxLength={120} placeholder="Ex.: poste em frente ao mercado" />
       <div>
         <p className="mb-1 text-sm font-medium text-ink">Localização — clique no mapa para marcar o ponto {ponto && <span className="font-normal text-ink-muted">({ponto[0]}, {ponto[1]})</span>}</p>
-        <MapaCtos ctos={ctos} altura="18rem" aoClicarMapa={(lat, lng) => setPonto([lat, lng])} marcadorSelecao={ponto} />
+        <MapaCtos ctos={ctos} altura="18rem" comBusca aoClicarMapa={(lat, lng) => setPonto([lat, lng])} marcadorSelecao={ponto} />
       </div>
       <Campo rotulo="Observação (opcional)" value={observacao} onChange={(e) => setObservacao(e.target.value)} maxLength={500} />
       <div className="flex justify-end gap-2">
@@ -79,7 +90,9 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
   const contratos = useContratos()
   const ctos = useCtos()
   const vincular = useVincularPorta(); const liberar = useLiberarPorta(); const trocar = useTrocarPorta(); const defeito = useDefeitoPorta()
+  const localCliente = useLocalClientePorta()
   const [porta, setPorta] = useState<CtoPorta | null>(null)
+  const [marcandoLocal, setMarcandoLocal] = useState(false)
   const [pessoaId, setPessoaId] = useState(''); const [contratoId, setContratoId] = useState(''); const [reservar, setReservar] = useState(false)
   const [destinoCto, setDestinoCto] = useState(cto.id); const [destinoPorta, setDestinoPorta] = useState('')
   const portasDestino = usePortasCto(destinoCto)
@@ -89,11 +102,11 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
     const comContrato = new Set((contratos.data ?? []).filter((c) => c.negocio_id === cto.negocio_id && c.status === 'ativo').map((c) => c.pessoa_id))
     return (pessoas.data ?? []).filter((p) => comContrato.has(p.id))
   }, [contratos.data, pessoas.data, cto.negocio_id])
-  const erro = vincular.error ?? liberar.error ?? trocar.error ?? defeito.error
-  const ocupado = vincular.isPending || liberar.isPending || trocar.isPending || defeito.isPending
+  const erro = vincular.error ?? liberar.error ?? trocar.error ?? defeito.error ?? localCliente.error
+  const ocupado = vincular.isPending || liberar.isPending || trocar.isPending || defeito.isPending || localCliente.isPending
   const { pct, tom } = ocupacaoDe(cto)
 
-  function fecharPorta() { setPorta(null); setPessoaId(''); setContratoId(''); setReservar(false); setDestinoPorta(''); setDestinoCto(cto.id); vincular.reset(); liberar.reset(); trocar.reset(); defeito.reset() }
+  function fecharPorta() { setPorta(null); setMarcandoLocal(false); setPessoaId(''); setContratoId(''); setReservar(false); setDestinoPorta(''); setDestinoCto(cto.id); vincular.reset(); liberar.reset(); trocar.reset(); defeito.reset(); localCliente.reset() }
 
   return (
     <div className="space-y-4">
@@ -146,9 +159,24 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
               </div>
             </div>
           )}
-          <div>
+          <div className="flex flex-wrap gap-2">
             <Botao variante={porta.defeito ? 'secundario' : 'perigo'} carregando={ocupado} onClick={() => defeito.mutate({ porta_id: porta.id, defeito: !porta.defeito }, { onSuccess: fecharPorta })}>{porta.defeito ? 'Marcar reparada' : 'Marcar defeito'}</Botao>
+            {porta.status !== 'livre' && (
+              <Botao variante="secundario" onClick={() => setMarcandoLocal((v) => !v)}>{marcandoLocal ? 'Cancelar marcação' : porta.cliente_latitude ? 'Reposicionar cliente no mapa' : 'Marcar local do cliente no mapa'}</Botao>
+            )}
           </div>
+          {marcandoLocal && (
+            <div>
+              <p className="mb-1 text-xs text-ink-muted">Busque o endereço do cliente e clique no mapa para marcar o ponto — o fio CTO→cliente aparece no mapa geral.</p>
+              <MapaCtos
+                ctos={[cto]}
+                altura="16rem"
+                comBusca
+                marcadorSelecao={porta.cliente_latitude && porta.cliente_longitude ? [porta.cliente_latitude, porta.cliente_longitude] : null}
+                aoClicarMapa={(lat, lng) => localCliente.mutate({ porta_id: porta.id, latitude: lat, longitude: lng }, { onSuccess: () => setMarcandoLocal(false) })}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -178,7 +206,16 @@ export function FtthPage() {
   const [detalhe, setDetalhe] = useState<CtoOcupacao | null>(null)
   const [editando, setEditando] = useState<CtoOcupacao | 'nova' | null>(null)
   const historicoGeral = useHistoricoCto(null)
+  const clientesPortas = useClientesMapa()
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
+  const clientesMapa: ClienteNoMapa[] = useMemo(() => {
+    const ctoPorId = new Map((ctos.data ?? []).map((c) => [c.id, c]))
+    return (clientesPortas.data ?? []).flatMap((p) => {
+      const c = ctoPorId.get(p.cto_id)
+      if (!c || p.cliente_latitude == null || p.cliente_longitude == null) return []
+      return [{ lat: p.cliente_latitude, lng: p.cliente_longitude, nome: (p.pessoa_id ? nomePessoa.get(p.pessoa_id) : null) ?? '—', ctoLat: c.latitude, ctoLng: c.longitude, porta: p.numero }]
+    })
+  }, [clientesPortas.data, ctos.data, nomePessoa])
   const nomeCto = useMemo(() => new Map((ctos.data ?? []).map((c) => [c.id, c.codigo])), [ctos.data])
   const servnet = (negocios.data ?? []).find((n) => n.nome.toLowerCase().includes('servnet')) ?? (negocios.data ?? [])[0]
   const criticas = (ctos.data ?? []).filter((c) => c.status === 'ativa' && ocupacaoDe(c).tom !== 'ok')
@@ -208,8 +245,8 @@ export function FtthPage() {
 
       {aba === 'mapa' && ctos.isSuccess && (
         <Cartao className="p-4">
-          <MapaCtos ctos={ctos.data} aoClicarCto={(c) => setDetalhe(c)} />
-          <p className="mt-2 text-xs text-ink-muted">Verde: disponível · Amarelo: ≥90% · Vermelho: lotada · Cinza: inativa/manutenção. Clique no pino para abrir a CTO.</p>
+          <MapaCtos ctos={ctos.data} clientes={clientesMapa} comBusca aoClicarCto={(c) => setDetalhe(c)} />
+          <p className="mt-2 text-xs text-ink-muted">Azul grande: POP (fio tracejado até as CTOs) · Verde: disponível · Amarelo: ≥90% · Vermelho: lotada · Cinza: inativa · Pontos verdes-água: clientes marcados (fio até a CTO). Clique no pino para abrir.</p>
         </Cartao>
       )}
 

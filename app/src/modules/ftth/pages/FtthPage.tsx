@@ -31,6 +31,7 @@ function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, ao
     ? `POP-${String(pops.length + 1).padStart(2, '0')}`
     : `CTO-${String(ctos.filter((c) => c.tipo === 'cto').length + 1).padStart(3, '0')}`
   const [codigo, setCodigo] = useState(cto?.codigo ?? proximo)
+  const [lacreCto, setLacreCto] = useState(cto?.lacre ?? '')
   const [endereco, setEndereco] = useState(cto?.endereco ?? '')
   const [referencia, setReferencia] = useState(cto?.referencia ?? '')
   const [ponto, setPonto] = useState<[number, number] | null>(cto ? [cto.latitude, cto.longitude] : null)
@@ -46,7 +47,7 @@ function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, ao
     if (!ponto) { setErroForm('Clique no mapa para marcar a localização da CTO.'); return }
     if (!Number.isInteger(n) || n < 1 || n > 64) { setErroForm('Quantidade de portas entre 1 e 64.'); return }
     setErroForm(null)
-    aoSalvar({ id: cto?.id, negocio_id: cto?.negocio_id ?? negocioServnet, codigo: codigo.trim(), endereco: endereco.trim() || null, referencia: referencia.trim() || null, latitude: ponto[0], longitude: ponto[1], quantidade_portas: tipo === 'pop' ? 1 : n, splitter: tipo === 'pop' ? null : splitter || null, status, observacao: observacao.trim() || null, tipo, pop_id: tipo === 'cto' ? popId || null : null })
+    aoSalvar({ id: cto?.id, negocio_id: cto?.negocio_id ?? negocioServnet, codigo: codigo.trim(), lacre: lacreCto.trim().toUpperCase() || null, endereco: endereco.trim() || null, referencia: referencia.trim() || null, latitude: ponto[0], longitude: ponto[1], quantidade_portas: tipo === 'pop' ? 1 : n, splitter: tipo === 'pop' ? null : splitter || null, status, observacao: observacao.trim() || null, tipo, pop_id: tipo === 'cto' ? popId || null : null })
   }
 
   return (
@@ -67,6 +68,7 @@ function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, ao
           <Selecao rotulo="Splitter" opcoes={['1x2', '1x4', '1x8', '1x16', '1x32', '1x64'].map((s) => ({ valor: s, rotulo: s }))} value={splitter} onChange={(e) => { setSplitter(e.target.value); setPortas(e.target.value.split('x')[1]) }} />
         </div>
       )}
+      <Campo rotulo="Identificação física / lacre da caixa (opcional)" value={lacreCto} onChange={(e) => setLacreCto(e.target.value)} maxLength={20} placeholder="Ex.: 0484210" />
       <Campo rotulo="Endereço (opcional)" value={endereco} onChange={(e) => setEndereco(e.target.value)} maxLength={200} placeholder="Rua, número, bairro" />
       <Campo rotulo="Referência (opcional)" value={referencia} onChange={(e) => setReferencia(e.target.value)} maxLength={120} placeholder="Ex.: poste em frente ao mercado" />
       <div>
@@ -160,7 +162,7 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
         <span className={tom === 'lotada' ? 'font-semibold text-red-700' : tom === 'quase' ? 'font-semibold text-amber-700' : ''}>{pct}% ocupada ({cto.ocupadas + cto.reservadas}/{cto.quantidade_portas})</span>
         {cto.com_defeito > 0 && <span className="text-red-700">{cto.com_defeito} porta(s) com defeito</span>}
         {cto.drops_disponiveis > 0 && <span className="text-green-700">{cto.drops_disponiveis} drop(s) disponível(is)</span>}
-        <span className="text-ink-muted">{cto.endereco ?? ''}{cto.referencia ? ` · ${cto.referencia}` : ''}</span>
+        <span className="text-ink-muted">{cto.lacre && <span className="mr-2 font-mono">lacre {cto.lacre}</span>}{cto.endereco ?? ''}{cto.referencia ? ` · ${cto.referencia}` : ''}</span>
         <Botao variante="secundario" onClick={aoEditar}>{cto.tipo === 'pop' ? 'Editar POP' : 'Editar CTO'}</Botao>
       </div>
       {tom !== 'ok' && <Alerta tipo={tom === 'lotada' ? 'erro' : 'info'} titulo={tom === 'lotada' ? 'CTO lotada' : 'CTO quase lotada (≥90%)'}>Planeje uma nova CTO ou libere portas nesta região.</Alerta>}
@@ -347,7 +349,7 @@ export function FtthPage() {
               <tbody>
                 {ctos.data.map((c) => { const { pct, tom } = ocupacaoDe(c); return (
                   <tr key={c.id} onClick={() => setDetalhe(c)} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
-                    <td className="px-4 py-2 font-medium">{c.codigo}{c.com_defeito > 0 && <span className="ml-2 text-xs text-red-700">⚠ {c.com_defeito} defeito(s)</span>}</td>
+                    <td className="px-4 py-2 font-medium">{c.codigo}{c.lacre && <span className="ml-2 font-mono text-xs text-ink-muted">{c.lacre}</span>}{c.com_defeito > 0 && <span className="ml-2 text-xs text-red-700">⚠ {c.com_defeito} defeito(s)</span>}</td>
                     <td className="px-4 py-2 text-ink-muted">{c.endereco ?? '—'}</td>
                     <td className="px-4 py-2 text-ink-muted">{c.splitter ?? '—'}</td>
                     <td className={`px-4 py-2 text-right tabular-nums ${tom === 'lotada' ? 'font-semibold text-red-700' : tom === 'quase' ? 'font-semibold text-amber-700' : ''}`}>{c.ocupadas + c.reservadas}/{c.quantidade_portas} ({pct}%)</td>

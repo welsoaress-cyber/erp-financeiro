@@ -39,6 +39,7 @@ with checks as (
   union all select '0049 ftth rotas com vértices (rota_pop, rota_cliente)', exists (select 1 from information_schema.columns where table_name='ctos' and column_name='rota_pop') and exists (select 1 from information_schema.columns where table_name='cto_portas' and column_name='rota_cliente') and (select count(*) from pg_proc where proname in ('rota_pop_cto','rota_cliente_porta','validar_rota')) = 3
   union all select '0050 endereço em pessoas', exists (select 1 from information_schema.columns where table_name='pessoas' and column_name='endereco')
   union all select '0051 lacre numerado por porta', exists (select 1 from information_schema.columns where table_name='cto_portas' and column_name='lacre') and exists (select 1 from pg_proc where proname='lacre_porta_cto')
+  union all select '0052 identificação (lacre) da própria CTO', exists (select 1 from information_schema.columns where table_name='ctos' and column_name='lacre')
   union all select 'RLS ligado em todas as tabelas públicas', (select bool_and(relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r')
 )
 select item, ok, case when ok then 'PASS' else 'FALHOU' end as resultado from checks

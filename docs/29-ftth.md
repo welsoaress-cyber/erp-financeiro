@@ -35,3 +35,6 @@ Os fios deixam de ser linha reta: `ctos.rota_pop` (vértices POP→CTO) e `cto_p
 
 ## Etapa 27E (migration 0051) — lacre numerado por porta
 `cto_portas.lacre` (3–20 caracteres alfanuméricos, único por organização, `lacre_porta_cto` via motor). Na tela: campo "Lacre (nº do drop na caixa)" no painel da porta; o número aparece na grade de portas e no diagrama do splitter. Vazio remove o lacre.
+
+## Etapa 27F (migration 0052) — identificação da própria CTO
+`ctos.lacre` (etiqueta/lacre físico da caixa, único por organização). Campo "Identificação física / lacre da caixa" no formulário; aparece no cabeçalho do detalhe e na lista de CTOs.

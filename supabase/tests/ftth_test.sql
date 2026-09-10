@@ -151,5 +151,18 @@ do $$ declare v r%rowtype; v_cto uuid; v_p1 uuid; v_p2 uuid; pt public.cto_porta
   assert pt.lacre is null, 'T7 lacre removido';
 end $$;
 
+-- T8 (0052): lacre da própria CTO, único por organização
+do $$ declare v r%rowtype; v_cto uuid; begin
+  select * into v from r;
+  select id into v_cto from public.ctos where codigo = 'CTO-901';
+  update public.ctos set lacre = '0484209' where id = v_cto;
+  assert (select lacre from public.ctos where id = v_cto) = '0484209', 'T8 lacre da CTO';
+  begin
+    insert into public.ctos (organizacao_id, negocio_id, codigo, latitude, longitude, quantidade_portas, lacre)
+    values (v.org, v.neg, 'CTO-902', -23.56, -46.64, 8, '0484209');
+    raise exception 'T8 lacre de CTO duplicado deveria falhar';
+  exception when unique_violation then null; end;
+end $$;
+
 rollback;
 \echo OK

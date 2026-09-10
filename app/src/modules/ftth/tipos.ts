@@ -13,6 +13,7 @@ export interface Cto {
   pop_id: string | null
   rota_pop: [number, number][] | null
   codigo: string
+  lacre: string | null
   endereco: string | null
   referencia: string | null
   latitude: number
@@ -82,6 +83,7 @@ export interface DadosCto {
   tipo: TipoPontoRede
   pop_id: string | null
   codigo: string
+  lacre: string | null
   endereco: string | null
   referencia: string | null
   latitude: number

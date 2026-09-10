@@ -128,7 +128,8 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
         </div>
       )}
       {erroBusca && <p className="text-xs text-red-600">{erroBusca}</p>}
-      <div ref={ref} style={{ height: altura }} className="w-full rounded-md border border-line" />
+      {/* z-0 cria um contexto de empilhamento próprio: os panes internos do Leaflet (z-index 200–700) não furam o modal */}
+      <div ref={ref} style={{ height: altura }} className="relative z-0 w-full rounded-md border border-line" />
     </div>
   )
 }

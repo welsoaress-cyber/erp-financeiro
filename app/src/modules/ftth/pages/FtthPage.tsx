@@ -20,14 +20,16 @@ import { ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type 
 
 type Aba = 'mapa' | 'ctos' | 'historico'
 
-function FormularioCto({ cto, negocioServnet, ctos, salvando, erro, aoSalvar, aoCancelar }: {
-  cto?: CtoOcupacao; negocioServnet: string; ctos: CtoOcupacao[]; salvando: boolean; erro: string | null
+function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, aoSalvar, aoCancelar }: {
+  cto?: CtoOcupacao; tipoFixo?: TipoPontoRede; negocioServnet: string; ctos: CtoOcupacao[]; salvando: boolean; erro: string | null
   aoSalvar: (d: DadosCto & { id?: string }) => void; aoCancelar: () => void
 }) {
-  const [tipo, setTipo] = useState<TipoPontoRede>(cto?.tipo ?? 'cto')
+  const tipo = cto?.tipo ?? tipoFixo ?? 'cto'
   const [popId, setPopId] = useState(cto?.pop_id ?? '')
   const pops = ctos.filter((c) => c.tipo === 'pop')
-  const proximo = `CTO-${String(ctos.filter((c) => c.tipo === 'cto').length + 1).padStart(3, '0')}`
+  const proximo = tipo === 'pop'
+    ? `POP-${String(pops.length + 1).padStart(2, '0')}`
+    : `CTO-${String(ctos.filter((c) => c.tipo === 'cto').length + 1).padStart(3, '0')}`
   const [codigo, setCodigo] = useState(cto?.codigo ?? proximo)
   const [endereco, setEndereco] = useState(cto?.endereco ?? '')
   const [referencia, setReferencia] = useState(cto?.referencia ?? '')
@@ -51,11 +53,10 @@ function FormularioCto({ cto, negocioServnet, ctos, salvando, erro, aoSalvar, ao
     <div className="space-y-4">
       {(erro ?? erroForm) && <Alerta tipo="erro">{erro ?? erroForm}</Alerta>}
       <div className="grid grid-cols-2 gap-4">
-        <Selecao rotulo="Tipo" opcoes={[{ valor: 'cto', rotulo: 'CTO (caixa de terminação)' }, { valor: 'pop', rotulo: 'POP (central do provedor)' }]} value={tipo} onChange={(e) => { setTipo(e.target.value as TipoPontoRede); if (e.target.value === 'pop' && !cto) setCodigo('POP-01') }} disabled={Boolean(cto)} />
+        <Campo rotulo="Código" value={codigo} onChange={(e) => setCodigo(e.target.value)} maxLength={20} />
         <Selecao rotulo="Status" opcoes={Object.entries(ROTULO_STATUS_CTO).map(([valor, rotulo]) => ({ valor, rotulo }))} value={status} onChange={(e) => setStatus(e.target.value as StatusCto)} />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Campo rotulo="Código" value={codigo} onChange={(e) => setCodigo(e.target.value)} maxLength={20} />
         {tipo === 'cto' && (
           <Selecao rotulo="Fibra vem do POP" opcoes={[{ valor: '', rotulo: pops.length === 0 ? 'Cadastre o POP primeiro' : 'Sem fio no mapa' }, ...pops.map((p) => ({ valor: p.id, rotulo: p.codigo }))]} value={popId} onChange={(e) => setPopId(e.target.value)} />
         )}
@@ -236,7 +237,7 @@ export function FtthPage() {
   const salvar = useSalvarCto()
   const [aba, setAba] = useState<Aba>('mapa')
   const [detalhe, setDetalhe] = useState<CtoOcupacao | null>(null)
-  const [editando, setEditando] = useState<CtoOcupacao | 'nova' | null>(null)
+  const [editando, setEditando] = useState<CtoOcupacao | 'nova' | 'novo-pop' | null>(null)
   const historicoGeral = useHistoricoCto(null)
   const clientesPortas = useClientesMapa()
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
@@ -257,7 +258,7 @@ export function FtthPage() {
   return (
     <>
       <CabecalhoPagina titulo="Rede FTTH" descricao="CTOs, portas ópticas e vínculo de clientes"
-        acoes={<Botao onClick={() => setEditando('nova')}>Nova CTO</Botao>} />
+        acoes={<span className="flex gap-2"><Botao variante="secundario" onClick={() => setEditando('novo-pop')}>Novo POP</Botao><Botao onClick={() => setEditando('nova')}>Nova CTO</Botao></span>} />
 
       {criticas.length > 0 && (
         <div className="mb-4"><Alerta tipo="erro" titulo={`${criticas.length} CTO(s) lotada(s) ou ≥90%`}>
@@ -323,10 +324,12 @@ export function FtthPage() {
         {detalheAtual && <DetalheCto cto={detalheAtual} aoEditar={() => { setEditando(detalheAtual); setDetalhe(null) }} />}
       </Modal>
 
-      <Modal aberto={editando !== null} aoFechar={() => { setEditando(null); salvar.reset() }} largura="lg" titulo={editando === 'nova' ? 'Nova CTO' : 'Editar CTO'}>
+      <Modal aberto={editando !== null} aoFechar={() => { setEditando(null); salvar.reset() }} largura="lg" titulo={editando === 'nova' ? 'Nova CTO' : editando === 'novo-pop' ? 'Novo POP (central do provedor)' : (editando as CtoOcupacao)?.tipo === 'pop' ? 'Editar POP' : 'Editar CTO'}>
         {editando !== null && servnet && (
           <FormularioCto
-            cto={editando === 'nova' ? undefined : editando}
+            key={typeof editando === 'string' ? editando : editando.id}
+            cto={typeof editando === 'string' ? undefined : editando}
+            tipoFixo={editando === 'novo-pop' ? 'pop' : editando === 'nova' ? 'cto' : undefined}
             negocioServnet={servnet.id}
             ctos={ctos.data ?? []}
             salvando={salvar.isPending}

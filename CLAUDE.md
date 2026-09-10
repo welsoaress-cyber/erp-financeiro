@@ -36,4 +36,5 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 17: `docs/25-carteira-dupla-saldo.md`.
 - Etapas 18-25: `docs/26-projecao-contratos.md`, `docs/27-cartao-credito.md` (meses futuros de contrato são projeção derivada, nunca lançamentos pré-gerados).
 - Etapa 26: `docs/28-disparos.md` (disparos WhatsApp manuais a partir do PDF de receitas; login do servidor em pessoas).
+- Etapa 27 (A–F): `docs/29-ftth.md` (Rede FTTH: POP e CTOs no mapa Leaflet/OSM, fios com vértices, lacres por porta e por caixa, vínculo cliente↔porta via contrato ativo, histórico; endereço em pessoas alimenta o fio automático).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

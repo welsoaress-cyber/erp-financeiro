@@ -29,3 +29,6 @@ Busca por CEP + número (Nominatim) com sugestão de CTO mais próxima; CTO/port
 
 ## Etapa 27C (migration 0049) — fios com vértices
 Os fios deixam de ser linha reta: `ctos.rota_pop` (vértices POP→CTO) e `cto_portas.rota_cliente` (vértices CTO→cliente; o **último ponto é a casa do cliente**, que alimenta `cliente_latitude/longitude`). RPCs `rota_pop_cto` e `rota_cliente_porta` validam a rota (`validar_rota`, até 200 pontos [lat,lng]). Na tela: "Desenhar fio POP→CTO" no detalhe da CTO e "Desenhar fio até o cliente" no detalhe da porta — cada clique no mapa é um vértice, com Desfazer/Limpar/Salvar; o mapa geral renderiza os traçados completos.
+
+## Etapa 27D (migration 0050) — endereço do cadastro e fio automático
+`pessoas.endereco` (texto livre, campo no formulário de Pessoas). No FTTH: ao **vincular** um cliente com endereço cadastrado, o sistema geocodifica (Nominatim) e desenha o fio CTO→casa automaticamente (1 ponto — reta); o desenho manual abre já com a busca do endereço do cliente executada, para refinar os vértices.

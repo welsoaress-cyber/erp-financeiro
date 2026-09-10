@@ -12,11 +12,13 @@ interface Props {
   marcadorSelecao?: [number, number] | null
   aoClicarCto?: (cto: CtoOcupacao) => void
   comBusca?: boolean
+  /** busca executada automaticamente ao abrir (ex.: endereço do cliente no cadastro) */
+  buscaInicial?: string | null
   /** rota em desenho (vértices temporários a partir de uma âncora, ex.: a CTO) */
   desenho?: { ancora: [number, number]; pontos: [number, number][] } | null
 }
 
-export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, marcadorSelecao, aoClicarCto, comBusca = false, desenho = null }: Props) {
+export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, marcadorSelecao, aoClicarCto, comBusca = false, buscaInicial = null, desenho = null }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const mapa = useRef<L.Map | null>(null)
   const camada = useRef<L.LayerGroup | null>(null)
@@ -93,6 +95,23 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
       m.panTo(marcadorSelecao)
     }
   }, [marcadorSelecao])
+
+  // endereço do cadastro: busca sozinho ao abrir (só dá zoom; sem marcar ponto)
+  useEffect(() => {
+    if (!buscaInicial || buscaInicial.trim().length < 3) return
+    setBusca(buscaInicial)
+    let cancelado = false
+    void (async () => {
+      const r = await buscarEndereco(buscaInicial.trim()).catch(() => null)
+      const m = mapa.current
+      if (cancelado || !r || !m) return
+      m.setView([r.lat, r.lng], 18)
+      if (pinoBusca.current) pinoBusca.current.remove()
+      pinoBusca.current = L.circleMarker([r.lat, r.lng], { radius: 7, color: '#7c3aed', fillColor: '#8b5cf6', fillOpacity: 0.9 }).addTo(m)
+    })()
+    return () => { cancelado = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buscaInicial])
 
   async function buscar() {
     if (busca.trim().length < 3 || buscando) return

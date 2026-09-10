@@ -16,7 +16,7 @@ import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
 import { MapaCtos } from '../components/MapaCtos'
-import { ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
+import { buscarEndereco, ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
 
 type Aba = 'mapa' | 'ctos' | 'historico'
 
@@ -170,7 +170,12 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
               <Selecao rotulo="Contrato" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...contratosDoCliente.map((c) => ({ valor: c.id, rotulo: `${codigoContrato(c)} · venc. dia ${c.dia_vencimento}` }))]} value={contratoId} onChange={(e) => setContratoId(e.target.value)} />
               <div className="flex items-end gap-2 pb-0.5">
                 <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={reservar} onChange={(e) => setReservar(e.target.checked)} className="size-4 accent-brand-600" />Reservar</label>
-                <Botao carregando={ocupado} disabled={!pessoaId || !contratoId} onClick={() => vincular.mutate({ porta_id: porta.id, pessoa_id: pessoaId, contrato_id: contratoId, reservar }, { onSuccess: fecharPorta })}>{reservar ? 'Reservar' : 'Vincular'}</Botao>
+                <Botao carregando={ocupado} disabled={!pessoaId || !contratoId} onClick={() => vincular.mutate({ porta_id: porta.id, pessoa_id: pessoaId, contrato_id: contratoId, reservar }, { onSuccess: (pt) => {
+                  // endereço no cadastro → geocodifica e desenha o fio sozinho (reta CTO→casa; refine depois com vértices)
+                  const end = (pessoas.data ?? []).find((x) => x.id === pessoaId)?.endereco
+                  if (end) void buscarEndereco(end).then((r) => { if (r) rotaCliente.mutate({ porta_id: pt.id, rota: [[r.lat, r.lng]] }) }).catch(() => null)
+                  fecharPorta()
+                } })}>{reservar ? 'Reservar' : 'Vincular'}</Botao>
               </div>
             </div>
           )}
@@ -200,6 +205,7 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
                 ctos={[cto]}
                 altura="18rem"
                 comBusca
+                buscaInicial={porta.pessoa_id ? ((pessoas.data ?? []).find((x) => x.id === porta.pessoa_id)?.endereco ?? null) : null}
                 desenho={{ ancora: [cto.latitude, cto.longitude], pontos: pontosCliente }}
                 aoClicarMapa={(lat, lng) => setPontosCliente((xs) => [...xs, [lat, lng]])}
               />

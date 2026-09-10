@@ -221,7 +221,7 @@ export function DisparosPage() {
   async function salvarTelefone(a: Alvo): Promise<Pessoa> {
     const tel = normalizarTelefone(a.telefoneNovo)
     const p = a.pessoa
-    const salvo = await atualizarPessoa.mutateAsync({ id: p.id, tipo: p.tipo, nome: p.nome, documento: p.documento, email: p.email, telefone: tel, login_servidor: p.login_servidor, data_nascimento: p.data_nascimento, observacao: p.observacao, ativo: p.ativo, receber_avisos: p.receber_avisos })
+    const salvo = await atualizarPessoa.mutateAsync({ id: p.id, tipo: p.tipo, nome: p.nome, documento: p.documento, email: p.email, telefone: tel, login_servidor: p.login_servidor, endereco: p.endereco, data_nascimento: p.data_nascimento, observacao: p.observacao, ativo: p.ativo, receber_avisos: p.receber_avisos })
     const atualizada = { ...p, telefone: (salvo as Pessoa).telefone ?? tel }
     setAlvos((xs) => xs.map((x) => (x.pessoa.id === p.id ? { ...x, pessoa: atualizada } : x)))
     return atualizada

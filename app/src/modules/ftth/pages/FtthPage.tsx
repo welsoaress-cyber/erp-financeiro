@@ -76,7 +76,7 @@ function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, ao
       <Campo rotulo="Observação (opcional)" value={observacao} onChange={(e) => setObservacao(e.target.value)} maxLength={500} />
       <div className="flex justify-end gap-2">
         <Botao variante="secundario" onClick={aoCancelar} disabled={salvando}>Cancelar</Botao>
-        <Botao onClick={enviar} carregando={salvando}>{cto ? 'Salvar alterações' : 'Criar CTO'}</Botao>
+        <Botao onClick={enviar} carregando={salvando}>{cto ? 'Salvar alterações' : tipo === 'pop' ? 'Criar POP' : 'Criar CTO'}</Botao>
       </div>
     </div>
   )

@@ -105,6 +105,8 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
       if (pinoBusca.current) pinoBusca.current.remove()
       pinoBusca.current = L.circleMarker([r.lat, r.lng], { radius: 7, color: '#7c3aed', fillColor: '#8b5cf6', fillOpacity: 0.9 }).addTo(m)
       pinoBusca.current.bindTooltip(r.rotulo.split(',').slice(0, 3).join(','))
+      // no modo seleção, o resultado da busca já marca o ponto (clique no mapa ajusta depois)
+      cbClicar.current?.(Number(r.lat.toFixed(6)), Number(r.lng.toFixed(6)))
     } catch {
       setErroBusca('Falha na busca de endereço (Nominatim fora do ar?).')
     } finally {

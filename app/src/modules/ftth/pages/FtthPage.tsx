@@ -84,6 +84,44 @@ function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, ao
 
 const COR_PORTA = (p: CtoPorta) => p.defeito ? 'border-red-400 bg-red-50 text-red-800' : p.status === 'ocupada' ? 'border-brand-600 bg-brand-50' : p.status === 'reservada' ? 'border-amber-400 bg-amber-50' : p.drop_disponivel ? 'border-green-500 bg-green-50' : 'border-line bg-white'
 
+const COR_FIO = (p: CtoPorta) => p.defeito ? '#dc2626' : p.status === 'ocupada' ? '#1d4ed8' : p.status === 'reservada' ? '#d97706' : p.drop_disponivel ? '#15803d' : '#9ca3af'
+
+/** Esquema interno da CTO: fibra do POP → splitter 1xN → portas. */
+function DiagramaSplitter({ cto, pop, portas, nomePessoa }: { cto: CtoOcupacao; pop: CtoOcupacao | null; portas: CtoPorta[]; nomePessoa: Map<string, string> }) {
+  const n = portas.length
+  if (n === 0) return null
+  const alturaLinha = 26
+  const h = Math.max(n * alturaLinha + 20, 120)
+  const ySplitter = h / 2
+  const yPorta = (i: number) => 14 + i * alturaLinha
+  return (
+    <div className="overflow-x-auto rounded-md border border-line bg-surface/40 p-2">
+      <svg width="640" height={h} viewBox={`0 0 640 ${h}`} className="min-w-[640px] text-xs">
+        {/* fibra do POP */}
+        <line x1="8" y1={ySplitter} x2="150" y2={ySplitter} stroke="#2563eb" strokeWidth="2.5" strokeDasharray="7 4" />
+        <text x="12" y={ySplitter - 8} fill="#1d4ed8" fontWeight="600">{pop ? `fibra do ${pop.codigo}` : 'fibra (POP não definido)'}</text>
+        {/* splitter */}
+        <rect x="150" y={ySplitter - 22} width="86" height="44" rx="6" fill="#eff6ff" stroke="#1d4ed8" strokeWidth="1.5" />
+        <text x="193" y={ySplitter - 4} textAnchor="middle" fill="#1d4ed8" fontWeight="700">Splitter</text>
+        <text x="193" y={ySplitter + 12} textAnchor="middle" fill="#1d4ed8">{cto.splitter ?? `1x${n}`}</text>
+        {/* saídas para as portas */}
+        {portas.map((p, i) => {
+          const y = yPorta(i)
+          const cor = COR_FIO(p)
+          const rotulo = p.defeito ? 'defeito' : p.status === 'ocupada' ? (p.pessoa_id ? nomePessoa.get(p.pessoa_id) ?? 'ocupada' : 'ocupada') : p.status === 'reservada' ? `reservada${p.pessoa_id ? ` · ${nomePessoa.get(p.pessoa_id) ?? ''}` : ''}` : p.drop_disponivel ? 'livre · drop disponível' : 'livre'
+          return (
+            <g key={p.id}>
+              <path d={`M 236 ${ySplitter} C 280 ${ySplitter}, 280 ${y}, 320 ${y}`} fill="none" stroke={cor} strokeWidth="1.8" opacity={p.status === 'livre' && !p.drop_disponivel && !p.defeito ? 0.45 : 0.95} />
+              <circle cx="326" cy={y} r="4" fill={cor} />
+              <text x="336" y={y + 4} fill="#374151"><tspan fontWeight="700">P{p.numero}</tspan> · {rotulo}</text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
 function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void }) {
   const portas = usePortasCto(cto.id)
   const historico = useHistoricoCto(cto.id)
@@ -149,6 +187,9 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
         </div>
       )}
 
+      {cto.tipo === 'cto' && !portas.isPending && (
+        <DiagramaSplitter cto={cto} pop={pop} portas={portas.data ?? []} nomePessoa={nomePessoa} />
+      )}
       {cto.tipo === 'pop' ? <p className="text-sm text-ink-muted">POP (central do provedor): sem portas de cliente. Os fios até as CTOs são desenhados no detalhe de cada CTO.</p> : portas.isPending ? <Carregando /> : (
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
           {(portas.data ?? []).map((p) => (

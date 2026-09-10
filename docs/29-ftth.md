@@ -1,0 +1,22 @@
+# Etapa 27A — Mapeamento FTTH (migration 0047)
+
+## Objetivo
+Gerenciar a rede FTTH da Servnet: CTOs com localização no mapa, portas ópticas, vínculo cliente↔porta amarrado a contrato ativo, histórico de movimentação e alertas de lotação ao vivo.
+
+## Regras
+- CTO pertence a um negócio; portas geradas automaticamente pelo cadastro (1–64, splitter informativo); código único por organização (sugerido CTO-NNN, editável); reduzir quantidade exige portas excedentes livres.
+- **Uma porta por cliente** (índice único). Vincular exige contrato **ativo** do cliente **no negócio da CTO** (o contrato é escolhido manualmente na tela). Reserva sempre com cliente; "Efetivar instalação" converte em ocupada.
+- Liberar e trocar deixam a porta antiga **livre com "drop disponível para utilização"**. Porta com defeito não pode ser ocupada; defeito em porta ocupada mantém o cliente. Todo movimento vai para `cto_historico` (com `auth.uid()`).
+- Alertas ao vivo (sem job): ≥90% amarelo, 100% vermelho, no mapa, na lista e no topo da tela.
+
+## Banco (0047)
+`ctos`, `cto_portas` (motor: `vincular_porta_cto`, `liberar_porta_cto`, `trocar_porta_cto`, `defeito_porta_cto` sob `erp.motor`), `cto_historico` (insert-only pelo motor), view `vw_ctos_ocupacao` (security_invoker). RLS por organização; sem DELETE para authenticated (redução de portas via trigger security definer).
+
+## App (menu "Rede FTTH")
+Abas Mapa (Leaflet + OpenStreetMap, pinos coloridos pela ocupação, tooltip e clique abre a CTO), CTOs (lista com ocupação/drops/defeitos) e Histórico. Nova/editar CTO com localização marcada **clicando no mapa** (centro padrão: Jd. Moraes Prado, São Paulo/SP). Detalhe da CTO: grade de portas colorida (ocupada/reservada/drop livre/defeito), vincular (cliente com contrato ativo + escolha do contrato + reservar), liberar, trocar (para outra CTO do mesmo negócio), marcar defeito/reparo, histórico da CTO.
+
+## Etapa 27B (próxima)
+Busca por CEP + número (Nominatim) com sugestão de CTO mais próxima; CTO/porta no detalhe de pessoa e contrato.
+
+## Testes
+`supabase/tests/ftth_test.sql`: geração/aumento/redução de portas, contrato encerrado recusado, 1 porta por cliente, escrita direta bloqueada, defeito bloqueia, reserva→ocupada, troca com histórico dos dois lados, liberação com drop, view de ocupação.

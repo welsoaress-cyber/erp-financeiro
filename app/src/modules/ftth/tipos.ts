@@ -11,6 +11,7 @@ export interface Cto {
   negocio_id: string
   tipo: TipoPontoRede
   pop_id: string | null
+  rota_pop: [number, number][] | null
   codigo: string
   endereco: string | null
   referencia: string | null
@@ -43,10 +44,11 @@ export interface CtoPorta {
   observacao: string | null
   cliente_latitude: number | null
   cliente_longitude: number | null
+  rota_cliente: [number, number][] | null
 }
 
 /** Ponto de cliente ligado a uma CTO (fio CTO→cliente no mapa). */
-export interface ClienteNoMapa { lat: number; lng: number; nome: string; ctoLat: number; ctoLng: number; porta: number }
+export interface ClienteNoMapa { lat: number; lng: number; nome: string; ctoLat: number; ctoLng: number; porta: number; rota: [number, number][] | null }
 
 /** Busca de endereço (Nominatim/OpenStreetMap, gratuito, ~1 req/s). */
 export async function buscarEndereco(q: string): Promise<{ lat: number; lng: number; rotulo: string } | null> {

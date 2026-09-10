@@ -14,7 +14,7 @@ import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
-import { useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLiberarPorta, useLocalClientePorta, usePortasCto, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
+import { useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
 import { MapaCtos } from '../components/MapaCtos'
 import { ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
 
@@ -90,9 +90,12 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
   const contratos = useContratos()
   const ctos = useCtos()
   const vincular = useVincularPorta(); const liberar = useLiberarPorta(); const trocar = useTrocarPorta(); const defeito = useDefeitoPorta()
-  const localCliente = useLocalClientePorta()
+  const rotaCliente = useRotaCliente(); const rotaPop = useRotaPop()
   const [porta, setPorta] = useState<CtoPorta | null>(null)
   const [marcandoLocal, setMarcandoLocal] = useState(false)
+  const [pontosCliente, setPontosCliente] = useState<[number, number][]>([])
+  const [desenhandoPop, setDesenhandoPop] = useState(false)
+  const [pontosPop, setPontosPop] = useState<[number, number][]>([])
   const [pessoaId, setPessoaId] = useState(''); const [contratoId, setContratoId] = useState(''); const [reservar, setReservar] = useState(false)
   const [destinoCto, setDestinoCto] = useState(cto.id); const [destinoPorta, setDestinoPorta] = useState('')
   const portasDestino = usePortasCto(destinoCto)
@@ -102,11 +105,12 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
     const comContrato = new Set((contratos.data ?? []).filter((c) => c.negocio_id === cto.negocio_id && c.status === 'ativo').map((c) => c.pessoa_id))
     return (pessoas.data ?? []).filter((p) => comContrato.has(p.id))
   }, [contratos.data, pessoas.data, cto.negocio_id])
-  const erro = vincular.error ?? liberar.error ?? trocar.error ?? defeito.error ?? localCliente.error
-  const ocupado = vincular.isPending || liberar.isPending || trocar.isPending || defeito.isPending || localCliente.isPending
+  const erro = vincular.error ?? liberar.error ?? trocar.error ?? defeito.error ?? rotaCliente.error ?? rotaPop.error
+  const ocupado = vincular.isPending || liberar.isPending || trocar.isPending || defeito.isPending || rotaCliente.isPending || rotaPop.isPending
+  const pop = (ctos.data ?? []).find((c) => c.id === cto.pop_id) ?? null
   const { pct, tom } = ocupacaoDe(cto)
 
-  function fecharPorta() { setPorta(null); setMarcandoLocal(false); setPessoaId(''); setContratoId(''); setReservar(false); setDestinoPorta(''); setDestinoCto(cto.id); vincular.reset(); liberar.reset(); trocar.reset(); defeito.reset(); localCliente.reset() }
+  function fecharPorta() { setPorta(null); setMarcandoLocal(false); setPontosCliente([]); setPessoaId(''); setContratoId(''); setReservar(false); setDestinoPorta(''); setDestinoCto(cto.id); vincular.reset(); liberar.reset(); trocar.reset(); defeito.reset(); rotaCliente.reset(); rotaPop.reset() }
 
   return (
     <div className="space-y-4">
@@ -121,7 +125,30 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
       {tom !== 'ok' && <Alerta tipo={tom === 'lotada' ? 'erro' : 'info'} titulo={tom === 'lotada' ? 'CTO lotada' : 'CTO quase lotada (≥90%)'}>Planeje uma nova CTO ou libere portas nesta região.</Alerta>}
       {erro != null && <Alerta tipo="erro">{mensagemDeErro(erro)}</Alerta>}
 
-      {portas.isPending ? <Carregando /> : (
+      {cto.tipo === 'cto' && pop && (
+        <div className="space-y-2">
+          <Botao variante="secundario" onClick={() => { setDesenhandoPop((v) => !v); setPontosPop([]) }}>{desenhandoPop ? 'Cancelar desenho do fio do POP' : cto.rota_pop ? `Redesenhar fio ${pop.codigo} → ${cto.codigo}` : `Desenhar fio ${pop.codigo} → ${cto.codigo}`}</Botao>
+          {desenhandoPop && (
+            <>
+              <p className="text-xs text-ink-muted">Clique no mapa seguindo o caminho do cabo a partir do POP; a chegada na CTO é ligada automaticamente. Salvar sem pontos = linha reta.</p>
+              <MapaCtos
+                ctos={[pop, cto]}
+                altura="18rem"
+                comBusca
+                desenho={{ ancora: [pop.latitude, pop.longitude], pontos: pontosPop }}
+                aoClicarMapa={(lat, lng) => setPontosPop((xs) => [...xs, [lat, lng]])}
+              />
+              <div className="flex gap-2">
+                <Botao carregando={ocupado} onClick={() => rotaPop.mutate({ cto_id: cto.id, rota: pontosPop }, { onSuccess: () => { setDesenhandoPop(false); setPontosPop([]) } })}>Salvar fio ({pontosPop.length} vértice(s))</Botao>
+                <Botao variante="secundario" disabled={pontosPop.length === 0} onClick={() => setPontosPop((xs) => xs.slice(0, -1))}>Desfazer último</Botao>
+                <Botao variante="secundario" disabled={pontosPop.length === 0} onClick={() => setPontosPop([])}>Limpar</Botao>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {cto.tipo === 'pop' ? <p className="text-sm text-ink-muted">POP (central do provedor): sem portas de cliente. Os fios até as CTOs são desenhados no detalhe de cada CTO.</p> : portas.isPending ? <Carregando /> : (
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
           {(portas.data ?? []).map((p) => (
             <button key={p.id} type="button" onClick={() => { fecharPorta(); setPorta(p) }} className={`rounded-md border p-2 text-center text-xs ${COR_PORTA(p)} ${porta?.id === p.id ? 'ring-2 ring-brand-600' : ''}`}>
@@ -162,19 +189,24 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
           <div className="flex flex-wrap gap-2">
             <Botao variante={porta.defeito ? 'secundario' : 'perigo'} carregando={ocupado} onClick={() => defeito.mutate({ porta_id: porta.id, defeito: !porta.defeito }, { onSuccess: fecharPorta })}>{porta.defeito ? 'Marcar reparada' : 'Marcar defeito'}</Botao>
             {porta.status !== 'livre' && (
-              <Botao variante="secundario" onClick={() => setMarcandoLocal((v) => !v)}>{marcandoLocal ? 'Cancelar marcação' : porta.cliente_latitude ? 'Reposicionar cliente no mapa' : 'Marcar local do cliente no mapa'}</Botao>
+              <Botao variante="secundario" onClick={() => { setMarcandoLocal((v) => !v); setPontosCliente([]) }}>{marcandoLocal ? 'Cancelar desenho' : porta.rota_cliente ? 'Redesenhar fio até o cliente' : 'Desenhar fio até o cliente'}</Botao>
             )}
           </div>
           {marcandoLocal && (
-            <div>
-              <p className="mb-1 text-xs text-ink-muted">Busque o endereço do cliente e clique no mapa para marcar o ponto — o fio CTO→cliente aparece no mapa geral.</p>
+            <div className="space-y-2">
+              <p className="text-xs text-ink-muted">Clique no mapa seguindo o caminho do cabo (postes/esquinas): cada clique é um vértice. O <b>último ponto é a casa do cliente</b>. Depois clique em Salvar fio.</p>
               <MapaCtos
                 ctos={[cto]}
-                altura="16rem"
+                altura="18rem"
                 comBusca
-                marcadorSelecao={porta.cliente_latitude && porta.cliente_longitude ? [porta.cliente_latitude, porta.cliente_longitude] : null}
-                aoClicarMapa={(lat, lng) => localCliente.mutate({ porta_id: porta.id, latitude: lat, longitude: lng }, { onSuccess: () => setMarcandoLocal(false) })}
+                desenho={{ ancora: [cto.latitude, cto.longitude], pontos: pontosCliente }}
+                aoClicarMapa={(lat, lng) => setPontosCliente((xs) => [...xs, [lat, lng]])}
               />
+              <div className="flex gap-2">
+                <Botao carregando={ocupado} disabled={pontosCliente.length === 0} onClick={() => rotaCliente.mutate({ porta_id: porta.id, rota: pontosCliente }, { onSuccess: () => { setMarcandoLocal(false); setPontosCliente([]) } })}>Salvar fio ({pontosCliente.length} ponto(s))</Botao>
+                <Botao variante="secundario" disabled={pontosCliente.length === 0} onClick={() => setPontosCliente((xs) => xs.slice(0, -1))}>Desfazer último</Botao>
+                <Botao variante="secundario" disabled={pontosCliente.length === 0} onClick={() => setPontosCliente([])}>Limpar</Botao>
+              </div>
             </div>
           )}
         </div>
@@ -213,7 +245,7 @@ export function FtthPage() {
     return (clientesPortas.data ?? []).flatMap((p) => {
       const c = ctoPorId.get(p.cto_id)
       if (!c || p.cliente_latitude == null || p.cliente_longitude == null) return []
-      return [{ lat: p.cliente_latitude, lng: p.cliente_longitude, nome: (p.pessoa_id ? nomePessoa.get(p.pessoa_id) : null) ?? '—', ctoLat: c.latitude, ctoLng: c.longitude, porta: p.numero }]
+      return [{ lat: p.cliente_latitude, lng: p.cliente_longitude, nome: (p.pessoa_id ? nomePessoa.get(p.pessoa_id) : null) ?? '—', ctoLat: c.latitude, ctoLng: c.longitude, porta: p.numero, rota: p.rota_cliente }]
     })
   }, [clientesPortas.data, ctos.data, nomePessoa])
   const nomeCto = useMemo(() => new Map((ctos.data ?? []).map((c) => [c.id, c.codigo])), [ctos.data])

@@ -120,5 +120,20 @@ do $$ declare v r%rowtype; v_pop uuid; v_cto uuid; v_porta uuid; pt public.cto_p
   exception when check_violation then null; end;
 end $$;
 
+-- T6 (0049): rotas com vértices — POP→CTO e CTO→cliente (último ponto = cliente)
+do $$ declare v r%rowtype; v_cto uuid; v_porta uuid; c public.ctos; pt public.cto_portas; begin
+  select * into v from r;
+  select id into v_cto from public.ctos where codigo = 'CTO-901';
+  c := public.rota_pop_cto(v_cto, '[[-23.505,-46.605],[-23.51,-46.61]]'::jsonb);
+  assert jsonb_array_length(c.rota_pop) = 2, 'T6 rota POP→CTO com 2 vértices';
+  begin
+    perform public.rota_pop_cto(v_cto, '[[999,0]]'::jsonb);
+    raise exception 'T6 rota inválida deveria falhar';
+  exception when check_violation then null; end;
+  select p.id into v_porta from public.cto_portas p where p.cto_id = v_cto and p.status = 'ocupada' limit 1;
+  pt := public.rota_cliente_porta(v_porta, '[[-23.551,-46.631],[-23.552,-46.632],[-23.553,-46.633]]'::jsonb);
+  assert pt.cliente_latitude = -23.553 and jsonb_array_length(pt.rota_cliente) = 3, 'T6 rota do cliente com último ponto';
+end $$;
+
 rollback;
 \echo OK

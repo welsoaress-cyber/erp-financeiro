@@ -12,9 +12,11 @@ interface Props {
   marcadorSelecao?: [number, number] | null
   aoClicarCto?: (cto: CtoOcupacao) => void
   comBusca?: boolean
+  /** rota em desenho (vértices temporários a partir de uma âncora, ex.: a CTO) */
+  desenho?: { ancora: [number, number]; pontos: [number, number][] } | null
 }
 
-export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, marcadorSelecao, aoClicarCto, comBusca = false }: Props) {
+export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, marcadorSelecao, aoClicarCto, comBusca = false, desenho = null }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const mapa = useRef<L.Map | null>(null)
   const camada = useRef<L.LayerGroup | null>(null)
@@ -47,11 +49,11 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
     for (const c of ctos) {
       if (c.tipo === 'cto' && c.pop_id) {
         const pop = porId.get(c.pop_id)
-        if (pop) L.polyline([[pop.latitude, pop.longitude], [c.latitude, c.longitude]], { color: '#2563eb', weight: 2, opacity: 0.6, dashArray: '6 4' }).addTo(g)
+        if (pop) L.polyline([[pop.latitude, pop.longitude], ...(c.rota_pop ?? []), [c.latitude, c.longitude]], { color: '#2563eb', weight: 2, opacity: 0.6, dashArray: '6 4' }).addTo(g)
       }
     }
     for (const cl of clientes) {
-      L.polyline([[cl.ctoLat, cl.ctoLng], [cl.lat, cl.lng]], { color: '#0d9488', weight: 1.5, opacity: 0.7 }).addTo(g)
+      L.polyline([[cl.ctoLat, cl.ctoLng], ...(cl.rota ?? [[cl.lat, cl.lng] as [number, number]])], { color: '#0d9488', weight: 1.5, opacity: 0.7 }).addTo(g)
       const p = L.circleMarker([cl.lat, cl.lng], { radius: 5, color: '#0d9488', fillColor: '#14b8a6', fillOpacity: 0.9, weight: 1.5 })
       p.bindTooltip(`${cl.nome} · porta ${cl.porta}`)
       p.addTo(g)
@@ -71,11 +73,16 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
       pin.on('click', () => cbCto.current?.(c))
       pin.addTo(g)
     }
+    if (desenho) {
+      const linha = [desenho.ancora, ...desenho.pontos]
+      L.polyline(linha, { color: '#dc2626', weight: 2.5, opacity: 0.9, dashArray: '4 4' }).addTo(g)
+      desenho.pontos.forEach((p, i) => L.circleMarker(p, { radius: i === desenho.pontos.length - 1 ? 6 : 4, color: '#dc2626', fillColor: '#ef4444', fillOpacity: 0.9 }).addTo(g))
+    }
     if (ctos.length > 0 && !aoClicarMapa) {
       m.fitBounds(L.latLngBounds(ctos.map((c) => [c.latitude, c.longitude] as [number, number])).pad(0.2), { maxZoom: 16 })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctos, clientes])
+  }, [ctos, clientes, desenho])
 
   useEffect(() => {
     const m = mapa.current

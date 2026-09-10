@@ -92,6 +92,32 @@ export function useLocalClientePorta() {
   })
 }
 
+/** Vértices do fio POP→CTO (traçado real). */
+export function useRotaPop() {
+  const invalidar = useInvalidarFtth()
+  return useMutation({
+    mutationFn: async (d: { cto_id: string; rota: [number, number][] }) => {
+      const { data, error } = await supabase.rpc('rota_pop_cto', { p_cto_id: d.cto_id, p_rota: d.rota })
+      if (error) throw error
+      return data as Cto
+    },
+    onSuccess: invalidar,
+  })
+}
+
+/** Vértices do fio CTO→cliente (o último ponto é o local do cliente). */
+export function useRotaCliente() {
+  const invalidar = useInvalidarFtth()
+  return useMutation({
+    mutationFn: async (d: { porta_id: string; rota: [number, number][] }) => {
+      const { data, error } = await supabase.rpc('rota_cliente_porta', { p_porta_id: d.porta_id, p_rota: d.rota })
+      if (error) throw error
+      return data as CtoPorta
+    },
+    onSuccess: invalidar,
+  })
+}
+
 export function useVincularPorta() {
   const invalidar = useInvalidarFtth()
   return useMutation({

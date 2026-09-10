@@ -26,3 +26,6 @@ Busca por CEP + número (Nominatim) com sugestão de CTO mais próxima; CTO/port
 - **POP**: cadastrado como ponto da rede (`ctos.tipo = 'pop'`, pino azul grande). Cada CTO pode apontar "Fibra vem do POP" (`pop_id`, validado: POP do mesmo negócio) — o mapa desenha o fio tracejado POP→CTO.
 - **Clientes no mapa**: no detalhe da porta ocupada/reservada, "Marcar local do cliente no mapa" (busca + clique) grava `cliente_latitude/longitude` via `local_cliente_porta` (motor); o mapa geral desenha o fio CTO→cliente com o nome na dica.
 - Premissa: fios em **linha reta** entre os pontos (sem vértices de poste nesta versão).
+
+## Etapa 27C (migration 0049) — fios com vértices
+Os fios deixam de ser linha reta: `ctos.rota_pop` (vértices POP→CTO) e `cto_portas.rota_cliente` (vértices CTO→cliente; o **último ponto é a casa do cliente**, que alimenta `cliente_latitude/longitude`). RPCs `rota_pop_cto` e `rota_cliente_porta` validam a rota (`validar_rota`, até 200 pontos [lat,lng]). Na tela: "Desenhar fio POP→CTO" no detalhe da CTO e "Desenhar fio até o cliente" no detalhe da porta — cada clique no mapa é um vértice, com Desfazer/Limpar/Salvar; o mapa geral renderiza os traçados completos.

@@ -57,12 +57,17 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const { mes, setMes } = usePeriodo()
   const lancamentos = useLancamentos(mes); const pessoas = usePessoas(); const contratos = useContratos(); const contas = useContas()
   const efetivar = useEfetivarLancamento(); const parcial = useBaixaParcial(); const cancelar = useCancelarLancamento()
-  const [filtroPessoa, setFiltroPessoa] = useState(''); const [filtroSituacao, setFiltroSituacao] = useState<Situacao | ''>('')
+  const [filtroPessoa, setFiltroPessoa] = useState(''); const [filtroSituacao, setFiltroSituacao] = useState<Situacao | ''>(''); const [busca, setBusca] = useState('')
   const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState(''); const [encargos, setEncargos] = useState(''); const [contaBaixa, setContaBaixa] = useState('')
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const contratoPorId = useMemo(() => new Map((contratos.data ?? []).map((c) => [c.id, c])), [contratos.data])
   const base = (lancamentos.data ?? []).filter((l) => l.tipo === tipo && l.status !== 'cancelado')
-  const lista = base.filter((l) => (!filtroPessoa || l.pessoa_id === filtroPessoa) && (!filtroSituacao || situacaoDe(l) === filtroSituacao)).sort((a, b) => a.data_vencimento.localeCompare(b.data_vencimento))
+  const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const termo = normalizar(busca.trim())
+  const lista = base
+    .filter((l) => (!filtroPessoa || l.pessoa_id === filtroPessoa) && (!filtroSituacao || situacaoDe(l) === filtroSituacao))
+    .filter((l) => !termo || normalizar([l.descricao, l.pessoa_id ? nomePessoa.get(l.pessoa_id) : null, l.observacao].filter(Boolean).join(' ')).includes(termo))
+    .sort((a, b) => a.data_vencimento.localeCompare(b.data_vencimento))
   const previsto = base.filter((l) => l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
   const realizado = base.filter((l) => l.status === 'efetivado').reduce((s, l) => s + l.valor, 0)
   const saldo = realizado - previsto
@@ -96,6 +101,14 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
         <select aria-label="Filtrar por situação" value={filtroSituacao} onChange={(e) => setFiltroSituacao(e.target.value as Situacao | '')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
           <option value="">Todas as situações</option><option value="aberto">Em aberto</option><option value="vencido">Vencidos</option><option value="pago">{receber ? 'Recebidos' : 'Pagos'}</option>
         </select>
+        <input
+          type="search"
+          aria-label="Pesquisar"
+          placeholder={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'}
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          className="h-10 min-w-56 flex-1 rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600"
+        />
       </div>
       <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Indicador rotulo="Previsto" valor={formatarMoeda(previsto)} ajuda="lançamentos ainda previstos" />

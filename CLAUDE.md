@@ -25,7 +25,7 @@ cd app && npx tsc --noEmit -p tsconfig.app.json && npx oxlint src && npm run bui
 E2E: Playwright com API mock (`mock.mjs`, porta 54321) e `vite preview --port 4173`; um spec por módulo. Rodar os specs dos módulos tocados.
 
 ## Produção
-- Verificação consolidada: `supabase/tests/verificar_tudo.sql` (esperado 40 de 40). Diagnóstico somente leitura: `supabase/scripts/diagnostico_contratos.sql`.
+- Verificação consolidada: `supabase/tests/verificar_tudo.sql` (esperado 41 de 41). Diagnóstico somente leitura: `supabase/scripts/diagnostico_contratos.sql`.
 - O ambiente remoto não alcança `*.supabase.co` nem `workers.dev`: o proprietário aplica SQL pelo SQL Editor e reporta o resultado.
 
 ## Estilo de resposta
@@ -36,5 +36,6 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 17: `docs/25-carteira-dupla-saldo.md`.
 - Etapas 18-25: `docs/26-projecao-contratos.md`, `docs/27-cartao-credito.md` (meses futuros de contrato são projeção derivada, nunca lançamentos pré-gerados).
 - Etapa 26: `docs/28-disparos.md` (disparos WhatsApp manuais a partir do PDF de receitas; login do servidor em pessoas).
+- Etapa 28 (A/B): `docs/30-estoque.md` (Estoque Servnet: itens com custo médio ponderado, movimentações imutáveis, compra com pagamento misto gerando despesa; etapa B = instalações + payback + relatórios).
 - Etapa 27 (A–F): `docs/29-ftth.md` (Rede FTTH: POP e CTOs no mapa Leaflet/OSM, fios com vértices, lacres por porta e por caixa, vínculo cliente↔porta via contrato ativo, histórico; endereço em pessoas alimenta o fio automático).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

@@ -1,0 +1,77 @@
+export interface EstoqueCategoria {
+  id: string
+  negocio_id: string
+  nome: string
+  descricao: string | null
+  ativo: boolean
+}
+
+export const UNIDADES = ['unidade', 'metro', 'caixa', 'pacote', 'rolo', 'par'] as const
+export type Unidade = (typeof UNIDADES)[number]
+
+export interface EstoqueItem {
+  id: string
+  organizacao_id: string
+  negocio_id: string
+  categoria_id: string
+  codigo: string
+  nome: string
+  descricao: string | null
+  unidade_medida: Unidade
+  marca: string | null
+  modelo: string | null
+  valor_custo: number
+  valor_venda: number | null
+  quantidade_atual: number
+  quantidade_minima: number
+  quantidade_maxima: number | null
+  localizacao: string | null
+  ativo: boolean
+}
+
+export type TipoMov = 'entrada' | 'saida' | 'ajuste'
+export type OrigemMov = 'compra' | 'instalacao' | 'devolucao' | 'ajuste' | 'perda' | 'inventario'
+export const ROTULO_ORIGEM: Record<OrigemMov, string> = {
+  compra: 'Compra', instalacao: 'Instalação', devolucao: 'Devolução', ajuste: 'Ajuste', perda: 'Perda', inventario: 'Inventário',
+}
+
+export interface EstoqueMov {
+  id: string
+  item_id: string
+  tipo: TipoMov
+  origem: OrigemMov
+  quantidade: number
+  valor_unitario: number
+  valor_total: number
+  data: string
+  pessoa_id: string | null
+  contrato_id: string | null
+  lancamento_id: string | null
+  observacao: string | null
+  criado_em: string
+}
+
+export interface DadosItem {
+  negocio_id: string
+  categoria_id: string
+  codigo: string
+  nome: string
+  descricao: string | null
+  unidade_medida: Unidade
+  marca: string | null
+  modelo: string | null
+  valor_venda: number | null
+  quantidade_minima: number
+  quantidade_maxima: number | null
+  localizacao: string | null
+  ativo: boolean
+}
+
+export function statusItem(i: EstoqueItem): { rotulo: string; tom: 'zerado' | 'baixo' | 'excesso' | 'ok' } {
+  if (i.quantidade_atual === 0) return { rotulo: 'Zerado', tom: 'zerado' }
+  if (i.quantidade_atual <= i.quantidade_minima) return { rotulo: 'Baixo', tom: 'baixo' }
+  if (i.quantidade_maxima != null && i.quantidade_maxima > 0 && i.quantidade_atual > i.quantidade_maxima) return { rotulo: 'Excesso', tom: 'excesso' }
+  return { rotulo: 'Normal', tom: 'ok' }
+}
+
+export const fmtQtd = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 2 })

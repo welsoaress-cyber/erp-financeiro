@@ -265,3 +265,27 @@ export function useLancamentosVencidosAntes(tipo: 'receita' | 'despesa', antesDe
     },
   })
 }
+
+// ---- Fechamento de mês ----
+export function useFechamentos() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: ['fechamentos', organizacao.id],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase.from('fechamentos_mes').select('competencia').eq('organizacao_id', organizacao.id)
+      if (error) throw error
+      return (data ?? []).map((f) => (f.competencia as string).slice(0, 7))
+    },
+  })
+}
+export function useFecharMes() {
+  const { organizacao } = useOrganizacao()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: { competencia: string; reabrir?: boolean }) => {
+      const { error } = await supabase.rpc(p.reabrir ? 'reabrir_mes' : 'fechar_mes', { p_competencia: `${p.competencia}-01` })
+      if (error) throw error
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['fechamentos', organizacao.id] }),
+  })
+}

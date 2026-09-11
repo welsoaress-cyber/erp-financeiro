@@ -18,7 +18,7 @@ import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, type ProjecaoContrato } from '../api'
+import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, type ProjecaoContrato } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
 import { ROTULO_PERIODICIDADE, ROTULO_STATUS, ROTULO_TIPO, rotuloParcela, type DadosLancamento, type Lancamento, type StatusLancamento, type TipoLancamento } from '../tipos'
@@ -29,6 +29,10 @@ const TOM_STATUS: Record<StatusLancamento, 'ok' | 'alerta' | 'neutro'> = { efeti
 export function LancamentosPage() {
   const { organizacao } = useOrganizacao()
   const { mes, setMes } = usePeriodo()
+  const fechamentos = useFechamentos()
+  const fecharMes = useFecharMes()
+  const mesFechado = (fechamentos.data ?? []).includes(mes)
+  const mesPassado = mes < new Date().toISOString().slice(0, 7)
   const [filtroTipo, setFiltroTipo] = useState<TipoLancamento | ''>('')
   // 'ativos' = previstos + efetivados (padrão): cancelados só quando pedidos explicitamente
   const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | '' | 'ativos'>('ativos')
@@ -161,6 +165,16 @@ export function LancamentosPage() {
 
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <SeletorMes mes={mes} aoMudar={setMes} />
+        {mesFechado ? (
+          <span className="flex items-center gap-2 text-sm">
+            <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink-muted">🔒 Mês fechado</span>
+            <button type="button" className="text-xs text-brand-700 hover:underline"
+              onClick={() => { if (window.confirm('Reabrir o mês? As travas de edição do realizado saem até você fechar de novo (fica auditado).')) fecharMes.mutate({ competencia: mes, reabrir: true }) }}>reabrir</button>
+          </span>
+        ) : mesPassado ? (
+          <button type="button" className="text-xs font-medium text-brand-700 hover:underline"
+            onClick={() => { if (window.confirm('Fechar o mês? Nada efetivado dentro dele poderá ser alterado, cancelado ou excluído (cobranças em aberto continuam baixáveis).')) fecharMes.mutate({ competencia: mes }) }}>🔒 Fechar mês</button>
+        ) : null}
         <select aria-label="Filtrar por tipo" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value as TipoLancamento | '')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
           <option value="">Todos os tipos</option>
           <option value="receita">Receitas</option>

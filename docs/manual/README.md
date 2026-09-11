@@ -50,6 +50,7 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 - Para dar baixa: abra o lançamento → **Efetivar** → confirme a data e a conta (pode trocar a conta na hora da baixa; pagamento em atraso pode ter encargos).
 - Lançamento pode ser **recorrente** (fixo ou parcelado): ao efetivar uma parcela, a próxima nasce sozinha.
 - Mensalidades de contrato entram sozinhas (faturamento automático); meses futuros aparecem como **projeção** (não são gravados).
+- **Fechar mês**: depois de conferir um mês passado com o extrato, clique em **🔒 Fechar mês** (ao lado do seletor). Nada efetivado dentro dele poderá ser alterado, cancelado ou excluído — cobranças em aberto continuam baixáveis (o dinheiro entra no mês atual). Para mexer no passado, use **reabrir** (fica auditado).
 
 ### 3.2 Contas a receber
 

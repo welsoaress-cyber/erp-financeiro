@@ -15,7 +15,8 @@ import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 
-interface Bloqueio { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; tipo: 'bloqueio' | 'desbloqueio'; status: string; motivo: string; criado_em: string }
+interface Bloqueio { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; tipo: 'bloqueio' | 'desbloqueio'; status: string; motivo: string; confianca_furada: boolean; criado_em: string }
+interface Confianca { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; segurar_ate: string; observacao: string | null; status: string }
 interface PixCobranca { id: string; negocio_id: string; pessoa_id: string | null; valor: number; status: string; criado_em: string; pago_em: string | null }
 
 /** Cobrança: bloqueio assistido (lista de quem bloquear/desbloquear) e Pix recentes. */
@@ -32,9 +33,17 @@ export function CobrancaPage() {
   const bloqueios = useQuery({
     queryKey: ['cobranca', organizacao.id, 'bloqueios'],
     queryFn: async (): Promise<Bloqueio[]> => {
-      const { data, error } = await supabase.from('bloqueios').select('id, negocio_id, contrato_id, pessoa_id, tipo, status, motivo, criado_em').eq('organizacao_id', organizacao.id).eq('status', 'pendente').order('criado_em')
+      const { data, error } = await supabase.from('bloqueios').select('id, negocio_id, contrato_id, pessoa_id, tipo, status, motivo, confianca_furada, criado_em').eq('organizacao_id', organizacao.id).eq('status', 'pendente').order('criado_em')
       if (error) throw error
       return (data ?? []) as Bloqueio[]
+    },
+  })
+  const confiancas = useQuery({
+    queryKey: ['cobranca', organizacao.id, 'confiancas'],
+    queryFn: async (): Promise<Confianca[]> => {
+      const { data, error } = await supabase.from('confiancas').select('id, negocio_id, contrato_id, pessoa_id, segurar_ate, observacao, status').eq('organizacao_id', organizacao.id).eq('status', 'ativa').order('segurar_ate')
+      if (error) throw error
+      return (data ?? []) as Confianca[]
     },
   })
   const pix = useQuery({
@@ -58,6 +67,22 @@ export function CobrancaPage() {
     mutationFn: async (id: string) => { const { error } = await supabase.rpc('descartar_bloqueio', { p_id: id }); if (error) throw error },
     onSuccess: invalidar,
   })
+  // voto de confiança: segura o bloqueio até a data escolhida
+  const [confiando, setConfiando] = useState<Bloqueio | null>(null)
+  const [confAte, setConfAte] = useState('')
+  const [confObs, setConfObs] = useState('')
+  const darConfianca = useMutation({
+    mutationFn: async () => {
+      if (!confiando) return
+      const { error } = await supabase.rpc('dar_confianca', { p_contrato_id: confiando.contrato_id, p_segurar_ate: confAte, p_observacao: confObs || null })
+      if (error) throw error
+    },
+    onSuccess: () => { setConfiando(null); setConfAte(''); setConfObs(''); invalidar() },
+  })
+  const cancelarConfianca = useMutation({
+    mutationFn: async (id: string) => { const { error } = await supabase.rpc('cancelar_confianca', { p_id: id }); if (error) throw error },
+    onSuccess: invalidar,
+  })
 
   // reconciliação ativa do Pix: ao abrir a tela, re-consulta no Mercado Pago os
   // "aguardando" com mais de 1h (webhook pode ter se perdido) — nunca bloquear quem pagou
@@ -77,7 +102,8 @@ export function CobrancaPage() {
   const rotuloContrato = (id: string) => { const c = (contratos.data ?? []).find((x) => x.id === id); return c ? codigoContrato(c) : '—' }
   const lista = (bloqueios.data ?? []).filter((b) => b.negocio_id === negocioAtual)
   const pixLista = (pix.data ?? []).filter((p) => p.negocio_id === negocioAtual)
-  const erro = gerar.error ?? executar.error ?? descartar.error
+  const confLista = (confiancas.data ?? []).filter((c) => c.negocio_id === negocioAtual)
+  const erro = gerar.error ?? executar.error ?? descartar.error ?? darConfianca.error ?? cancelarConfianca.error
 
   return (
     <>
@@ -103,21 +129,56 @@ export function CobrancaPage() {
           ) : (
             <ul className="divide-y divide-line text-sm">
               {lista.map((b) => (
-                <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 px-6 py-3">
-                  <span className="min-w-0">
-                    <Distintivo tom={b.tipo === 'bloqueio' ? 'alerta' : 'ok'}>{b.tipo === 'bloqueio' ? 'Bloquear' : 'Desbloquear'}</Distintivo>
-                    <span className="ml-2 font-medium">{nomePessoa.get(b.pessoa_id) ?? '—'}</span>
-                    <span className="ml-2 text-xs text-ink-muted">{rotuloContrato(b.contrato_id)} · {b.motivo}</span>
-                  </span>
-                  <span className="flex shrink-0 gap-2">
-                    <Botao variante="secundario" carregando={descartar.isPending} onClick={() => descartar.mutate(b.id)}>Ignorar</Botao>
-                    <Botao carregando={executar.isPending} onClick={() => executar.mutate(b.id)}>{b.tipo === 'bloqueio' ? 'Bloqueei na rede' : 'Desbloqueei na rede'}</Botao>
-                  </span>
+                <li key={b.id} className="px-6 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0">
+                      <Distintivo tom={b.tipo === 'bloqueio' ? 'alerta' : 'ok'}>{b.tipo === 'bloqueio' ? 'Bloquear' : 'Desbloquear'}</Distintivo>
+                      {b.confianca_furada && <span className="ml-2"><Distintivo tom="alerta">🤝 Confiança furada</Distintivo></span>}
+                      <span className="ml-2 font-medium">{nomePessoa.get(b.pessoa_id) ?? '—'}</span>
+                      <span className="ml-2 text-xs text-ink-muted">{rotuloContrato(b.contrato_id)} · {b.motivo}</span>
+                    </span>
+                    <span className="flex shrink-0 gap-2">
+                      {b.tipo === 'bloqueio' && <Botao variante="secundario" onClick={() => { setConfiando(confiando?.id === b.id ? null : b); setConfAte(''); setConfObs('') }}>🤝 Confiança</Botao>}
+                      <Botao variante="secundario" carregando={descartar.isPending} onClick={() => descartar.mutate(b.id)}>Ignorar</Botao>
+                      <Botao carregando={executar.isPending} onClick={() => executar.mutate(b.id)}>{b.tipo === 'bloqueio' ? 'Bloqueei na rede' : 'Desbloqueei na rede'}</Botao>
+                    </span>
+                  </div>
+                  {confiando?.id === b.id && (
+                    <form className="mt-3 flex flex-wrap items-end gap-2 rounded-md bg-canvas p-3" onSubmit={(e) => { e.preventDefault(); darConfianca.mutate() }}>
+                      <label className="text-xs text-ink-muted">Segurar o bloqueio até
+                        <input type="date" required value={confAte} min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)} onChange={(e) => setConfAte(e.target.value)} className="mt-1 block h-9 rounded-md border border-line bg-white px-2 text-sm text-ink" />
+                      </label>
+                      <label className="min-w-48 flex-1 text-xs text-ink-muted">Combinado (opcional)
+                        <input value={confObs} onChange={(e) => setConfObs(e.target.value)} placeholder="Ex.: prometeu pagar no dia 15" className="mt-1 block h-9 w-full rounded-md border border-line bg-white px-2 text-sm text-ink" />
+                      </label>
+                      <Botao type="submit" carregando={darConfianca.isPending}>Dar confiança</Botao>
+                    </form>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </Cartao>
+
+        {confLista.length > 0 && (
+          <Cartao className="p-0">
+            <div className="border-b border-line px-6 py-3">
+              <h2 className="text-sm font-semibold">Confianças ativas ({confLista.length})</h2>
+              <p className="text-xs text-ink-muted">Bloqueio segurado até a data combinada. Pagou → cumprida; passou devendo → volta na lista como confiança furada.</p>
+            </div>
+            <ul className="divide-y divide-line text-sm">
+              {confLista.map((c) => (
+                <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-6 py-3">
+                  <span className="min-w-0">
+                    <span className="font-medium">{nomePessoa.get(c.pessoa_id) ?? '—'}</span>
+                    <span className="ml-2 text-xs text-ink-muted">{rotuloContrato(c.contrato_id)} · até {formatarData(c.segurar_ate)}{c.observacao ? ` · ${c.observacao}` : ''}</span>
+                  </span>
+                  <Botao variante="secundario" carregando={cancelarConfianca.isPending} onClick={() => cancelarConfianca.mutate(c.id)}>Cancelar</Botao>
+                </li>
+              ))}
+            </ul>
+          </Cartao>
+        )}
 
         <Cartao className="p-0">
           <div className="flex items-center justify-between border-b border-line px-6 py-3">

@@ -18,6 +18,7 @@ begin;
 do $$
 declare r record; v_apagadas int := 0; v_ficaram int := 0;
 begin
+  perform set_config('erp.motor', 'on', true); -- proteções de negócios/carteira respeitam o motor
   alter table public.categorias disable trigger user;
   alter table public.negocios   disable trigger user;
   alter table public.carteira   disable trigger user;

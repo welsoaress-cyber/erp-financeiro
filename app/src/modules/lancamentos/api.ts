@@ -192,6 +192,18 @@ export function useCancelarLancamento() {
   })
 }
 
+export function useEstornarLancamento() {
+  const invalidar = useInvalidarFinanceiro()
+  return useMutation({
+    mutationFn: async ({ id, motivo }: { id: string; motivo: string }) => {
+      const { data, error } = await supabase.rpc('estornar_lancamento', { p_id: id, p_motivo: motivo })
+      if (error) throw error
+      return data as Lancamento
+    },
+    onSuccess: invalidar,
+  })
+}
+
 export function useExcluirLancamento() {
   const invalidar = useInvalidarFinanceiro()
   return useMutation({

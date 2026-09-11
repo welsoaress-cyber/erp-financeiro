@@ -14,11 +14,12 @@ interface Props {
   aoCancelarLancamento: (motivo: string) => void
   aoExcluir: () => void
   aoProjetar?: (meses: number) => void
+  aoEstornar?: (motivo: string) => void
 }
 
 /** Ações de estado de um lançamento existente: efetivar, cancelar (com motivo), excluir (só previsto) e projetar (recorrentes). */
-export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCancelarLancamento, aoExcluir, aoProjetar }: Props) {
-  const [modo, setModo] = useState<'nenhum' | 'efetivar' | 'cancelar' | 'excluir' | 'projetar'>('nenhum')
+export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCancelarLancamento, aoExcluir, aoProjetar, aoEstornar }: Props) {
+  const [modo, setModo] = useState<'nenhum' | 'efetivar' | 'cancelar' | 'excluir' | 'projetar' | 'estornar'>('nenhum')
   const [dataEf, setDataEf] = useState(hojeISO())
   const [motivo, setMotivo] = useState('')
   const [meses, setMeses] = useState('6')
@@ -50,6 +51,7 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
             <Botao type="button" variante="secundario" onClick={() => aoProjetar(60)} carregando={ocupado}>Gerar próximas ocorrências</Botao>
           )}
           {lancamento.recorrente && aoProjetar && !fixa && <Botao type="button" variante="secundario" onClick={() => setModo('projetar')}>Projetar meses futuros</Botao>}
+          {lancamento.status === 'efetivado' && aoEstornar && lancamento.valor > 0 && <Botao type="button" variante="secundario" onClick={() => setModo('estornar')}>Estornar</Botao>}
           <Botao type="button" variante="secundario" onClick={() => setModo('cancelar')}>Cancelar lançamento</Botao>
           {lancamento.status === 'previsto' && <Botao type="button" variante="perigo" onClick={() => setModo('excluir')}>Excluir</Botao>}
         </div>
@@ -67,6 +69,16 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
           <div className="flex items-end gap-2">
             <Campo rotulo="Meses à frente" type="number" inputMode="numeric" min={1} max={60} value={meses} onChange={(e) => setMeses(e.target.value)} />
             <Botao type="button" onClick={() => aoProjetar(Number(meses))} carregando={ocupado} disabled={!Number.isInteger(Number(meses)) || Number(meses) < 1}>Gerar</Botao>
+            <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
+          </div>
+        </div>
+      )}
+      {modo === 'estornar' && aoEstornar && (
+        <div className="space-y-2">
+          <Campo rotulo="Motivo do estorno (obrigatório)" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={200} placeholder="Ex.: pagamento duplicado no banco" />
+          <p className="text-xs text-ink-muted">Cria um contra-lançamento datado de HOJE devolvendo o valor — o lançamento original fica intocado (funciona mesmo com o mês dele fechado). Use cancelar apenas quando o mês ainda está aberto e o lançamento nunca deveria ter existido.</p>
+          <div className="flex gap-2">
+            <Botao type="button" onClick={() => aoEstornar(motivo)} carregando={ocupado} disabled={motivo.trim().length < 5}>Confirmar estorno</Botao>
             <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
           </div>
         </div>

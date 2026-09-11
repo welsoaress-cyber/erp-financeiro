@@ -58,6 +58,18 @@ export function CobrancaPage() {
     mutationFn: async (id: string) => { const { error } = await supabase.rpc('descartar_bloqueio', { p_id: id }); if (error) throw error },
     onSuccess: invalidar,
   })
+
+  // reconciliação ativa do Pix: ao abrir a tela, re-consulta no Mercado Pago os
+  // "aguardando" com mais de 1h (webhook pode ter se perdido) — nunca bloquear quem pagou
+  const [reconciliado, setReconciliado] = useState<{ verificados: number; confirmados: number } | null>(null)
+  useEffect(() => {
+    let ativo = true
+    supabase.functions.invoke('pix-reconciliar', { body: {} })
+      .then(({ data }) => { if (ativo && data?.ok) { setReconciliado({ verificados: data.verificados, confirmados: data.confirmados }); if (data.confirmados > 0) invalidar() } })
+      .catch(() => { /* Edge indisponível: a tela segue com os dados do banco */ })
+    return () => { ativo = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // atualiza a lista ao abrir a tela
   useEffect(() => { if (negocioAtual) gerar.mutate() }, [negocioAtual]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -108,7 +120,10 @@ export function CobrancaPage() {
         </Cartao>
 
         <Cartao className="p-0">
-          <div className="border-b border-line px-6 py-3"><h2 className="text-sm font-semibold">Pix recentes</h2></div>
+          <div className="flex items-center justify-between border-b border-line px-6 py-3">
+            <h2 className="text-sm font-semibold">Pix recentes</h2>
+            {reconciliado && <span className="text-xs text-ink-muted">{reconciliado.verificados > 0 ? `Reconciliação: ${reconciliado.verificados} verificados no Mercado Pago · ${reconciliado.confirmados} baixados agora` : 'Reconciliação: nenhum Pix antigo aguardando'}</span>}
+          </div>
           {pixLista.length === 0 ? <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhuma cobrança Pix ainda. Ative o Pix automático em Portal → Configurar e coloque o token do Mercado Pago nos secrets.</p> : (
             <ul className="divide-y divide-line text-sm">
               {pixLista.map((p) => (

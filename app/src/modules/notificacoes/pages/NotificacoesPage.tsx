@@ -67,7 +67,7 @@ export function NotificacoesPage() {
               </select>
             )}
             {config ? (
-              <span className="text-sm text-ink-muted">{negocio.nome} · {config.numero_whatsapp ?? 'sem número'} · {config.dias_antes} dia(s) antes · bloqueio {config.dias_apos} dia(s) após · {config.hora_inicio.slice(0, 5)}–{config.hora_fim.slice(0, 5)} · {ROTULO_PROVEDOR[config.provedor]}{config.instancia ? ` (${config.instancia})` : ''}</span>
+              <span className="text-sm text-ink-muted">{negocio.nome} · {config.numero_whatsapp ?? 'sem número'} · régua {[...(config.regua_antes ?? []).map((d) => `${d} antes`), 'no dia', ...(config.regua_apos ?? []).map((d) => `${d} depois`)].join(' · ')} · {config.hora_inicio.slice(0, 5)}–{config.hora_fim.slice(0, 5)} · {ROTULO_PROVEDOR[config.provedor]}{config.instancia ? ` (${config.instancia})` : ''}</span>
             ) : <span className="text-sm text-ink-muted">{negocio.nome} · sem configuração</span>}
             {config && <Distintivo tom={config.ativo ? 'ok' : 'neutro'}>{config.ativo ? 'Ativas' : 'Desativadas'}</Distintivo>}
             <Botao variante="secundario" className="ml-auto" onClick={() => setJanela('config')}>{config ? 'Configurar' : 'Configurar notificações'}</Botao>

@@ -25,6 +25,8 @@ export interface ConfigNotificacao {
   ativo: boolean
   dias_antes: number
   dias_apos: number
+  regua_antes: number[]
+  regua_apos: number[]
   hora_inicio: string
   hora_fim: string
   template_vencimento_proximo: string
@@ -37,8 +39,8 @@ export interface DadosConfigNotificacao {
   provedor: ProvedorNotificacao
   instancia: string | null
   ativo: boolean
-  dias_antes: number
-  dias_apos: number
+  regua_antes: number[]
+  regua_apos: number[]
   hora_inicio: string
   hora_fim: string
   template_vencimento_proximo: string

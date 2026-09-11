@@ -25,8 +25,8 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
   const [ativo, setAtivo] = useState(config?.ativo ?? false)
   const [provedor, setProvedor] = useState<ProvedorNotificacao>(config?.provedor ?? 'simulado')
   const [instancia, setInstancia] = useState(config?.instancia ?? '')
-  const [diasAntes, setDiasAntes] = useState(String(config?.dias_antes ?? 3))
-  const [diasApos, setDiasApos] = useState(String(config?.dias_apos ?? 3))
+  const [reguaAntes, setReguaAntes] = useState((config?.regua_antes ?? [2]).join(', '))
+  const [reguaApos, setReguaApos] = useState((config?.regua_apos ?? [3]).join(', '))
   const [horaInicio, setHoraInicio] = useState((config?.hora_inicio ?? '08:00').slice(0, 5))
   const [horaFim, setHoraFim] = useState((config?.hora_fim ?? '18:00').slice(0, 5))
   const [tplProximo, setTplProximo] = useState(config?.template_vencimento_proximo ?? TEMPLATES_PADRAO.template_vencimento_proximo)
@@ -40,15 +40,16 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
     const num = numero.replace(/[^0-9+]/g, '')
     if (ativo && !num) { setErro('Informe o número de WhatsApp do negócio para ativar.'); return }
     if (num && !/^\+[1-9][0-9]{9,14}$/.test(num)) { setErro('Número no formato internacional, ex.: +5511954490001.'); return }
-    const dA = Number(diasAntes), dP = Number(diasApos)
-    if (!Number.isInteger(dA) || dA < 0 || dA > 30) { setErro('Dias antes: 0 a 30.'); return }
-    if (!Number.isInteger(dP) || dP < 1 || dP > 60) { setErro('Dias após: 1 a 60.'); return }
+    const lerRegua = (texto: string) => texto.split(/[,;\s]+/).filter(Boolean).map(Number)
+    const rA = lerRegua(reguaAntes), rP = lerRegua(reguaApos)
+    if (rA.some((d) => !Number.isInteger(d) || d < 1 || d > 30) || rA.length > 5) { setErro('Avisos antes: até 5 números de 1 a 30 (ex.: 2 ou 5, 2). Vazio = nenhum.'); return }
+    if (rP.some((d) => !Number.isInteger(d) || d < 1 || d > 60) || rP.length > 5) { setErro('Avisos depois: até 5 números de 1 a 60 (ex.: 3 ou 1, 3).'); return }
     if (horaFim <= horaInicio) { setErro('O fim do horário comercial deve ser depois do início.'); return }
     const inst = instancia.trim().toLowerCase()
     if (provedor === 'evolution' && !/^[a-z0-9_-]{2,40}$/.test(inst)) { setErro('Informe o nome da instância da Evolution API (ex.: servnet).'); return }
     for (const t of [tplProximo, tplDia, tplBloqueio]) if (t.trim().length < 10 || t.length > 1000) { setErro('Cada mensagem precisa ter entre 10 e 1000 caracteres.'); return }
     setErro(null)
-    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, dias_antes: dA, dias_apos: dP, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
+    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, regua_antes: rA, regua_apos: rP, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
   }
 
   return (
@@ -66,12 +67,12 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
         <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium"><input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-brand-600" />Notificações ativas</label>
       </div>
       <div className="grid gap-4 sm:grid-cols-4">
-        <Campo rotulo="Dias antes do vencimento" type="number" min={0} max={30} value={diasAntes} onChange={(e) => setDiasAntes(e.target.value)} />
-        <Campo rotulo="Dias após (bloqueio)" type="number" min={1} max={60} value={diasApos} onChange={(e) => setDiasApos(e.target.value)} />
+        <Campo rotulo="Avisar antes (dias)" value={reguaAntes} onChange={(e) => setReguaAntes(e.target.value)} placeholder="2 ou 5, 2" title="Um aviso em cada dia listado antes do vencimento. Vazio = nenhum aviso antes." />
+        <Campo rotulo="Avisar depois (dias)" value={reguaApos} onChange={(e) => setReguaApos(e.target.value)} placeholder="3 ou 1, 3" title="Um aviso de bloqueio em cada dia listado após o vencimento. O maior é o prazo do bloqueio assistido." />
         <Campo rotulo="Horário comercial: início" type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
         <Campo rotulo="Horário comercial: fim" type="time" value={horaFim} onChange={(e) => setHoraFim(e.target.value)} />
       </div>
-      <p className="text-xs text-ink-muted">Variáveis: {PLACEHOLDERS.join(' ')}. Fora do horário comercial (Brasília) os avisos ficam pendentes até a próxima execução.</p>
+      <p className="text-xs text-ink-muted">Régua padrão enxuta: 2 dias antes · no dia · 3 dias depois (o aviso do dia sempre sai). Cada ponto manda no máximo uma mensagem por fatura. Variáveis: {PLACEHOLDERS.join(' ')}. Fora do horário comercial (Brasília) os avisos ficam pendentes até a próxima execução.</p>
       <Template rotulo="Mensagem: próximo ao vencimento" valor={tplProximo} aoMudar={setTplProximo} exemplo={exemplo} />
       <Template rotulo="Mensagem: no dia do vencimento" valor={tplDia} aoMudar={setTplDia} exemplo={exemplo} />
       <Template rotulo="Mensagem: bloqueio (após vencimento sem pagamento)" valor={tplBloqueio} aoMudar={setTplBloqueio} exemplo={exemplo} />

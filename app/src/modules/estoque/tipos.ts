@@ -68,7 +68,10 @@ export interface DadosItem {
   ativo: boolean
 }
 
-export function statusItem(i: EstoqueItem): { rotulo: string; tom: 'zerado' | 'baixo' | 'excesso' | 'ok' } {
+/** teveEntrada: item com ao menos uma entrada/ajuste positivo no histórico.
+ *  Sem isso, item recém-criado com saldo 0 é "aguardando 1ª entrada", não alerta. */
+export function statusItem(i: EstoqueItem, teveEntrada = true): { rotulo: string; tom: 'zerado' | 'baixo' | 'excesso' | 'ok' | 'novo' } {
+  if (i.quantidade_atual === 0 && !teveEntrada) return { rotulo: 'Aguardando 1ª entrada', tom: 'novo' }
   if (i.quantidade_atual === 0) return { rotulo: 'Zerado', tom: 'zerado' }
   if (i.quantidade_atual <= i.quantidade_minima) return { rotulo: 'Baixo', tom: 'baixo' }
   if (i.quantidade_maxima != null && i.quantidade_maxima > 0 && i.quantidade_atual > i.quantidade_maxima) return { rotulo: 'Excesso', tom: 'excesso' }

@@ -56,6 +56,25 @@ export function useEstoqueItens() {
   })
 }
 
+/** Itens que já tiveram ao menos uma entrada (entrada ou ajuste que colocou saldo). */
+export function useItensComEntrada() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'itens-com-entrada'],
+    queryFn: async (): Promise<Set<string>> => {
+      const { data, error } = await supabase
+        .from('estoque_movimentacoes')
+        .select('item_id')
+        .eq('organizacao_id', organizacao.id)
+        .in('tipo', ['entrada', 'ajuste'])
+        .gt('quantidade', 0)
+        .limit(10000)
+      if (error) throw error
+      return new Set((data ?? []).map((m) => m.item_id as string))
+    },
+  })
+}
+
 export function useSalvarEstoqueItem() {
   const { organizacao } = useOrganizacao()
   const invalidar = useInvalidarEstoque()

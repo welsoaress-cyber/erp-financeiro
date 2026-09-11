@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
 import { Distintivo } from '../../../core/ui/Distintivo'
-import { useEstoqueItens } from '../../estoque/api'
+import { useEstoqueItens, useItensComEntrada } from '../../estoque/api'
 import { fmtQtd, statusItem } from '../../estoque/tipos'
 
 interface Props {
@@ -12,9 +12,10 @@ interface Props {
 /** Cartão de alertas de estoque no dashboard geral: itens zerados ou abaixo do mínimo. Só aparece se houver alerta. */
 export function AlertasEstoque({ bate, nomeNegocio }: Props) {
   const itens = useEstoqueItens()
+  const comEntrada = useItensComEntrada()
   const alertas = (itens.data ?? [])
     .filter((i) => i.ativo && bate(i.negocio_id))
-    .map((i) => ({ item: i, st: statusItem(i) }))
+    .map((i) => ({ item: i, st: statusItem(i, (comEntrada.data ?? new Set()).has(i.id)) }))
     .filter((x) => x.st.tom === 'zerado' || x.st.tom === 'baixo')
     .sort((a, b) => (a.st.tom === b.st.tom ? 0 : a.st.tom === 'zerado' ? -1 : 1))
   if (alertas.length === 0) return null

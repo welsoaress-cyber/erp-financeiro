@@ -146,7 +146,7 @@ Passo a passo comum:
 
 Estoque da Servnet com **custo médio ponderado** e movimentações imutáveis:
 
-- **Itens**: o item nasce zerado; o saldo entra por **Ajuste de inventário** (define a quantidade que você tem) ou por **Nova compra**.
+- **Itens**: o item nasce zerado; o saldo entra por **Ajuste de inventário** (define a quantidade que você tem) ou por **Nova compra**. Item recém-criado aparece como **"Aguardando 1ª entrada"** (aviso azul, sem alarme); o alerta vermelho de **Zerado** só dispara para item que já teve saldo e acabou. A aba Itens filtra por esses estados.
 - **Nova compra**: vários itens + **pagamento misto** (parte no cartão → fatura; parte Pix/dinheiro → efetivado) — a despesa entra sozinha no Financeiro.
 - **+ Criar item novo**: dentro da Nova compra dá para criar o item na hora (nome, categoria, código sugerido e unidade) sem sair da tela — os detalhes podem ser completados depois na aba Itens.
 - **Importar de print**: dentro da Nova compra, clique em "📷 Importar de print", cole (Ctrl+V) ou arraste o print do pedido (Shopee, Mercado Livre, e-mail). O sistema lê a imagem no próprio navegador e preenche descrição, quantidade e valor total — você só confere, escolhe o item e a conta, e registra. Funciona melhor com print de tela (não foto); a primeira leitura demora alguns segundos (baixa o leitor de texto).

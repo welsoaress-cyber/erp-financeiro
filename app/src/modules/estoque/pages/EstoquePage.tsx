@@ -91,6 +91,58 @@ function FormularioItem({ item, negocioId, salvando, erro, aoSalvar, aoCancelar 
 interface LinhaCompra { itemId: string; quantidade: string; valorTotal: string }
 interface LinhaPagto { contaId: string; valor: string; pago: boolean }
 
+/** Criação rápida de item dentro da Nova compra, sem sair da tela. */
+function NovoItemRapido({ negocioId, aoCriar, aoFechar }: { negocioId: string; aoCriar: (item: EstoqueItem) => void; aoFechar: () => void }) {
+  const categoriasEstoque = useEstoqueCategorias()
+  const salvarItem = useSalvarEstoqueItem()
+  const [nome, setNome] = useState('')
+  const [codigo, setCodigo] = useState('')
+  const [categoriaId, setCategoriaId] = useState('')
+  const [unidade, setUnidade] = useState<Unidade>('unidade')
+  const [erro, setErro] = useState<string | null>(null)
+  const cats = (categoriasEstoque.data ?? []).filter((c) => c.negocio_id === negocioId && c.ativo)
+  const sugerirCodigo = (n: string) => n.trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').split(/\s+/).slice(0, 2).map((p) => p.slice(0, 6)).join('-')
+
+  function criar() {
+    if (nome.trim().length < 2) { setErro('Informe o nome do item.'); return }
+    if (!categoriaId) { setErro('Escolha a categoria do estoque.'); return }
+    const cod = (codigo.trim() || sugerirCodigo(nome)).toUpperCase()
+    if (cod.length < 2) { setErro('Informe o código.'); return }
+    setErro(null)
+    salvarItem.mutate({
+      negocio_id: negocioId, categoria_id: categoriaId, codigo: cod, nome: nome.trim(),
+      descricao: null, unidade_medida: unidade, marca: null, modelo: null, valor_venda: null,
+      quantidade_minima: 0, quantidade_maxima: null, localizacao: null, ativo: true,
+    }, { onSuccess: (item) => aoCriar(item), onError: (e) => setErro(mensagemDeErro(e)) })
+  }
+
+  return (
+    <div className="space-y-3 rounded-md border border-line bg-surface/60 p-3">
+      {erro && <Alerta tipo="erro">{erro}</Alerta>}
+      {cats.length === 0 ? (
+        <p className="text-sm text-ink-muted">Este negócio ainda não tem categoria de estoque — crie uma na aba Categorias do Estoque.</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo rotulo="Nome do item" value={nome} autoFocus maxLength={80} placeholder="Ex.: Estante gaveteiro 60 gavetas"
+              onChange={(e) => { setNome(e.target.value); if (!codigo) setCodigo('') }} />
+            <Selecao rotulo="Categoria" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...cats.map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo rotulo="Código" value={codigo} maxLength={20} placeholder={sugerirCodigo(nome) || 'Ex.: ESTANT-01'} onChange={(e) => setCodigo(e.target.value)} />
+            <Selecao rotulo="Unidade" opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))} value={unidade} onChange={(e) => setUnidade(e.target.value as Unidade)} />
+          </div>
+          <p className="text-xs text-ink-muted">Detalhes (marca, mínimo, localização…) podem ser completados depois na aba Itens.</p>
+        </>
+      )}
+      <div className="flex justify-end gap-2">
+        <Botao variante="secundario" onClick={aoFechar} disabled={salvarItem.isPending}>Cancelar</Botao>
+        {cats.length > 0 && <Botao onClick={criar} carregando={salvarItem.isPending}>Criar e usar na compra</Botao>}
+      </div>
+    </div>
+  )
+}
+
 function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: EstoqueItem[]; aoFechar: () => void }) {
   const contas = useContas()
   const categorias = useCategorias()
@@ -104,7 +156,10 @@ function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: 
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [importando, setImportando] = useState(false)
+  const [novoItem, setNovoItem] = useState(false)
+  const [extraItens, setExtraItens] = useState<EstoqueItem[]>([])
   const catsDespesa = (categorias.data ?? []).filter((c) => c.tipo === 'despesa' && c.ativo)
+  const itensDisponiveis = [...itens, ...extraItens.filter((e) => !itens.some((i) => i.id === e.id))]
   const totalItens = linhas.reduce((s, l) => s + (Number(l.valorTotal.replace(',', '.')) || 0), 0)
   const totalPagto = pagtos.reduce((s, p) => s + (Number(p.valor.replace(',', '.')) || 0), 0)
   const contaDe = (id: string) => (contas.data ?? []).find((c) => c.id === id)
@@ -176,13 +231,33 @@ function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: 
         <p className="mb-1 text-sm font-medium">Itens comprados (valor = total pago naquele item; o custo unitário é rateado)</p>
         {linhas.map((l, i) => (
           <div key={i} className="mb-2 flex items-end gap-2">
-            <div className="flex-1"><Selecao rotulo={i === 0 ? 'Item' : ''} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...itens.filter((x) => x.ativo).map((x) => ({ valor: x.id, rotulo: `${x.codigo} · ${x.nome} (${x.unidade_medida})` }))]} value={l.itemId} onChange={(e) => setLinhas((xs) => xs.map((x, j) => (j === i ? { ...x, itemId: e.target.value } : x)))} /></div>
+            <div className="flex-1"><Selecao rotulo={i === 0 ? 'Item' : ''} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...itensDisponiveis.filter((x) => x.ativo).map((x) => ({ valor: x.id, rotulo: `${x.codigo} · ${x.nome} (${x.unidade_medida})` }))]} value={l.itemId} onChange={(e) => setLinhas((xs) => xs.map((x, j) => (j === i ? { ...x, itemId: e.target.value } : x)))} /></div>
             <input type="number" step="0.01" min="0.01" placeholder="Qtd." value={l.quantidade} onChange={(e) => setLinhas((xs) => xs.map((x, j) => (j === i ? { ...x, quantidade: e.target.value } : x)))} className="h-10 w-24 rounded-md border border-line bg-white px-2 text-sm" />
             <input type="number" step="0.01" min="0" placeholder="Valor total R$" value={l.valorTotal} onChange={(e) => setLinhas((xs) => xs.map((x, j) => (j === i ? { ...x, valorTotal: e.target.value } : x)))} className="h-10 w-32 rounded-md border border-line bg-white px-2 text-sm" />
             <button type="button" aria-label="Remover item" className="pb-2 text-ink-muted hover:text-red-700" onClick={() => setLinhas((xs) => xs.filter((_, j) => j !== i))}>×</button>
           </div>
         ))}
-        <Botao variante="secundario" onClick={() => setLinhas((xs) => [...xs, { itemId: '', quantidade: '', valorTotal: '' }])}>+ Item</Botao>
+        <div className="flex gap-2">
+          <Botao variante="secundario" onClick={() => setLinhas((xs) => [...xs, { itemId: '', quantidade: '', valorTotal: '' }])}>+ Item</Botao>
+          {!novoItem && <Botao variante="secundario" onClick={() => setNovoItem(true)}>+ Criar item novo</Botao>}
+        </div>
+        {novoItem && (
+          <div className="mt-2">
+            <NovoItemRapido
+              negocioId={negocioId}
+              aoFechar={() => setNovoItem(false)}
+              aoCriar={(item) => {
+                setExtraItens((xs) => [...xs, item])
+                setLinhas((xs) => {
+                  const vazia = xs.findIndex((x) => !x.itemId)
+                  if (vazia >= 0) return xs.map((x, j) => (j === vazia ? { ...x, itemId: item.id, quantidade: x.quantidade || '1' } : x))
+                  return [...xs, { itemId: item.id, quantidade: '1', valorTotal: '' }]
+                })
+                setNovoItem(false)
+              }}
+            />
+          </div>
+        )}
       </div>
       <div>
         <p className="mb-1 text-sm font-medium">Pagamento (pode dividir: cartão + Pix, etc. Cartão de crédito vai para a fatura)</p>

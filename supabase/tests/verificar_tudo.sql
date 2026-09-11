@@ -40,6 +40,7 @@ with checks as (
   union all select '0050 endereço em pessoas', exists (select 1 from information_schema.columns where table_name='pessoas' and column_name='endereco')
   union all select '0051 lacre numerado por porta', exists (select 1 from information_schema.columns where table_name='cto_portas' and column_name='lacre') and exists (select 1 from pg_proc where proname='lacre_porta_cto')
   union all select '0052 identificação (lacre) da própria CTO', exists (select 1 from information_schema.columns where table_name='ctos' and column_name='lacre')
+  union all select '0065 natureza da categoria (operacional × investimento)', exists (select 1 from information_schema.columns where table_name='categorias' and column_name='natureza')
   union all select '0064 excluir pessoa sem histórico', exists (select 1 from pg_proc where proname='excluir_pessoa' and prosecdef)
   union all select '0063 aceite digital do contrato', exists (select 1 from pg_tables where schemaname='public' and tablename='aceites_contrato') and (select count(distinct proname) from pg_proc where proname in ('contrato_texto_termo','registrar_aceite_contrato','portal_meus_aceites')) = 3
   union all select '0062 monitoramento da olt (status, eventos, ping)', (select count(*) from pg_tables where schemaname='public' and tablename in ('olt_status','olt_eventos')) = 2 and exists (select 1 from pg_proc where proname='olt_registrar_ping')

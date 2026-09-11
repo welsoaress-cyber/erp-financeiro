@@ -5,12 +5,19 @@ export const TIPOS_CATEGORIA = [
 
 export type TipoCategoria = (typeof TIPOS_CATEGORIA)[number]['valor']
 
+export type NaturezaCategoria = 'operacional' | 'investimento'
+export const ROTULO_NATUREZA: Record<NaturezaCategoria, string> = {
+  operacional: 'Despesa operacional',
+  investimento: 'Investimento / ativo',
+}
+
 export interface Categoria {
   id: string
   organizacao_id: string
   nome: string
   tipo: TipoCategoria
   categoria_pai_id: string | null
+  natureza: NaturezaCategoria
   ativo: boolean
   criado_em: string
   atualizado_em: string
@@ -20,6 +27,7 @@ export interface DadosCategoria {
   nome: string
   tipo: TipoCategoria
   categoria_pai_id: string | null
+  natureza: NaturezaCategoria
   ativo: boolean
 }
 

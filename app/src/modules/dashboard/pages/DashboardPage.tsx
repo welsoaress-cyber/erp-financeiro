@@ -106,7 +106,8 @@ export function DashboardPage() {
 
           <AlertasEstoque bate={bate} nomeNegocio={nomeNegocio} />
 
-          <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate} />
+          <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate}
+            naturezaDe={new Map((categorias.data ?? []).map((c) => [c.id, c.natureza]))} />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <CartaoRecolhivel

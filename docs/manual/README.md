@@ -89,7 +89,11 @@ Cartão tem **fatura por mês**: as despesas no cartão entram como previstas na
 
 ![Categorias](img/09-categorias.png)
 
-Categorias de receita e despesa usadas nos lançamentos e nos relatórios. Crie/renomeie/desative aqui (categoria usada não é excluída, só desativada).
+Categorias de receita e despesa usadas nos lançamentos e nos relatórios. Crie/renomeie/desative aqui (categoria usada não é excluída, só desativada). O "+" em uma categoria cria uma **subcategoria** (ex.: Mobiliário dentro de Escritório); dá para criar categoria nova também direto no formulário do lançamento.
+
+Categoria de despesa tem **Natureza**: *Despesa operacional* (dia a dia) ou *Investimento / ativo* (móveis, equipamentos, obra). O Resumo financeiro do Dashboard mostra os investimentos separados e o **resultado operacional** sem eles.
+
+> **Centro de custo**: use um negócio para isso — ex.: crie o negócio "Administrativo" e lance nele as despesas gerais; tudo filtra por negócio.
 
 ## 7. Negócios
 

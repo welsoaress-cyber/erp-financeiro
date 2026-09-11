@@ -339,7 +339,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
               tipo={tipo as 'receita' | 'despesa'}
               raizes={arvore.map(({ raiz }) => raiz)}
               aoCriar={async (nome, paiId) => {
-                const c = await criarCategoria.mutateAsync({ nome, tipo: tipo as 'receita' | 'despesa', categoria_pai_id: paiId, ativo: true })
+                const c = await criarCategoria.mutateAsync({ nome, tipo: tipo as 'receita' | 'despesa', categoria_pai_id: paiId, natureza: arvore.find(({ raiz }) => raiz.id === paiId)?.raiz.natureza ?? 'operacional', ativo: true })
                 setCategoriaId(c.id)
               }}
             />

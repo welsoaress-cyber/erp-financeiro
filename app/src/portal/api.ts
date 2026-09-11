@@ -119,3 +119,61 @@ export function useLoginSemSenha() {
     },
   })
 }
+
+// ---------------------------------------------------------------------------
+// Visitas técnicas (Ordens de Serviço) — etapa 29C
+// ---------------------------------------------------------------------------
+export interface VisitaTecnica {
+  id: string
+  numero: string
+  tipo: string
+  status: 'aberto' | 'em_atendimento' | 'pausado' | 'encerrado' | 'cancelado'
+  descricao: string
+  data_agendada: string | null
+  hora_agendada: string | null
+  remarcacao_data: string | null
+  remarcacao_hora: string | null
+  remarcacao_motivo: string | null
+  tecnico: string | null
+  avaliacao_resolvido: boolean | null
+  avaliacao_nota: number | null
+  aberto_via: string
+  criado_em: string
+}
+
+export const useVisitas = () => useLista<VisitaTecnica>('visitas', 'portal_minhas_visitas', [])
+
+export function useAbrirVisita() {
+  const invalidar = useInvalidarPortal()
+  return useMutation({
+    mutationFn: async (p: { negocioId: string; problema: string; descricao: string }) => {
+      const { data, error } = await supabase.rpc('portal_abrir_visita', { p_negocio_id: p.negocioId, p_problema: p.problema, p_descricao: p.descricao || null })
+      if (error) throw error
+      const linha = Array.isArray(data) ? data[0] : data
+      return linha as { numero: string; tecnico: string | null }
+    },
+    onSuccess: invalidar,
+  })
+}
+
+export function useResponderRemarcacaoVisita() {
+  const invalidar = useInvalidarPortal()
+  return useMutation({
+    mutationFn: async (p: { osId: string; aprovar: boolean }) => {
+      const { error } = await supabase.rpc('portal_responder_remarcacao', { p_os_id: p.osId, p_aprovar: p.aprovar })
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+
+export function useAvaliarVisita() {
+  const invalidar = useInvalidarPortal()
+  return useMutation({
+    mutationFn: async (p: { osId: string; resolvido: boolean; nota?: number | null; reabrir?: boolean }) => {
+      const { error } = await supabase.rpc('portal_avaliar_visita', { p_os_id: p.osId, p_resolvido: p.resolvido, p_nota: p.nota ?? null, p_reabrir: p.reabrir ?? false })
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}

@@ -12,7 +12,7 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useAtualizarContato, useContratosCliente, useFaturas, useFidelidade, usePromocoesCliente, useSolicitacoes, useSolicitar, useStatusRede } from '../api'
+import { useAtualizarContato, useContratosCliente, useFaturas, useFidelidade, usePromocoesCliente, useSolicitacoes, useSolicitar, useStatusRede, useAbrirVisita, useAvaliarVisita, useResponderRemarcacaoVisita, useVisitas, type VisitaTecnica } from '../api'
 import { ROTULO_REDE, ROTULO_SITUACAO, ROTULO_STATUS_SOLICITACAO, ROTULO_TIPO_SOLICITACAO, TOM, codigoContrato, linkIndicacao, linkWhatsApp, type EstadoSelo, type Fidelidade, type TipoSolicitacao } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
@@ -135,6 +135,96 @@ export function PortalFidelidadePage() {
   )
 }
 
+
+const PROBLEMAS_VISITA = [
+  { valor: 'sem_internet', rotulo: 'Sem internet' },
+  { valor: 'lentidao', rotulo: 'Internet lenta / instável' },
+  { valor: 'mudanca_endereco', rotulo: 'Mudança de endereço' },
+  { valor: 'outro', rotulo: 'Outro problema' },
+]
+const ROTULO_STATUS_VISITA: Record<VisitaTecnica['status'], string> = { aberto: 'Aguardando agendamento', em_atendimento: 'Técnico em atendimento', pausado: 'Pausado', encerrado: 'Concluído', cancelado: 'Cancelado' }
+
+/** Visitas técnicas (etapa 29C): abrir chamado que vira OS, acompanhar, aprovar remarcação e avaliar. */
+function VisitasTecnicas({ negocios }: { negocios: { id: string; nome: string }[] }) {
+  const visitas = useVisitas()
+  const abrir = useAbrirVisita()
+  const responder = useResponderRemarcacaoVisita()
+  const avaliar = useAvaliarVisita()
+  const [negocioId, setNegocioId] = useState(negocios[0]?.id ?? '')
+  const [problema, setProblema] = useState('sem_internet')
+  const [descricao, setDescricao] = useState('')
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [avaliando, setAvaliando] = useState<string | null>(null)
+  const [resolvido, setResolvido] = useState('sim')
+  const [nota, setNota] = useState('5')
+  const temAtiva = (visitas.data ?? []).some((v) => v.status === 'aberto' || v.status === 'em_atendimento' || v.status === 'pausado')
+  const erro = abrir.error ?? responder.error ?? avaliar.error
+
+  function enviar(e: FormEvent) {
+    e.preventDefault()
+    setAviso(null)
+    abrir.mutate({ negocioId, problema, descricao: descricao.trim() }, {
+      onSuccess: (r) => { setAviso(`Visita ${r.numero} aberta${r.tecnico ? ` para o técnico ${r.tecnico}` : ''}. Você recebe o dia e a hora no WhatsApp assim que for agendada.`); setDescricao('') },
+    })
+  }
+
+  return (
+    <Cartao className="p-0">
+      <div className="border-b border-line px-4 py-3"><h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Visita técnica</h2></div>
+      <div className="space-y-3 p-4">
+        {erro != null && <Alerta tipo="erro">{mensagemDeErro(erro)}</Alerta>}
+        {aviso && <Alerta tipo="sucesso">{aviso}</Alerta>}
+        {!temAtiva && (
+          <form onSubmit={enviar} className="space-y-3" noValidate>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {negocios.length > 1 && <Selecao rotulo="Serviço" opcoes={negocios.map((n) => ({ valor: n.id, rotulo: n.nome }))} value={negocioId} onChange={(e) => setNegocioId(e.target.value)} />}
+              <Selecao rotulo="Qual o problema?" opcoes={PROBLEMAS_VISITA} value={problema} onChange={(e) => setProblema(e.target.value)} />
+            </div>
+            <AreaTexto rotulo="Detalhes (opcional)" rows={2} maxLength={400} value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: luz vermelha no modem desde as 14h" />
+            <div className="flex justify-end"><Botao type="submit" carregando={abrir.isPending}>Pedir visita técnica</Botao></div>
+          </form>
+        )}
+        {(visitas.data ?? []).map((v) => (
+          <div key={v.id} className="rounded-md border border-line p-3 text-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span><span className="font-mono text-xs text-ink-muted">{v.numero}</span></span>
+              <Distintivo tom={v.status === 'encerrado' ? 'ok' : v.status === 'cancelado' ? 'neutro' : 'info'}>{ROTULO_STATUS_VISITA[v.status]}</Distintivo>
+            </div>
+            <p className="mt-1 text-ink-muted">{v.descricao}</p>
+            {v.data_agendada && v.status !== 'encerrado' && v.status !== 'cancelado' && (
+              <p className="mt-1">Agendada para <b>{formatarData(v.data_agendada)}</b> às <b>{v.hora_agendada?.slice(0, 5)}</b>{v.tecnico ? ` com ${v.tecnico}` : ''}.</p>
+            )}
+            {v.remarcacao_data && (
+              <div className="mt-2 rounded-md bg-surface p-3">
+                <p>O técnico pediu para remarcar para <b>{formatarData(v.remarcacao_data)}</b> às <b>{v.remarcacao_hora?.slice(0, 5)}</b>{v.remarcacao_motivo ? ` (${v.remarcacao_motivo})` : ''}. Aceita?</p>
+                <span className="mt-2 flex gap-2">
+                  <Botao onClick={() => responder.mutate({ osId: v.id, aprovar: true })} carregando={responder.isPending}>Aceitar nova data</Botao>
+                  <Botao variante="secundario" onClick={() => responder.mutate({ osId: v.id, aprovar: false })} carregando={responder.isPending}>Manter como está</Botao>
+                </span>
+              </div>
+            )}
+            {v.status === 'encerrado' && v.avaliacao_resolvido == null && v.aberto_via === 'portal' && (
+              avaliando === v.id ? (
+                <div className="mt-2 flex flex-wrap items-end gap-2 rounded-md bg-surface p-3">
+                  <Selecao rotulo="Foi resolvido?" opcoes={[{ valor: 'sim', rotulo: 'Sim' }, { valor: 'nao', rotulo: 'Não' }]} value={resolvido} onChange={(e) => setResolvido(e.target.value)} />
+                  {resolvido === 'sim' && <Selecao rotulo="Nota" opcoes={['5', '4', '3', '2', '1'].map((n) => ({ valor: n, rotulo: '⭐'.repeat(Number(n)) }))} value={nota} onChange={(e) => setNota(e.target.value)} />}
+                  <Botao carregando={avaliar.isPending} onClick={() => avaliar.mutate({ osId: v.id, resolvido: resolvido === 'sim', nota: resolvido === 'sim' ? Number(nota) : null, reabrir: resolvido === 'nao' }, { onSuccess: () => setAvaliando(null) })}>
+                    {resolvido === 'nao' ? 'Enviar e reabrir chamado' : 'Enviar avaliação'}
+                  </Botao>
+                </div>
+              ) : (
+                <Botao variante="secundario" onClick={() => { setAvaliando(v.id); setResolvido('sim'); setNota('5') }}>Avaliar atendimento</Botao>
+              )
+            )}
+            {v.avaliacao_resolvido != null && <p className="mt-1 text-xs text-ink-muted">{v.avaliacao_resolvido ? `Você avaliou: resolvido, nota ${v.avaliacao_nota}.` : 'Você avaliou como não resolvido.'}</p>}
+            <p className="mt-1 text-xs text-ink-muted">{formatarData(v.criado_em.slice(0, 10))}</p>
+          </div>
+        ))}
+      </div>
+    </Cartao>
+  )
+}
+
 export function PortalChamadosPage() {
   const r = usePortal()
   const solicitacoes = useSolicitacoes(); const solicitar = useSolicitar(); const contratos = useContratosCliente()
@@ -151,6 +241,7 @@ export function PortalChamadosPage() {
   return (
     <div className="space-y-6">
       <Titulo>Chamados</Titulo>
+      <VisitasTecnicas negocios={r.negocios} />
       <Cartao>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">Abrir chamado</h2>
         <form onSubmit={aoEnviar} className="space-y-3" noValidate>

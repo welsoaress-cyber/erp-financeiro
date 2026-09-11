@@ -38,6 +38,7 @@ export const ROTULO_ORIGEM: Record<OrigemMov, string> = {
 export interface EstoqueMov {
   id: string
   item_id: string
+  instalacao_id?: string | null
   tipo: TipoMov
   origem: OrigemMov
   quantidade: number
@@ -75,3 +76,37 @@ export function statusItem(i: EstoqueItem): { rotulo: string; tom: 'zerado' | 'b
 }
 
 export const fmtQtd = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+
+export interface EstoqueInstalacao {
+  id: string
+  negocio_id: string
+  pessoa_id: string
+  contrato_id: string | null
+  porta_id: string | null
+  data: string
+  custo_material: number
+  mao_de_obra: number
+  custo_total: number
+  tecnico: string | null
+  observacao: string | null
+  criado_em: string
+}
+
+export interface ConsumoMensal {
+  negocio_id: string
+  mes: string
+  tipo: TipoMov
+  origem: OrigemMov
+  movimentacoes: number
+  quantidade: number
+  valor_total: number
+}
+
+export interface ConsumoItem {
+  negocio_id: string
+  item_id: string
+  mes: string
+  quantidade: number
+  valor_total: number
+  movimentacoes: number
+}

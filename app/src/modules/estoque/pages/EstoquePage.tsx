@@ -15,10 +15,11 @@ import { usePessoas } from '../../pessoas/api'
 import { useCategorias } from '../../categorias/api'
 import { useContas } from '../../contas/api'
 import { useCriarLancamento } from '../../lancamentos/api'
-import { useAjusteEstoque, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
+import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useInstalacoes, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
+import { NovaInstalacao } from '../components/NovaInstalacao'
 import { fmtQtd, ROTULO_ORIGEM, statusItem, UNIDADES, type EstoqueItem, type Unidade } from '../tipos'
 
-type Aba = 'dashboard' | 'itens' | 'movs' | 'categorias'
+type Aba = 'dashboard' | 'itens' | 'movs' | 'instalacoes' | 'relatorios' | 'categorias'
 const TOM_STATUS = { zerado: 'alerta', baixo: 'alerta', excesso: 'info', ok: 'ok' } as const
 
 function FormularioItem({ item, negocioId, salvando, erro, aoSalvar, aoCancelar }: {
@@ -228,12 +229,16 @@ export function EstoquePage() {
   const itens = useEstoqueItens()
   const categorias = useEstoqueCategorias()
   const movs = useEstoqueMovs()
+  const instalacoes = useInstalacoes()
+  const consumoMensal = useConsumoMensal()
+  const consumoItem = useConsumoItem()
+  const pessoas = usePessoas()
   const salvarItem = useSalvarEstoqueItem()
   const salvarCategoria = useSalvarEstoqueCategoria()
   const [aba, setAba] = useState<Aba>('dashboard')
   const [negocioId, setNegocioId] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
-  const [modal, setModal] = useState<'item' | 'compra' | null>(null)
+  const [modal, setModal] = useState<'item' | 'compra' | 'instalacao' | null>(null)
   const [itemEdicao, setItemEdicao] = useState<EstoqueItem | null>(null)
   const [itemMov, setItemMov] = useState<EstoqueItem | null>(null)
   const [novaCategoria, setNovaCategoria] = useState('')
@@ -244,6 +249,7 @@ export function EstoquePage() {
   const listaFiltrada = lista.filter((i) => !filtroStatus || statusItem(i).tom === filtroStatus)
   const nomeItem = useMemo(() => new Map((itens.data ?? []).map((i) => [i.id, `${i.codigo} · ${i.nome}`])), [itens.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
+  const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const baixos = lista.filter((i) => i.ativo && statusItem(i).tom === 'baixo')
   const zerados = lista.filter((i) => i.ativo && statusItem(i).tom === 'zerado')
   const valorTotal = lista.reduce((s, i) => s + i.quantidade_atual * i.valor_custo, 0)
@@ -253,7 +259,7 @@ export function EstoquePage() {
   return (
     <>
       <CabecalhoPagina titulo="Estoque" descricao="Itens, movimentações e custo dos materiais"
-        acoes={<span className="flex gap-2"><Botao variante="secundario" onClick={() => { setItemEdicao(null); setModal('item') }}>Novo item</Botao><Botao onClick={() => setModal('compra')}>Nova compra</Botao></span>} />
+        acoes={<span className="flex flex-wrap gap-2"><Botao variante="secundario" onClick={() => { setItemEdicao(null); setModal('item') }}>Novo item</Botao><Botao variante="secundario" onClick={() => setModal('compra')}>Nova compra</Botao><Botao onClick={() => setModal('instalacao')}>Nova instalação</Botao></span>} />
 
       {(baixos.length > 0 || zerados.length > 0) && (
         <div className="mb-4"><Alerta tipo="erro" titulo={`${zerados.length} item(ns) zerado(s) · ${baixos.length} abaixo do mínimo`}>
@@ -263,9 +269,9 @@ export function EstoquePage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div role="tablist" className="flex gap-1 rounded-md border border-line p-1 text-sm">
-          {(['dashboard', 'itens', 'movs', 'categorias'] as Aba[]).map((a) => (
+          {(['dashboard', 'itens', 'movs', 'instalacoes', 'relatorios', 'categorias'] as Aba[]).map((a) => (
             <button key={a} role="tab" aria-selected={aba === a} onClick={() => setAba(a)} className={`rounded px-3 py-1.5 ${aba === a ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>
-              {a === 'dashboard' ? 'Dashboard' : a === 'itens' ? 'Itens' : a === 'movs' ? 'Movimentações' : 'Categorias'}
+              {a === 'dashboard' ? 'Dashboard' : a === 'itens' ? 'Itens' : a === 'movs' ? 'Movimentações' : a === 'instalacoes' ? 'Instalações' : a === 'relatorios' ? 'Relatórios' : 'Categorias'}
             </button>
           ))}
         </div>
@@ -340,6 +346,74 @@ export function EstoquePage() {
         </Cartao>
       )}
 
+      {aba === 'instalacoes' && (
+        <Cartao className="p-0">
+          {(instalacoes.data ?? []).filter((x) => x.negocio_id === negocioAtual).length === 0 ? (
+            <p className="px-6 py-12 text-center text-sm text-ink-muted">Nenhuma instalação registrada. Clique em "Nova instalação".</p>
+          ) : (
+            <div className="overflow-x-auto"><table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Data</th><th className="px-4 py-2 font-medium">Cliente</th><th className="px-4 py-2 text-right font-medium">Material</th><th className="px-4 py-2 text-right font-medium">Mão de obra</th><th className="px-4 py-2 text-right font-medium">Total</th><th className="px-4 py-2 font-medium">Técnico</th><th className="px-4 py-2 font-medium">Obs.</th></tr></thead>
+              <tbody>
+                {(instalacoes.data ?? []).filter((x) => x.negocio_id === negocioAtual).map((x) => (
+                  <tr key={x.id} className="border-b border-line last:border-0">
+                    <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatarData(x.data)}</td>
+                    <td className="px-4 py-2 font-medium">{nomePessoa.get(x.pessoa_id) ?? '—'}{x.contrato_id ? '' : <span className="ml-2 text-xs font-normal text-ink-muted">(sem contrato)</span>}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{formatarMoeda(x.custo_material)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{formatarMoeda(x.mao_de_obra)}</td>
+                    <td className="px-4 py-2 text-right font-medium tabular-nums">{formatarMoeda(x.custo_total)}</td>
+                    <td className="px-4 py-2 text-ink-muted">{x.tecnico ?? '—'}</td>
+                    <td className="max-w-56 truncate px-4 py-2 text-xs text-ink-muted" title={x.observacao ?? ''}>{x.observacao ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+          )}
+        </Cartao>
+      )}
+
+      {aba === 'relatorios' && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Cartao className="p-0">
+            <h2 className="border-b border-line px-6 py-3 text-sm font-semibold">Consumo por mês e origem</h2>
+            {(consumoMensal.data ?? []).filter((c) => c.negocio_id === negocioAtual && c.tipo === 'saida').length === 0 ? (
+              <p className="px-6 py-10 text-center text-sm text-ink-muted">Sem saídas registradas.</p>
+            ) : (
+              <table className="w-full text-sm"><thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Mês</th><th className="px-4 py-2 font-medium">Origem</th><th className="px-4 py-2 text-right font-medium">Movs.</th><th className="px-4 py-2 text-right font-medium">Valor</th></tr></thead>
+                <tbody>
+                  {(consumoMensal.data ?? []).filter((c) => c.negocio_id === negocioAtual && c.tipo === 'saida').map((c) => (
+                    <tr key={`${c.mes}-${c.origem}`} className="border-b border-line last:border-0">
+                      <td className="px-4 py-2 tabular-nums">{c.mes.split('-').reverse().join('/')}</td>
+                      <td className="px-4 py-2">{ROTULO_ORIGEM[c.origem]}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{c.movimentacoes}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatarMoeda(c.valor_total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Cartao>
+          <Cartao className="p-0">
+            <h2 className="border-b border-line px-6 py-3 text-sm font-semibold">Itens mais consumidos (saídas por mês)</h2>
+            {(consumoItem.data ?? []).filter((c) => c.negocio_id === negocioAtual).length === 0 ? (
+              <p className="px-6 py-10 text-center text-sm text-ink-muted">Sem saídas registradas.</p>
+            ) : (
+              <table className="w-full text-sm"><thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Mês</th><th className="px-4 py-2 font-medium">Item</th><th className="px-4 py-2 text-right font-medium">Qtd.</th><th className="px-4 py-2 text-right font-medium">Valor</th></tr></thead>
+                <tbody>
+                  {(consumoItem.data ?? []).filter((c) => c.negocio_id === negocioAtual).map((c) => (
+                    <tr key={`${c.mes}-${c.item_id}`} className="border-b border-line last:border-0">
+                      <td className="px-4 py-2 tabular-nums">{c.mes.split('-').reverse().join('/')}</td>
+                      <td className="px-4 py-2">{nomeItem.get(c.item_id) ?? '—'}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{fmtQtd(c.quantidade)}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatarMoeda(c.valor_total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Cartao>
+        </div>
+      )}
+
       {aba === 'categorias' && (
         <Cartao className="p-4">
           <div className="mb-3 flex gap-2">
@@ -369,6 +443,10 @@ export function EstoquePage() {
 
       <Modal aberto={modal === 'compra'} aoFechar={() => setModal(null)} largura="xl" titulo="Nova compra (entrada de estoque)">
         {modal === 'compra' && negocioAtual && <NovaCompra negocioId={negocioAtual} itens={lista} aoFechar={() => setModal(null)} />}
+      </Modal>
+
+      <Modal aberto={modal === 'instalacao'} aoFechar={() => setModal(null)} largura="xl" titulo="Nova instalação (materiais + mão de obra)">
+        {modal === 'instalacao' && negocioAtual && <NovaInstalacao negocioId={negocioAtual} itens={lista} aoFechar={() => setModal(null)} />}
       </Modal>
 
       <Modal aberto={itemMov !== null} aoFechar={() => setItemMov(null)} largura="md" titulo="Movimentar item">

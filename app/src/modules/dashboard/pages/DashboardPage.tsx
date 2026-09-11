@@ -17,6 +17,7 @@ import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { useLancamentos } from '../../lancamentos/api'
 import { useResultadoPorNegocio, useSaldoInicial, useSaudeNotificacoes, useUltimosLancamentos } from '../api'
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
+import { AlertasEstoque } from '../components/AlertasEstoque'
 import { SaudeAvisos } from '../components/SaudeAvisos'
 
 function Indicador({ rotulo, valor, tom = 'neutro', detalhe }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto'; detalhe?: string }) {
@@ -98,6 +99,8 @@ export function DashboardPage() {
           </div>
 
           <SaudeAvisos negocios={(negocios.data ?? []).filter((n) => bate(n.id))} saude={saudeNotificacoes.data} />
+
+          <AlertasEstoque bate={bate} nomeNegocio={nomeNegocio} />
 
           <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate} />
 

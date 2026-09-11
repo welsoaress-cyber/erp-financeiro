@@ -7,6 +7,7 @@ import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useAtualizarContrato } from '../api'
+import { usePaybackContratos } from '../../estoque/api'
 import { Selecao } from '../../../core/ui/Selecao'
 import { codigoContrato, PERIODICIDADES, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type Periodicidade, type ResultadoContrato } from '../tipos'
 import { FaturamentoContrato } from './FaturamentoContrato'
@@ -25,6 +26,8 @@ const TOM: Record<Contrato['status'], 'ok' | 'alerta' | 'neutro'> = { ativo: 'ok
 /** Detalhe do contrato: dados, rentabilidade, edição de valor/vencimento e ciclo de vida. */
 export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }: Props) {
   const atualizar = useAtualizarContrato()
+  const paybacks = usePaybackContratos()
+  const payback = (paybacks.data ?? []).find((p) => p.contrato_id === contrato.id)
   const encerrado = contrato.status === 'encerrado'
   const [valor, setValor] = useState(String(contrato.valor))
   const [dia, setDia] = useState(String(contrato.dia_vencimento))
@@ -58,6 +61,22 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
         <div><p className="text-xs uppercase tracking-wide text-ink-muted">Resultado</p><p className={`font-semibold tabular-nums ${(resultado?.resultado ?? 0) < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(resultado?.resultado ?? 0)}</p></div>
         <p className="col-span-3 text-xs text-ink-muted">{resultado?.lancamentos ?? 0} lançamento(s) efetivado(s) vinculado(s) a este contrato{resultado?.ultimo_lancamento ? ` · último em ${formatarData(resultado.ultimo_lancamento)}` : ''}.</p>
       </div>
+
+      {payback && (
+        <div className="rounded-md border border-line bg-surface/60 p-3 text-sm">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">Payback da instalação</p>
+          <p>
+            Custo: <b className="tabular-nums">{formatarMoeda(payback.custo_instalacao)}</b> ({payback.instalacoes} instalação(ões))
+            {payback.payback_estimado_meses != null && <> · estimado: <b>{payback.payback_estimado_meses} {payback.payback_estimado_meses === 1 ? 'mês' : 'meses'}</b> ({formatarMoeda(payback.mensalidade)}/mês)</>}
+          </p>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            Recebido do contrato: {formatarMoeda(payback.recebido)}.{' '}
+            {payback.data_payback_real
+              ? <span className="font-medium text-green-700">Pago em {formatarData(payback.data_payback_real)}{payback.payback_real_meses != null ? ` (${payback.payback_real_meses} ${payback.payback_real_meses === 1 ? 'mês' : 'meses'})` : ''}.</span>
+              : <span className="text-red-700">Ainda não se pagou (faltam {formatarMoeda(Math.max(payback.custo_instalacao - payback.recebido, 0))}).</span>}
+          </p>
+        </div>
+      )}
 
       {atualizar.error && <Alerta tipo="erro">{mensagemDeErro(atualizar.error)}</Alerta>}
 

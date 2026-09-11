@@ -44,4 +44,5 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 32: `docs/34-bi-gerencial.md` (BI gerencial em tempo real: churn, MRR, ticket, inadimplência, payback médio, técnicos, CSV — menu Gerencial).
 - Etapa 33: `docs/35-ftth-ceo.md` (FTTH: CEO como tipo de ponto, encadeamento alimentado-por com impacto de rompimento, OLT como cadastro no POP).
 - Etapa 34: `docs/36-olt-monitoramento.md` (agente local pinga a OLT → Edge olt-ping → aviso WhatsApp ao admin quando cai/volta; alerta na tela FTTH).
+- Etapa 35: `docs/37-backup.md` (backup semanal via GitHub Actions → artifact privado 90 dias; secret SUPABASE_DB_URL).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

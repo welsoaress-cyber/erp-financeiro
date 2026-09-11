@@ -1,0 +1,44 @@
+# Backup semanal do banco (fora do Supabase, custo zero).
+# - Roda todo domingo 03:00 (Manaus) = 07:00 UTC; também manual (Run workflow).
+# - pg_dump completo (schema + dados) comprimido, guardado como ARTIFACT privado
+#   do GitHub por 90 dias (só quem tem acesso ao repositório baixa).
+# - Precisa do secret SUPABASE_DB_URL (Settings → Secrets and variables →
+#   Actions): a "Connection string" URI do banco (Database → Connect →
+#   Session pooler), com a senha do banco. Nunca no repositório.
+name: backup-banco
+on:
+  schedule:
+    - cron: '0 7 * * 0'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Instalar cliente Postgres 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+      - name: Gerar dump
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          test -n "$DB_URL" || { echo "Configure o secret SUPABASE_DB_URL"; exit 1; }
+          DATA=$(date -u +%Y-%m-%d)
+          /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" \
+            --no-owner --no-privileges \
+            --exclude-schema=graphql --exclude-schema=graphql_public \
+            --exclude-schema=realtime --exclude-schema=_realtime \
+            --exclude-schema=supabase_functions --exclude-schema=net --exclude-schema=cron \
+            | gzip -9 > "erp-backup-$DATA.sql.gz"
+          ls -lh erp-backup-*.sql.gz
+      - name: Guardar (90 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: erp-backup-${{ github.run_id }}
+          path: erp-backup-*.sql.gz
+          retention-days: 90
+          if-no-files-found: error

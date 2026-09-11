@@ -16,13 +16,13 @@ import { usePessoas } from '../../pessoas/api'
 import { useCategorias } from '../../categorias/api'
 import { useContas } from '../../contas/api'
 import { useCriarLancamento } from '../../lancamentos/api'
-import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useInstalacoes, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
+import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useInstalacoes, useItensComEntrada, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
 import { NovaInstalacao } from '../components/NovaInstalacao'
 import { fmtQtd, ROTULO_ORIGEM, statusItem, UNIDADES, type EstoqueItem, type Unidade } from '../tipos'
 import { AbaComodato } from '../components/AbaComodato'
 
 type Aba = 'dashboard' | 'itens' | 'movs' | 'instalacoes' | 'comodato' | 'relatorios' | 'categorias'
-const TOM_STATUS = { zerado: 'alerta', baixo: 'alerta', excesso: 'info', ok: 'ok' } as const
+const TOM_STATUS = { zerado: 'alerta', baixo: 'alerta', excesso: 'info', ok: 'ok', novo: 'neutro' } as const
 
 function FormularioItem({ item, negocioId, salvando, erro, aoSalvar, aoCancelar }: {
   item?: EstoqueItem; negocioId: string; salvando: boolean; erro: string | null
@@ -338,12 +338,15 @@ export function EstoquePage() {
   const servnet = (negocios.data ?? []).find((n) => n.nome.toLowerCase().includes('servnet')) ?? (negocios.data ?? [])[0]
   const negocioAtual = negocioId || servnet?.id || ''
   const lista = (itens.data ?? []).filter((i) => i.negocio_id === negocioAtual)
-  const listaFiltrada = lista.filter((i) => !filtroStatus || statusItem(i).tom === filtroStatus)
+  const comEntrada = useItensComEntrada()
+  const stItem = (i: EstoqueItem) => statusItem(i, (comEntrada.data ?? new Set()).has(i.id))
+  const listaFiltrada = lista.filter((i) => !filtroStatus || stItem(i).tom === filtroStatus)
   const nomeItem = useMemo(() => new Map((itens.data ?? []).map((i) => [i.id, `${i.codigo} · ${i.nome}`])), [itens.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
-  const baixos = lista.filter((i) => i.ativo && statusItem(i).tom === 'baixo')
-  const zerados = lista.filter((i) => i.ativo && statusItem(i).tom === 'zerado')
+  const baixos = lista.filter((i) => i.ativo && stItem(i).tom === 'baixo')
+  const zerados = lista.filter((i) => i.ativo && stItem(i).tom === 'zerado')
+  const aguardando = lista.filter((i) => i.ativo && stItem(i).tom === 'novo')
   const valorTotal = lista.reduce((s, i) => s + i.quantidade_atual * i.valor_custo, 0)
   const mesAtual = hojeISO().slice(0, 7)
   const consumoMes = (movs.data ?? []).filter((m) => m.tipo === 'saida' && m.data.startsWith(mesAtual)).reduce((s, m) => s + m.valor_total, 0)
@@ -353,6 +356,11 @@ export function EstoquePage() {
       <CabecalhoPagina titulo="Estoque" descricao="Itens, movimentações e custo dos materiais"
         acoes={<span className="flex flex-wrap gap-2"><Botao variante="secundario" onClick={() => { setItemEdicao(null); setModal('item') }}>Novo item</Botao><Botao variante="secundario" onClick={() => setModal('compra')}>Nova compra</Botao><Botao onClick={() => setModal('instalacao')}>Nova instalação</Botao></span>} />
 
+      {aguardando.length > 0 && (
+        <div className="mb-4"><Alerta tipo="info" titulo={`${aguardando.length} item(ns) aguardando a primeira entrada`}>
+          {aguardando.slice(0, 6).map((i) => i.codigo).join(' · ')} — registre a compra ou um ajuste de inventário.
+        </Alerta></div>
+      )}
       {(baixos.length > 0 || zerados.length > 0) && (
         <div className="mb-4"><Alerta tipo="erro" titulo={`${zerados.length} item(ns) zerado(s) · ${baixos.length} abaixo do mínimo`}>
           {[...zerados, ...baixos].slice(0, 6).map((i) => `${i.codigo} (${fmtQtd(i.quantidade_atual)} ${i.unidade_medida})`).join(' · ')}
@@ -387,7 +395,7 @@ export function EstoquePage() {
         <Cartao className="p-0">
           <div className="flex items-center gap-3 border-b border-line px-4 py-3 text-sm">
             <select aria-label="Filtrar status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className="h-9 rounded-md border border-line bg-white px-2">
-              <option value="">Todos</option><option value="baixo">Baixo</option><option value="zerado">Zerado</option><option value="excesso">Excesso</option><option value="ok">Normal</option>
+              <option value="">Todos</option><option value="baixo">Baixo</option><option value="zerado">Zerado</option><option value="novo">Aguardando 1ª entrada</option><option value="excesso">Excesso</option><option value="ok">Normal</option>
             </select>
             <span className="text-ink-muted">{listaFiltrada.length} item(ns)</span>
           </div>
@@ -395,7 +403,7 @@ export function EstoquePage() {
             <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Código</th><th className="px-4 py-2 font-medium">Item</th><th className="px-4 py-2 font-medium">Categoria</th><th className="px-4 py-2 text-right font-medium">Qtd.</th><th className="px-4 py-2 text-right font-medium">Custo médio</th><th className="px-4 py-2 text-right font-medium">Total</th><th className="px-4 py-2 font-medium">Status</th><th className="px-4 py-2"></th></tr></thead>
               <tbody>
-                {listaFiltrada.map((i) => { const st = statusItem(i); return (
+                {listaFiltrada.map((i) => { const st = stItem(i); return (
                   <tr key={i.id} className="border-b border-line last:border-0 hover:bg-surface">
                     <td className="px-4 py-2 font-mono text-xs">{i.codigo}</td>
                     <td className="px-4 py-2 font-medium">{i.nome}{!i.ativo && <span className="ml-2 text-xs text-ink-muted">(inativo)</span>}{(i.marca || i.modelo) && <span className="block text-xs font-normal text-ink-muted">{[i.marca, i.modelo].filter(Boolean).join(' · ')}</span>}</td>

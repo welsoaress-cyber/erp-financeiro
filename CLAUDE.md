@@ -54,5 +54,6 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 40: `docs/42-indique-ganhe-presente.md` (campanha Indique e Ganhe com presente do estoque: faixa por plano do indicado, escolha sem troca no portal, entrega ≤ 10 dias úteis, custo congelado para ROI).
 - Etapa 41: `docs/44-patrimonio.md` (patrimônio como tabela própria de bens individuais — série, local, estado, baixa com histórico imutável; aba Patrimônio no Estoque com inventário e CSV; fora dos alertas de reposição).
 - Etapa 42: `docs/45-fechamento-mes.md` (fechamento de mês: trava do realizado com baixa atrasada permitida; fechar/reabrir auditado em Financeiro → Lançamentos).
+- Etapa 43: `docs/46-estorno.md` (estorno formal: contra-lançamento negativo datado de hoje, original intocado mesmo em mês fechado).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

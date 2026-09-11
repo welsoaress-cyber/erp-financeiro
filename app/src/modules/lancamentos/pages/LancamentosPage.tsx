@@ -18,7 +18,7 @@ import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, type ProjecaoContrato } from '../api'
+import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, useEstornarLancamento, type ProjecaoContrato } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
 import { ROTULO_PERIODICIDADE, ROTULO_STATUS, ROTULO_TIPO, rotuloParcela, type DadosLancamento, type Lancamento, type StatusLancamento, type TipoLancamento } from '../tipos'
@@ -54,6 +54,7 @@ export function LancamentosPage() {
   const cancelar = useCancelarLancamento()
   const excluir = useExcluirLancamento()
   const projetar = useProjetarLancamento()
+  const estornar = useEstornarLancamento()
   const atualizarLote = useAtualizarLancamentoRecorrente()
   const emEdicao = edicao?.modo === 'editar' ? edicao.lancamento : null
   const proximaParcela = useProximaParcela(emEdicao?.id ?? null, emEdicao?.recorrente ?? false)
@@ -131,8 +132,8 @@ export function LancamentosPage() {
   const carregando = lancamentos.isPending || contas.isPending || categorias.isPending
   const erroCarga = lancamentos.error ?? contas.error ?? categorias.error
   const erroSalvar = criar.error ?? atualizar.error ?? atualizarLote.error
-  const erroAcao = efetivar.error ?? cancelar.error ?? excluir.error ?? projetar.error
-  const ocupadoAcao = efetivar.isPending || cancelar.isPending || excluir.isPending || projetar.isPending
+  const erroAcao = efetivar.error ?? cancelar.error ?? excluir.error ?? projetar.error ?? estornar.error
+  const ocupadoAcao = efetivar.isPending || cancelar.isPending || excluir.isPending || projetar.isPending || estornar.isPending
 
   function descricaoSecundaria(l: { tipo: TipoLancamento; conta_id: string | null; conta_destino_id?: string | null; categoria_id: string | null; negocio_id: string | null; pessoa_id: string | null; contrato_id: string | null }) {
     const base = l.tipo === 'transferencia'
@@ -312,6 +313,7 @@ export function LancamentosPage() {
                 aoCancelarLancamento={(motivo) => cancelar.mutate({ id: edicao.lancamento.id, motivo }, { onSuccess: fechar })}
                 aoExcluir={() => excluir.mutate(edicao.lancamento.id, { onSuccess: fechar })}
                 aoProjetar={(meses) => projetar.mutate({ id: edicao.lancamento.id, meses }, { onSuccess: fechar })}
+                aoEstornar={(motivo) => estornar.mutate({ id: edicao.lancamento.id, motivo }, { onSuccess: fechar })}
               />
             )}
           </div>

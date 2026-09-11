@@ -11,7 +11,7 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useAceitarContrato, useContratosCliente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
+import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
 import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
@@ -207,6 +207,31 @@ export function PortalPlanoPage() {
   )
 }
 
+/** Indicação convertida aguardando a escolha do presente (regra: sem troca depois). */
+function EscolhaPresente({ indicacaoId }: { indicacaoId: string }) {
+  const opcoes = usePresentesIndicacao(indicacaoId)
+  const escolher = useEscolherPresente()
+  const [itemId, setItemId] = useState('')
+  if (opcoes.isPending) return <p className="mt-1 text-xs text-ink-muted">Carregando presentes…</p>
+  if ((opcoes.data ?? []).length === 0) return <p className="mt-1 text-xs text-ink-muted">🎁 Seu indicado foi instalado! O provedor vai liberar as opções de presente.</p>
+  return (
+    <div className="mt-2 rounded-md border border-line bg-surface/60 p-3">
+      <p className="text-xs font-medium">🎁 Parabéns! Escolha o seu presente (não é possível trocar depois):</p>
+      {escolher.error != null && <div className="mt-1"><Alerta tipo="erro">{mensagemDeErro(escolher.error)}</Alerta></div>}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {(opcoes.data ?? []).map((o) => (
+          <label key={o.item_id} className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${itemId === o.item_id ? 'border-brand-600 bg-brand-600/10 font-medium' : 'border-line'}`}>
+            <input type="radio" name={`presente-${indicacaoId}`} className="size-3.5 accent-brand-600" checked={itemId === o.item_id} onChange={() => setItemId(o.item_id)} />
+            {o.nome}
+          </label>
+        ))}
+        <Botao onClick={() => { if (itemId && window.confirm('Confirmar este presente? Não será possível trocar.')) escolher.mutate({ indicacaoId, itemId }) }} disabled={!itemId} carregando={escolher.isPending}>Confirmar</Botao>
+      </div>
+      <p className="mt-1 text-xs text-ink-muted">Entrega em até 10 dias úteis, na sua casa.</p>
+    </div>
+  )
+}
+
 export function PortalIndiquePage() {
   const r = usePortal()
   const indicacoes = useIndicacoesCliente()
@@ -260,7 +285,21 @@ export function PortalIndiquePage() {
       <Cartao className="p-0">
         <div className="border-b border-line px-4 py-3"><h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Suas indicações</h2></div>
         {indicacoes.isPending ? <div className="p-6"><Carregando /></div> : (indicacoes.data ?? []).length === 0 ? <p className="px-4 py-8 text-center text-sm text-ink-muted">Nenhuma indicação ainda.</p> : (
-          <ul className="divide-y divide-line">{(indicacoes.data ?? []).map((i) => <li key={i.id} className="flex items-center justify-between px-4 py-2 text-sm"><span>{i.nome_indicado} <span className="text-xs text-ink-muted">· {formatarData(i.criado_em.slice(0, 10))}</span></span><span className="flex items-center gap-2">{i.status === 'convertida' && i.beneficio_valor > 0 && <span className="text-green-700 tabular-nums">+{formatarMoeda(i.beneficio_valor)}</span>}<Distintivo tom={i.status === 'convertida' ? 'ok' : i.status === 'pendente' ? 'info' : 'neutro'}>{ROTULO_INDICACAO[i.status]}</Distintivo></span></li>)}</ul>
+          <ul className="divide-y divide-line">{(indicacoes.data ?? []).map((i) => (
+            <li key={i.id} className="px-4 py-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span>{i.nome_indicado} <span className="text-xs text-ink-muted">· {formatarData(i.criado_em.slice(0, 10))}</span></span>
+                <span className="flex items-center gap-2">{i.status === 'convertida' && i.beneficio_valor > 0 && <span className="text-green-700 tabular-nums">+{formatarMoeda(i.beneficio_valor)}</span>}<Distintivo tom={i.status === 'convertida' ? 'ok' : i.status === 'pendente' ? 'info' : 'neutro'}>{ROTULO_INDICACAO[i.status]}</Distintivo></span>
+              </div>
+              {i.aguardando_escolha && <EscolhaPresente indicacaoId={i.id} />}
+              {i.presente && (
+                <p className="mt-1 text-xs text-ink-muted">
+                  🎁 Presente: <span className="font-medium text-ink">{i.presente}</span>
+                  {i.presente_entregue_em ? ` — entregue em ${formatarData(i.presente_entregue_em)}` : ' — entrega em até 10 dias úteis'}
+                </p>
+              )}
+            </li>
+          ))}</ul>
         )}
       </Cartao>
     </div>

@@ -16,7 +16,8 @@ export interface ProximaFatura { contrato_codigo: number; negocio: string; plano
 export interface Pagamento { id: string; data_pagamento: string; valor: number; descricao: string; negocio: string; contrato_codigo: number; forma: string }
 export interface ContratoCliente { id: string; codigo: number; negocio: string; plano: string; plano_descricao: string | null; valor: number; periodicidade: 'mensal' | 'anual' | 'unico'; data_inicio: string; data_fim: string | null; dia_vencimento: number; status: 'ativo' | 'suspenso' | 'encerrado'; proxima_renovacao: string | null; descontos_pendentes: number }
 export interface Promocao { id: string; negocio: string; titulo: string; descricao: string; regras: string | null; como_aderir: string | null; data_inicio: string; data_fim: string | null; plano: string | null }
-export interface Indicacao { id: string; negocio: string; nome_indicado: string; status: 'pendente' | 'convertida' | 'cancelada'; beneficio_valor: number; criado_em: string }
+export interface Indicacao { id: string; negocio: string; nome_indicado: string; status: 'pendente' | 'convertida' | 'cancelada'; beneficio_valor: number; criado_em: string; convertida_em: string | null; presente_item_id: string | null; presente: string | null; presente_entregue_em: string | null; aguardando_escolha: boolean }
+export interface PresenteOpcao { item_id: string; nome: string; descricao: string | null; ja_escolhido: boolean }
 export type EstadoSelo = 'ok' | 'gratis' | 'atraso' | 'vencida' | 'aberto' | 'vazio'
 export interface SeloFidelidade { n: number; competencia: string; estado: EstadoSelo; vencimento: string | null; valor: number | null }
 export interface Fidelidade { contrato_id: string; codigo: number; negocio: string; plano: string; valor: number; ativa: boolean; inicio: string; fim: string; ciclo: number; selos: number; slots: SeloFidelidade[]; premios: { percentual: number; competencia: string; referencia: string }[] }

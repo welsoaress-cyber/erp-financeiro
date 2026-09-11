@@ -50,5 +50,6 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 37: `docs/39-excluir-pessoa-busca.md` (excluir pessoa sem histórico via função definer; busca em Contratos por nome/nº/CPF/login/telefone; menu reordenável e dashboard recolhível).
 - Etapa 38: `docs/40-compra-print.md` (compra de estoque por print: OCR Tesseract.js no navegador pré-preenche a Nova compra).
 - Etapa 39: `docs/41-natureza-categoria.md` (natureza operacional × investimento na categoria; resultado operacional no Resumo; centro de custo = negócio).
+- Etapa 40: `docs/42-indique-ganhe-presente.md` (campanha Indique e Ganhe com presente do estoque: faixa por plano do indicado, escolha sem troca no portal, entrega ≤ 10 dias úteis, custo congelado para ROI).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

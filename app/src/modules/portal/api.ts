@@ -46,6 +46,18 @@ export function useCancelarIndicacao() {
   const invalidar = useInvalidar()
   return useMutation({ mutationFn: async (p: { id: string; observacao: string | null }) => { const { error } = await supabase.from('indicacoes').update({ status: 'cancelada', observacao: p.observacao }).eq('id', p.id); if (error) throw error }, onSuccess: invalidar })
 }
+export function useCriarIndicacaoAdmin() {
+  const invalidar = useInvalidar()
+  return useMutation({ mutationFn: async (p: { negocioId: string; indicanteId: string; nome: string; telefone: string }) => { const { error } = await supabase.rpc('criar_indicacao_admin', { p_negocio_id: p.negocioId, p_indicador_pessoa_id: p.indicanteId, p_nome: p.nome, p_telefone: p.telefone }); if (error) throw error }, onSuccess: invalidar })
+}
+export function useEscolherPresenteAdmin() {
+  const invalidar = useInvalidar()
+  return useMutation({ mutationFn: async (p: { id: string; itemId: string }) => { const { error } = await supabase.rpc('escolher_presente_indicacao', { p_indicacao_id: p.id, p_item_id: p.itemId }); if (error) throw error }, onSuccess: invalidar })
+}
+export function useEntregarPresente() {
+  const invalidar = useInvalidar()
+  return useMutation({ mutationFn: async (p: { id: string; observacao?: string }) => { const { error } = await supabase.rpc('entregar_presente_indicacao', { p_indicacao_id: p.id, p_observacao: p.observacao ?? null }); if (error) throw error }, onSuccess: invalidar })
+}
 export function useAcessosPortal() {
   const { organizacao } = useOrganizacao()
   return useQuery({ queryKey: [...chave(organizacao.id), 'acessos'], queryFn: async (): Promise<AcessoPortal[]> => { const { data, error } = await supabase.from('vw_portal_acessos').select('*').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }); if (error) throw error; return (data ?? []).map((a) => ({ ...a, indicacoes: Number(a.indicacoes) })) } })

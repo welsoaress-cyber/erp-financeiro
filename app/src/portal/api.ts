@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../core/supabase/client'
 import { useAuth } from '../core/auth/useAuth'
-import type { AvisoRede, ContratoCliente, Fatura, Fidelidade, Indicacao, Pagamento, PortalResumo, Promocao, ProximaFatura, Solicitacao, TipoSolicitacao } from './tipos'
+import type { AvisoRede, ContratoCliente, Fatura, Fidelidade, Indicacao, Pagamento, PortalResumo, PresenteOpcao, Promocao, ProximaFatura, Solicitacao, TipoSolicitacao } from './tipos'
 
 const chave = (u: string | undefined) => ['portal', u ?? ''] as const
 const num = <T extends object>(rows: T[], campos: (keyof T)[]) => rows.map((r) => { const c = { ...r } as Record<keyof T, unknown>; for (const k of campos) c[k] = Number(c[k]); return c as T })
@@ -46,6 +46,28 @@ export function useVincularPortal() {
       const { data, error } = await supabase.rpc('portal_vincular', { p_documento: p.documento, p_telefone: p.telefone })
       if (error) throw error
       return data as { pessoa_id: string; codigo_indicacao: string; ja_vinculado: boolean }
+    },
+    onSuccess: invalidar,
+  })
+}
+export function usePresentesIndicacao(indicacaoId: string | null) {
+  const { usuario } = useAuth()
+  return useQuery({
+    queryKey: [...chave(usuario?.id), 'presentes', indicacaoId],
+    enabled: Boolean(usuario && indicacaoId),
+    queryFn: async (): Promise<PresenteOpcao[]> => {
+      const { data, error } = await supabase.rpc('portal_presentes_indicacao', { p_indicacao_id: indicacaoId })
+      if (error) throw error
+      return (data ?? []) as PresenteOpcao[]
+    },
+  })
+}
+export function useEscolherPresente() {
+  const invalidar = useInvalidarPortal()
+  return useMutation({
+    mutationFn: async (p: { indicacaoId: string; itemId: string }) => {
+      const { error } = await supabase.rpc('portal_escolher_presente', { p_indicacao_id: p.indicacaoId, p_item_id: p.itemId })
+      if (error) throw error
     },
     onSuccess: invalidar,
   })

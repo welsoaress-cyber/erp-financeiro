@@ -73,8 +73,9 @@ do $$ declare v r%rowtype; j jsonb; n int; begin
   assert (j->'negocios'->0->'portal'->>'chave_pix') = 'pix@servnet.com', 'T2 config do portal no resumo';
   select count(*) into n from public.portal_faturas(); assert n = 3, 'T2 3 faturas';
   assert (select count(*) from public.portal_faturas() where situacao = 'paga') = 1, 'T2 1 paga';
-  assert (select count(*) from public.portal_faturas() where situacao = 'vencida') = 1, 'T2 08/2026 vencida (hoje é 03/09)';
-  assert (select count(*) from public.portal_faturas() where situacao = 'pendente') = 1, 'T2 09/2026 pendente';
+  -- 08/2026 sempre vencida; 09/2026 vence dia 10 (depende do dia em que o teste roda)
+  assert (select count(*) from public.portal_faturas() where situacao = 'vencida') = (case when current_date > date '2026-09-10' then 2 else 1 end), 'T2 vencidas';
+  assert (select count(*) from public.portal_faturas() where situacao = 'pendente') = (case when current_date > date '2026-09-10' then 0 else 1 end), 'T2 pendente';
   assert (select chave_pix from public.portal_faturas() limit 1) = 'pix@servnet.com', 'T2 chave pix na fatura';
   select count(*) into n from public.portal_proximas_faturas(); assert n between 5 and 7, 'T2 próximas ~6 meses (' || n || ')';
   assert (select min(data_vencimento) from public.portal_proximas_faturas()) = date '2026-10-10', 'T2 próxima 10/10';

@@ -8,7 +8,7 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { useNegocios } from '../../negocios/api'
-import { useAtualizarPessoa, useCriarPessoa, usePessoas, useVinculos } from '../api'
+import { useAtualizarPessoa, useCriarPessoa, useExcluirPessoa, usePessoas, useVinculos } from '../api'
 import { FormularioPessoa } from '../components/FormularioPessoa'
 import { VinculosPessoa } from '../components/VinculosPessoa'
 import { formatarDocumento, formatarTelefone, ROTULO_PAPEL, somenteDigitos, type DadosPessoa } from '../tipos'
@@ -21,6 +21,7 @@ export function PessoasPage() {
   const negocios = useNegocios()
   const criar = useCriarPessoa()
   const atualizar = useAtualizarPessoa()
+  const excluir = useExcluirPessoa()
   const [busca, setBusca] = useState('')
   const [mostrarInativas, setMostrarInativas] = useState(false)
   const [edicao, setEdicao] = useState<Edicao>(null)
@@ -30,18 +31,18 @@ export function PessoasPage() {
   const digitos = somenteDigitos(busca)
   const lista = (pessoas.data ?? []).filter((p) =>
     (mostrarInativas || p.ativo)
-    && (!termo || p.nome.toLowerCase().includes(termo) || (digitos.length > 0 && (p.documento ?? '').includes(digitos)) || (p.email ?? '').includes(termo)))
+    && (!termo || p.nome.toLowerCase().includes(termo) || (digitos.length > 0 && (p.documento ?? '').includes(digitos)) || (p.email ?? '').includes(termo) || (p.login_servidor ?? '').toLowerCase().includes(termo)))
   const totalInativas = (pessoas.data ?? []).filter((p) => !p.ativo).length
   const vinculosDe = (id: string) => (vinculos.data ?? []).filter((v) => v.pessoa_id === id && v.ativo)
   const pessoaEmEdicao = edicao?.modo === 'editar' ? (pessoas.data ?? []).find((p) => p.id === edicao.pessoaId) : undefined
 
-  function fechar() { criar.reset(); atualizar.reset(); setEdicao(null) }
+  function fechar() { criar.reset(); atualizar.reset(); excluir.reset(); setEdicao(null) }
   function salvar(dados: DadosPessoa) {
     if (!edicao) return
     if (edicao.modo === 'nova') criar.mutate(dados, { onSuccess: (p) => setEdicao({ modo: 'editar', pessoaId: p.id }) })
     else atualizar.mutate({ id: edicao.pessoaId, ...dados }, { onSuccess: fechar })
   }
-  const erroSalvar = criar.error ?? atualizar.error
+  const erroSalvar = criar.error ?? atualizar.error ?? excluir.error
   const carregando = pessoas.isPending || vinculos.isPending || negocios.isPending
   const erroCarga = pessoas.error ?? vinculos.error ?? negocios.error
 
@@ -53,7 +54,7 @@ export function PessoasPage() {
       {pessoas.isSuccess && vinculos.isSuccess && negocios.isSuccess && (
         <Cartao className="p-0">
           <div className="flex flex-wrap items-center gap-3 border-b border-line px-6 py-3 text-sm">
-            <input type="search" aria-label="Buscar por nome, documento ou e-mail" placeholder="Buscar por nome, CPF/CNPJ ou e-mail" value={busca} onChange={(e) => setBusca(e.target.value)} className="h-9 w-full max-w-sm rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" />
+            <input type="search" aria-label="Buscar por nome, documento, e-mail ou login" placeholder="Buscar por nome, CPF/CNPJ, e-mail ou login" value={busca} onChange={(e) => setBusca(e.target.value)} className="h-9 w-full max-w-sm rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" />
             <span className="text-ink-muted">{lista.length} {lista.length === 1 ? 'pessoa' : 'pessoas'}</span>
             {totalInativas > 0 && (
               <label className="ml-auto flex items-center gap-2">
@@ -108,9 +109,11 @@ export function PessoasPage() {
               key={edicao.modo === 'editar' ? edicao.pessoaId : 'nova'}
               pessoa={pessoaEmEdicao}
               salvando={criar.isPending || atualizar.isPending}
+              excluindo={excluir.isPending}
               erro={erroSalvar ? mensagemDeErro(erroSalvar) : null}
               aoSalvar={salvar}
               aoCancelar={fechar}
+              aoExcluir={edicao.modo === 'editar' ? () => excluir.mutate(edicao.pessoaId, { onSuccess: fechar }) : undefined}
             />
             {pessoaEmEdicao && <VinculosPessoa pessoa={pessoaEmEdicao} vinculos={vinculos.data ?? []} negocios={negocios.data ?? []} />}
           </div>

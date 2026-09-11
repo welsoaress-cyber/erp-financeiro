@@ -8,12 +8,14 @@ import { documentoValido, formatarDocumento, formatarTelefone, normalizarTelefon
 interface Props {
   pessoa?: Pessoa
   salvando: boolean
+  excluindo?: boolean
   erro: string | null
   aoSalvar: (dados: DadosPessoa) => void
   aoCancelar: () => void
+  aoExcluir?: () => void
 }
 
-export function FormularioPessoa({ pessoa, salvando, erro, aoSalvar, aoCancelar }: Props) {
+export function FormularioPessoa({ pessoa, salvando, excluindo, erro, aoSalvar, aoCancelar, aoExcluir }: Props) {
   const editando = Boolean(pessoa)
   const [tipo, setTipo] = useState<TipoPessoa>(pessoa?.tipo ?? 'fisica')
   const [nome, setNome] = useState(pessoa?.nome ?? '')
@@ -80,8 +82,14 @@ export function FormularioPessoa({ pessoa, salvando, erro, aoSalvar, aoCancelar 
         </label>
       )}
       <div className="flex justify-end gap-2 pt-2">
-        <Botao type="button" variante="secundario" onClick={aoCancelar} disabled={salvando}>Voltar</Botao>
-        <Botao type="submit" carregando={salvando}>{editando ? 'Salvar alterações' : 'Criar pessoa'}</Botao>
+        {editando && aoExcluir && (
+          <Botao type="button" variante="perigo" className="mr-auto" carregando={excluindo} disabled={salvando}
+            onClick={() => { if (window.confirm(`Excluir "${pessoa?.nome}"? Só é possível excluir pessoa sem histórico (contratos, lançamentos, OS…). Não dá para desfazer.`)) aoExcluir() }}>
+            Excluir
+          </Botao>
+        )}
+        <Botao type="button" variante="secundario" onClick={aoCancelar} disabled={salvando || excluindo}>Voltar</Botao>
+        <Botao type="submit" carregando={salvando} disabled={excluindo}>{editando ? 'Salvar alterações' : 'Criar pessoa'}</Botao>
       </div>
     </form>
   )

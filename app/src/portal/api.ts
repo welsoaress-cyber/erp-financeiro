@@ -177,3 +177,26 @@ export function useAvaliarVisita() {
     onSuccess: invalidar,
   })
 }
+
+// ---------------------------------------------------------------------------
+// Pix (etapa 31)
+// ---------------------------------------------------------------------------
+export interface PixGerado { copia_cola: string; ticket_url?: string | null }
+
+export function usePagarComPix() {
+  return useMutation({
+    mutationFn: async (p: { lancamentoId: string }): Promise<PixGerado> => {
+      // reaproveita cobrança pendente antes de gerar outra
+      const { data: existente } = await supabase.rpc('portal_pix_cobranca', { p_lancamento_id: p.lancamentoId })
+      const ex = Array.isArray(existente) ? existente[0] : existente
+      if (ex?.status === 'pendente' && ex.copia_cola) return { copia_cola: ex.copia_cola, ticket_url: ex.ticket_url }
+      const { data, error } = await supabase.functions.invoke('pix-gerar', { body: { lancamento_id: p.lancamentoId } })
+      if (error) {
+        const detalhe = await (error as { context?: Response }).context?.json?.().catch(() => null)
+        throw new Error(detalhe?.erro ?? 'Não foi possível gerar o Pix agora. Tente de novo ou fale com o suporte.')
+      }
+      if (!data?.ok) throw new Error(data?.erro ?? 'Não foi possível gerar o Pix.')
+      return { copia_cola: data.copia_cola, ticket_url: data.ticket_url }
+    },
+  })
+}

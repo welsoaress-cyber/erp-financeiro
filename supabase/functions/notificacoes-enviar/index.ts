@@ -13,8 +13,49 @@ const SB_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const EVO_URL = (Deno.env.get('EVOLUTION_API_URL') ?? '').replace(/\/$/, '')
 const EVO_KEY = Deno.env.get('EVOLUTION_API_KEY') ?? ''
 const CRON_SECRET = Deno.env.get('NOTIFICACOES_CRON_SECRET') ?? ''
+// Pix no aviso de cobrança (etapa 31): com MP_ACCESS_TOKEN configurado e Pix
+// ativo no negócio, o aviso ganha o copia-e-cola no fim da mensagem.
+const MP_TOKEN = Deno.env.get('MP_ACCESS_TOKEN') ?? ''
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+
+// Gera (ou reaproveita) a cobrança Pix da fatura; devolve o copia-e-cola ou null.
+// deno-lint-ignore no-explicit-any
+async function pixDaFatura(sb: any, lancamentoId: string): Promise<string | null> {
+  if (!MP_TOKEN || !lancamentoId) return null
+  try {
+    const { data } = await sb.rpc('pix_dados_lancamento', { p_lancamento_id: lancamentoId })
+    const d = Array.isArray(data) ? data[0] : data
+    if (!d || !d.pix_automatico) return null
+    if (d.cobranca_pendente) return d.cobranca_pendente as string
+    const documento = String(d.documento ?? '').replace(/\D/g, '')
+    const res = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${MP_TOKEN}`, 'Content-Type': 'application/json', 'X-Idempotency-Key': `aviso-${lancamentoId}-${Date.now()}` },
+      body: JSON.stringify({
+        transaction_amount: Number(d.valor),
+        description: `${d.descricao} (venc. ${d.vencimento})`,
+        payment_method_id: 'pix',
+        date_of_expiration: new Date(Date.now() + 48 * 3600 * 1000).toISOString().replace('Z', '-00:00'),
+        external_reference: String(lancamentoId),
+        payer: {
+          email: d.email || 'cliente@sememail.com.br',
+          first_name: String(d.cliente ?? 'Cliente').split(' ')[0],
+          identification: documento.length === 11 ? { type: 'CPF', number: documento } : documento.length === 14 ? { type: 'CNPJ', number: documento } : undefined,
+        },
+      }),
+    })
+    const mp = await res.json().catch(() => ({}))
+    const codigo = mp?.point_of_interaction?.transaction_data?.qr_code
+    if (!res.ok || !codigo) return null
+    await sb.rpc('pix_registrar', {
+      p_lancamento_id: lancamentoId, p_txid: String(mp.id), p_copia_cola: codigo,
+      p_ticket_url: mp?.point_of_interaction?.transaction_data?.ticket_url ?? null,
+      p_expira_em: new Date(Date.now() + 48 * 3600 * 1000).toISOString(), p_resposta: { status: mp.status, origem: 'aviso' },
+    })
+    return codigo as string
+  } catch { return null }
+}
 const mascarar = (n: string | null) => (n ?? '').replace(/\d(?=\d{4})/g, '*')
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -77,7 +118,13 @@ Deno.serve(async (req) => {
       resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'pulado', motivo })
       continue
     }
-    const r = await enviarTexto(it.instancia, it.numero_destino, it.mensagem)
+    let mensagem = it.mensagem
+    if (['proximo_vencimento', 'vencimento', 'bloqueio'].includes(it.tipo)) {
+      const { data: log } = await sb.from('notificacoes_log').select('lancamento_id').eq('id', it.id).maybeSingle()
+      const pix = await pixDaFatura(sb, log?.lancamento_id as string)
+      if (pix) mensagem += `\n\nPague agora com Pix copia e cola:\n${pix}`
+    }
+    const r = await enviarTexto(it.instancia, it.numero_destino, mensagem)
     await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: r.ok, p_erro: r.erro ?? null, p_resposta: r.resposta ?? null })
     if (r.ok) { enviados++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'enviado' }) }
     else { erros++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'erro', motivo: r.erro }) }

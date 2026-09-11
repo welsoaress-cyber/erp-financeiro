@@ -11,9 +11,36 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useContratosCliente, useFaturas, useIndicacoesCliente, useIndicar, usePagamentos, usePromocoesCliente, useProximasFaturas } from '../api'
+import { useContratosCliente, useFaturas, useIndicacoesCliente, useIndicar, usePagamentos, usePagarComPix, usePromocoesCliente, useProximasFaturas } from '../api'
 import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
+
+function BotaoPix({ fatura }: { fatura: Fatura }) {
+  const pagar = usePagarComPix()
+  const [pix, setPix] = useState<{ copia_cola: string; ticket_url?: string | null } | null>(null)
+  const [copiado, setCopiado] = useState(false)
+  async function copiar(codigo: string) { try { await navigator.clipboard.writeText(codigo); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { /* sem clipboard */ } }
+  if (fatura.situacao === 'paga' || fatura.situacao === 'gratis') return null
+  if (pix) {
+    return (
+      <div className="mt-2 rounded-md border border-line bg-surface p-3 text-left">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Pix copia e cola</p>
+        <p className="mt-1 break-all font-mono text-[11px]">{pix.copia_cola}</p>
+        <span className="mt-2 flex flex-wrap gap-2">
+          <Botao onClick={() => void copiar(pix.copia_cola)}>{copiado ? 'Copiado!' : 'Copiar código'}</Botao>
+          {pix.ticket_url && <a href={pix.ticket_url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center rounded-md border border-line px-4 text-sm hover:bg-white/5">Ver QR Code</a>}
+        </span>
+        <p className="mt-2 text-xs text-ink-muted">Depois do pagamento a fatura baixa sozinha em alguns minutos.</p>
+      </div>
+    )
+  }
+  return (
+    <div className="mt-1 text-left">
+      {pagar.error != null && <p className="mb-1 text-xs text-red-400">{mensagemDeErro(pagar.error)}</p>}
+      <Botao variante="secundario" carregando={pagar.isPending} onClick={() => pagar.mutate({ lancamentoId: fatura.id }, { onSuccess: setPix })}>Pagar com Pix</Botao>
+    </div>
+  )
+}
 
 export function PortalFaturasPage() {
   const faturas = useFaturas()
@@ -33,7 +60,7 @@ export function PortalFaturasPage() {
                 <td className="px-4 py-3">{f.plano} <span className="font-mono text-xs text-ink-muted">{codigoContrato(f.contrato_codigo)}</span>{f.observacao && <p className="text-xs text-green-700">{f.observacao}</p>}</td>
                 <td className="px-4 py-3 text-right tabular-nums">{formatarMoeda(f.valor)}</td>
                 <td className="px-4 py-3"><Distintivo tom={TOM[f.situacao]}>{ROTULO_SITUACAO[f.situacao]}</Distintivo>{f.data_efetivacao && <p className="text-xs text-ink-muted">em {formatarData(f.data_efetivacao)}</p>}</td>
-                <td className="px-4 py-3 text-right"><Link to={`/portal/faturas/${f.id}`} className="text-brand-700 hover:underline whitespace-nowrap">{f.situacao === 'paga' ? 'Recibo' : 'Boleto / PDF'}</Link></td>
+                <td className="px-4 py-3 text-right"><Link to={`/portal/faturas/${f.id}`} className="text-brand-700 hover:underline whitespace-nowrap">{f.situacao === 'paga' ? 'Recibo' : 'Boleto / PDF'}</Link><BotaoPix fatura={f} /></td>
               </tr>))}</tbody>
           </table></div>
         )}

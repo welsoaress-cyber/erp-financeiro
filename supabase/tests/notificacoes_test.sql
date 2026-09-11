@@ -41,7 +41,10 @@ do $$ declare v r%rowtype; c public.notificacoes_config; begin
     raise exception 'T1 número sem + deveria falhar';
   exception when check_violation then null; end;
   insert into public.notificacoes_config (organizacao_id, negocio_id, numero_whatsapp, ativo) values (v.org, v.servnet, '+55 (11) 95449-0001', true) returning * into c;
-  assert c.numero_whatsapp = '+5511954490001' and c.dias_antes = 3 and c.dias_apos = 3 and c.provedor = 'simulado', 'T1 normalizado e padrões';
+  assert c.numero_whatsapp = '+5511954490001' and c.dias_antes = 2 and c.dias_apos = 3 and c.provedor = 'simulado', 'T1 normalizado e padrão enxuto (0073)';
+  -- este teste cobre a régua antiga (1 ponto): fixa em 3 antes / 3 depois
+  update public.notificacoes_config set regua_antes = '{3}', regua_apos = '{3}' where id = c.id returning * into c;
+  assert c.dias_antes = 3 and c.dias_apos = 3, 'T1 dias derivados da régua';
   begin
     update public.notificacoes_config set template_bloqueio = 'curto' where id = c.id;
     raise exception 'T1 template curto deveria falhar';

@@ -210,7 +210,7 @@ Indicadores em tempo real, por negócio: clientes ativos, **MRR**, ticket médio
 
 ![Notificações](img/21-notificacoes.png)
 
-- **Notificações**: régua de cobrança no WhatsApp (D-3, no dia e D+3) por negócio — configure número, instância Evolution e templates; acompanhe o histórico de envio. Os avisos de OS (visita agendada/concluída) e o Pix copia-e-cola pegam carona nessa mesma configuração.
+- **Notificações**: régua de cobrança no WhatsApp **configurável por negócio** — escolha em quais dias o cliente recebe aviso antes e depois do vencimento (até 5 pontos de cada lado; o aviso do dia sempre sai). Padrão enxuto: **2 antes · no dia · 3 depois**. Cada ponto manda no máximo uma mensagem por fatura — sem enxurrada de WhatsApp. Configure também número, instância Evolution e templates; acompanhe o histórico de envio. Os avisos de OS (visita agendada/concluída) e o Pix copia-e-cola pegam carona nessa mesma configuração.
 - **Disparos** (![Disparos](img/22-disparos.png)): mensagens manuais em lote (ex.: aviso de manutenção) com proteção anti-bloqueio.
 - **Apps**: controle de recargas/ativações de apps com carteira de dois saldos.
 

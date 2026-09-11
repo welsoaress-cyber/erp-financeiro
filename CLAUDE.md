@@ -59,6 +59,6 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 45: `docs/48-parcela-inicial.md` (parcelamento pode iniciar de parcela específica — numeração espelha o contrato: 2/24…24/24).
 - Etapa 46: `docs/49-pix-reconciliacao.md` (reconciliação ativa do Pix: tela Cobrança re-consulta no MP os pendentes >1h via Edge pix-reconciliar).
 - Etapa 47: `docs/50-confianca.md` (voto de confiança na Cobrança: segura o bloqueio até data; furou → volta destacado; cumprida/furada resolvidas em gerar_bloqueios).
-- Etapa 46: `docs/49-pix-reconciliacao.md` (Edge pix-reconciliar: re-consulta no MP os Pix pendentes >1h ao abrir a Cobrança — nunca bloquear quem pagou).
+- Etapa 48: `docs/51-regua-cobranca.md` (régua de cobrança configurável por negócio — listas regua_antes/regua_apos, padrão enxuto 2·dia·3; dias_antes/apos derivados).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

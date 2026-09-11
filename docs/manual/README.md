@@ -100,13 +100,15 @@ Cada operação sua (Servnet, etc.) é um **negócio**. Quase tudo no sistema é
 
 ![Pessoas](img/11-pessoas.png)
 
-Cadastro único de clientes e fornecedores (o técnico também vira uma pessoa, para receber comissões). O **endereço** alimenta o mapa FTTH; **CPF + data de nascimento** são o login do cliente no portal; "receber avisos" controla o WhatsApp de cobrança.
+Cadastro único de clientes e fornecedores (o técnico também vira uma pessoa, para receber comissões). O **endereço** alimenta o mapa FTTH; **CPF + data de nascimento** são o login do cliente no portal; "receber avisos" controla o WhatsApp de cobrança. A busca encontra por nome, CPF/CNPJ, e-mail ou login do servidor.
+
+Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pessoa **sem histórico** — se ela tiver contrato, lançamento, OS ou comodato, o sistema barra e o caminho é **desativar** (desmarcar "Pessoa ativa"). A exclusão remove junto o acesso dela ao portal.
 
 ## 9. Contratos
 
 ![Contratos](img/12-contratos.png)
 
-O coração da receita recorrente:
+O coração da receita recorrente. Use a **busca** para achar um contrato por nome do cliente, número (#012), CPF/CNPJ, login do servidor ou telefone.
 
 1. **Novo contrato**: cliente + plano + valor + dia de vencimento (+ conta de recebimento).
 2. Com **faturamento automático**, a mensalidade entra sozinha todo mês em Contas a receber.

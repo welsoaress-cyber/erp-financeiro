@@ -64,6 +64,17 @@ export function useAtualizarPessoa() {
   })
 }
 
+export function useExcluirPessoa() {
+  const invalidar = useInvalidarPessoas()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc('excluir_pessoa', { p_pessoa_id: id })
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+
 export function useCriarVinculo() {
   const { organizacao } = useOrganizacao()
   const invalidar = useInvalidarPessoas()

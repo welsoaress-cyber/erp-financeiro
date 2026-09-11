@@ -34,6 +34,7 @@ export function ContratosPage() {
   const gerar = useGerarFaturamento()
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [filtroNegocio, setFiltroNegocio] = useState('')
+  const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState<StatusContrato | ''>('ativo')
 
   const nome = useMemo(() => ({
@@ -42,8 +43,21 @@ export function ContratosPage() {
     plano: new Map((planos.data ?? []).map((p) => [p.id, p.nome])),
   }), [negocios.data, pessoas.data, planos.data])
   const resultadoDe = useMemo(() => new Map((resultado.data ?? []).map((r) => [r.contrato_id, r])), [resultado.data])
+  const pessoaDe = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p])), [pessoas.data])
 
-  const lista = (contratos.data ?? []).filter((c) => (!filtroNegocio || c.negocio_id === filtroNegocio) && (!filtroStatus || c.status === filtroStatus))
+  const termo = busca.trim().toLowerCase()
+  const digitosBusca = termo.replace(/\D/g, '')
+  const casaBusca = (c: Contrato) => {
+    if (!termo) return true
+    if (String(c.codigo).includes(termo) || `#${String(c.codigo).padStart(3, '0')}`.includes(termo)) return true
+    const p = pessoaDe.get(c.pessoa_id)
+    if (!p) return false
+    return p.nome.toLowerCase().includes(termo)
+      || (digitosBusca.length > 2 && (p.documento ?? '').includes(digitosBusca))
+      || (p.login_servidor ?? '').toLowerCase().includes(termo)
+      || (digitosBusca.length > 2 && (p.telefone ?? '').includes(digitosBusca))
+  }
+  const lista = (contratos.data ?? []).filter((c) => (!filtroNegocio || c.negocio_id === filtroNegocio) && (!filtroStatus || c.status === filtroStatus) && casaBusca(c))
   const contratoVisto = edicao?.modo === 'ver' ? (contratos.data ?? []).find((c) => c.id === edicao.id) : undefined
   const temPlanos = (planos.data ?? []).some((p) => p.ativo)
   const carregando = contratos.isPending || planos.isPending || negocios.isPending || pessoas.isPending || resultado.isPending || mrr.isPending || contas.isPending
@@ -87,6 +101,9 @@ export function ContratosPage() {
 
           <Cartao className="p-0">
             <div className="flex flex-wrap items-center gap-3 border-b border-line px-6 py-3 text-sm">
+              <input type="search" aria-label="Buscar contrato" placeholder="Buscar por nome, nº do contrato, CPF/CNPJ, login ou telefone"
+                value={busca} onChange={(e) => setBusca(e.target.value)}
+                className="h-9 w-full max-w-sm rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" />
               <select aria-label="Filtrar por negócio" value={filtroNegocio} onChange={(e) => setFiltroNegocio(e.target.value)} className="h-9 rounded-md border border-line bg-white px-3 text-sm">
                 <option value="">Todos os negócios</option>
                 {(negocios.data ?? []).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}

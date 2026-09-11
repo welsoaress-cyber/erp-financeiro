@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Cartao } from '../../../core/ui/Cartao'
+import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { useEstoqueItens } from '../../estoque/api'
 import { fmtQtd, statusItem } from '../../estoque/tipos'
@@ -19,11 +19,11 @@ export function AlertasEstoque({ bate, nomeNegocio }: Props) {
     .sort((a, b) => (a.st.tom === b.st.tom ? 0 : a.st.tom === 'zerado' ? -1 : 1))
   if (alertas.length === 0) return null
   return (
-    <Cartao className="p-0">
-      <div className="flex items-center justify-between border-b border-line px-6 py-3">
-        <h2 className="text-sm font-semibold">Estoque <Distintivo tom="alerta">{`${alertas.length} item(ns) em alerta`}</Distintivo></h2>
-        <Link to="/estoque" className="text-xs font-medium text-brand-600 hover:underline">Abrir estoque</Link>
-      </div>
+    <CartaoRecolhivel
+      id="estoque"
+      titulo={<h2 className="text-sm font-semibold">Estoque <Distintivo tom="alerta">{`${alertas.length} item(ns) em alerta`}</Distintivo></h2>}
+      acao={<Link to="/estoque" className="shrink-0 text-xs font-medium text-brand-600 hover:underline">Abrir estoque</Link>}
+    >
       <ul className="divide-y divide-line">
         {alertas.slice(0, 6).map(({ item, st }) => (
           <li key={item.id} className="flex items-center justify-between gap-3 px-6 py-3 text-sm">
@@ -36,6 +36,6 @@ export function AlertasEstoque({ bate, nomeNegocio }: Props) {
         ))}
         {alertas.length > 6 && <li className="px-6 py-2 text-xs text-ink-muted">+ {alertas.length - 6} item(ns) — veja no módulo Estoque.</li>}
       </ul>
-    </Cartao>
+    </CartaoRecolhivel>
   )
 }

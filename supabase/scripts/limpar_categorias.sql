@@ -5,9 +5,9 @@
 -- ⚠️ ANTES DE RODAR: gere um backup (GitHub → Actions → backup-banco).
 --
 -- APAGA: todas as categorias (e subcategorias) que NÃO estão em uso.
--- FICA:  categoria usada por algum lançamento não é apagada (apagar quebraria
---        o histórico) — ela aparece no resultado como "em uso"; renomeie ou
---        desative pela tela se quiser.
+-- FICA:  categoria usada por lançamento ou pela carteira de um app não é
+--        apagada (quebraria o histórico) — aparece no resultado como
+--        "em uso"; renomeie ou desative pela tela se quiser.
 -- ATENÇÃO: negócios que usavam uma categoria apagada como padrão de
 --        receita/despesa ficam SEM padrão — reconfigure em Negócios antes do
 --        próximo faturamento automático.
@@ -31,11 +31,10 @@ begin
     begin
       update public.negocios set categoria_receita_id = null where categoria_receita_id = r.id;
       update public.negocios set categoria_despesa_id = null where categoria_despesa_id = r.id;
-      update public.carteira  set categoria_consumo_id = null where categoria_consumo_id = r.id;
       delete from public.categorias where id = r.id;
       v_apagadas := v_apagadas + 1;
     exception when foreign_key_violation then
-      v_ficaram := v_ficaram + 1; -- em uso por lançamentos: fica
+      v_ficaram := v_ficaram + 1; -- em uso (lançamentos ou carteira): fica
     end;
   end loop;
 
@@ -48,7 +47,7 @@ end $$;
 commit;
 
 -- Conferência: o que ficou (em uso) e negócios que precisam de novo padrão
-select nome, tipo, natureza, 'em uso por lançamentos' as motivo
+select nome, tipo, natureza, 'em uso (lançamentos ou carteira)' as motivo
   from public.categorias order by tipo, nome;
 select nome as negocio_sem_categoria_padrao
   from public.negocios

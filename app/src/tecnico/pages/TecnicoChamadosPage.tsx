@@ -28,6 +28,7 @@ function DetalheTecnico({ os, aoFechar }: { os: OrdemServico; aoFechar: () => vo
   const [painel, setPainel] = useState<'nenhum' | 'agendar' | 'remarcar' | 'pausar' | 'encerrar'>('nenhum')
   const [data, setData] = useState(hojeISO()); const [hora, setHora] = useState('08:00'); const [motivo, setMotivo] = useState('')
   const [linhas, setLinhas] = useState<{ itemId: string; quantidade: string }[]>([{ itemId: '', quantidade: '' }])
+  const [equips, setEquips] = useState<{ itemId: string; serie: string }[]>([])
   const [diagnostico, setDiagnostico] = useState(''); const [sinal, setSinal] = useState(''); const [obs, setObs] = useState('')
   const erro = [ciencia, agendar, remarcar, iniciar, pausar, retomar, encerrar, enviarFoto].map((m) => m.error).find((e) => e != null)
   const saldoDe = (id: string) => (bolsa.data ?? []).find((b) => b.item_id === id)?.quantidade ?? 0
@@ -100,6 +101,15 @@ function DetalheTecnico({ os, aoFechar }: { os: OrdemServico; aoFechar: () => vo
             </div>
           ))}
           <Botao variante="secundario" onClick={() => setLinhas((xs) => [...xs, { itemId: '', quantidade: '' }])}>+ Material</Botao>
+          <p className="pt-1 font-medium">Equipamento instalado no cliente? Informe a série</p>
+          {equips.map((l, i) => (
+            <div key={i} className="flex items-end gap-2">
+              <div className="flex-1"><Selecao rotulo={i === 0 ? 'Equipamento' : ''} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(itens.data ?? []).map((x) => ({ valor: x.id, rotulo: `${x.codigo} · ${x.nome}` }))]} value={l.itemId} onChange={(e) => setEquips((xs) => xs.map((x, j) => (j === i ? { ...x, itemId: e.target.value } : x)))} /></div>
+              <input placeholder="Nº de série" aria-label="Número de série" value={l.serie} onChange={(e) => setEquips((xs) => xs.map((x, j) => (j === i ? { ...x, serie: e.target.value } : x)))} className="h-10 w-32 rounded-md border border-line bg-white px-2 text-sm" />
+              <button type="button" aria-label="Remover" className="pb-2 text-ink-muted" onClick={() => setEquips((xs) => xs.filter((_, j) => j !== i))}>×</button>
+            </div>
+          ))}
+          <Botao variante="secundario" onClick={() => setEquips((xs) => [...xs, { itemId: '', serie: '' }])}>+ Equipamento (série)</Botao>
           <Selecao rotulo="O que era o problema?" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...Object.entries(ROTULO_DIAGNOSTICO).map(([v, r]) => ({ valor: v, rotulo: r }))]} value={diagnostico} onChange={(e) => setDiagnostico(e.target.value)} />
           <div className="grid grid-cols-2 gap-2">
             <Campo rotulo="Sinal (dBm)" type="number" step="0.1" value={sinal} onChange={(e) => setSinal(e.target.value)} placeholder="-18.5" />
@@ -121,6 +131,7 @@ function DetalheTecnico({ os, aoFechar }: { os: OrdemServico; aoFechar: () => vo
             p_os_id: os.id,
             p_itens: linhas.filter((l) => l.itemId && Number(l.quantidade.replace(',', '.')) > 0).map((l) => ({ item_id: l.itemId, quantidade: Number(l.quantidade.replace(',', '.')) })),
             p_diagnostico: diagnostico || null, p_sinal_dbm: sinal.trim() ? Number(sinal.replace(',', '.')) : null, p_observacao: obs.trim() || null,
+            p_equipamentos: equips.filter((l) => l.itemId && l.serie.trim().length >= 3).map((l) => ({ item_id: l.itemId, numero_serie: l.serie.trim() })),
           }, { onSuccess: aoFechar })}>Confirmar encerramento</Botao>
           <p className="text-xs text-ink-muted">Se faltar material na bolsa o encerramento passa mesmo assim; o saldo fica negativo e o admin repõe.</p>
         </div>

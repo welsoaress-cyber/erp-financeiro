@@ -113,7 +113,7 @@ export const useSolicitarRemarcacaoTec = () => useRpcTecnico<{ p_os_id: string; 
 export const useIniciar = () => useRpcTecnico<{ p_os_id: string }>('iniciar_os')
 export const usePausar = () => useRpcTecnico<{ p_os_id: string; p_motivo: string }>('pausar_os')
 export const useRetomar = () => useRpcTecnico<{ p_os_id: string }>('retomar_os')
-export const useEncerrar = () => useRpcTecnico<{ p_os_id: string; p_itens: { item_id: string; quantidade: number }[]; p_diagnostico?: string | null; p_sinal_dbm?: number | null; p_observacao?: string | null }>('encerrar_os')
+export const useEncerrar = () => useRpcTecnico<{ p_os_id: string; p_itens: { item_id: string; quantidade: number }[]; p_diagnostico?: string | null; p_sinal_dbm?: number | null; p_observacao?: string | null; p_equipamentos?: { item_id: string; numero_serie: string }[] }>('encerrar_os')
 export const usePerdaMinha = () => useRpcTecnico<{ p_tecnico_id: string; p_item_id: string; p_quantidade: number; p_avaria: boolean; p_motivo: string; p_defeito_fabrica?: boolean }>('perda_tecnico')
 export const usePedirReposicao = () => useRpcTecnico<{ p_item_id: string; p_quantidade: number }>('solicitar_reposicao')
 

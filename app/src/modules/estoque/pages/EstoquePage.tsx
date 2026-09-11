@@ -18,8 +18,9 @@ import { useCriarLancamento } from '../../lancamentos/api'
 import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useInstalacoes, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
 import { NovaInstalacao } from '../components/NovaInstalacao'
 import { fmtQtd, ROTULO_ORIGEM, statusItem, UNIDADES, type EstoqueItem, type Unidade } from '../tipos'
+import { AbaComodato } from '../components/AbaComodato'
 
-type Aba = 'dashboard' | 'itens' | 'movs' | 'instalacoes' | 'relatorios' | 'categorias'
+type Aba = 'dashboard' | 'itens' | 'movs' | 'instalacoes' | 'comodato' | 'relatorios' | 'categorias'
 const TOM_STATUS = { zerado: 'alerta', baixo: 'alerta', excesso: 'info', ok: 'ok' } as const
 
 function FormularioItem({ item, negocioId, salvando, erro, aoSalvar, aoCancelar }: {
@@ -269,9 +270,9 @@ export function EstoquePage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div role="tablist" className="flex gap-1 rounded-md border border-line p-1 text-sm">
-          {(['dashboard', 'itens', 'movs', 'instalacoes', 'relatorios', 'categorias'] as Aba[]).map((a) => (
+          {(['dashboard', 'itens', 'movs', 'instalacoes', 'comodato', 'relatorios', 'categorias'] as Aba[]).map((a) => (
             <button key={a} role="tab" aria-selected={aba === a} onClick={() => setAba(a)} className={`rounded px-3 py-1.5 ${aba === a ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>
-              {a === 'dashboard' ? 'Dashboard' : a === 'itens' ? 'Itens' : a === 'movs' ? 'Movimentações' : a === 'instalacoes' ? 'Instalações' : a === 'relatorios' ? 'Relatórios' : 'Categorias'}
+              {a === 'dashboard' ? 'Dashboard' : a === 'itens' ? 'Itens' : a === 'movs' ? 'Movimentações' : a === 'instalacoes' ? 'Instalações' : a === 'comodato' ? 'Comodato' : a === 'relatorios' ? 'Relatórios' : 'Categorias'}
             </button>
           ))}
         </div>
@@ -413,6 +414,8 @@ export function EstoquePage() {
           </Cartao>
         </div>
       )}
+
+      {aba === 'comodato' && negocioAtual && <AbaComodato negocioId={negocioAtual} />}
 
       {aba === 'categorias' && (
         <Cartao className="p-4">

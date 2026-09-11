@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { ConsumoItem, ConsumoMensal, DadosItem, EstoqueCategoria, EstoqueInstalacao, EstoqueItem, EstoqueMov } from './tipos'
+import type { Comodato, ConsumoItem, ConsumoMensal, DadosItem, EstoqueCategoria, EstoqueInstalacao, EstoqueItem, EstoqueMov } from './tipos'
 
 const chave = (org: string) => ['estoque', org] as const
 
@@ -212,3 +212,37 @@ export function useConsumoItem() {
     },
   })
 }
+
+// ---------------------------------------------------------------------------
+// Comodato (etapa 30)
+// ---------------------------------------------------------------------------
+export function useComodatos() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'comodatos'],
+    queryFn: async (): Promise<Comodato[]> => {
+      const { data, error } = await supabase.from('comodatos').select('*').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }).limit(500)
+      if (error) throw error
+      return (data ?? []) as Comodato[]
+    },
+  })
+}
+
+function useRpcComodato<T extends Record<string, unknown>>(fn: string) {
+  const invalidar = useInvalidarEstoque()
+  const { organizacao } = useOrganizacao()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (params: T) => {
+      const { data, error } = await supabase.rpc(fn, params)
+      if (error) throw error
+      return data as unknown
+    },
+    onSuccess: () => { invalidar(); void qc.invalidateQueries({ queryKey: ['os', organizacao.id] }) },
+  })
+}
+
+export const useRegistrarComodato = () => useRpcComodato<{ p_negocio_id: string; p_item_id: string; p_serie: string; p_pessoa_id: string; p_contrato_id?: string | null; p_observacao?: string | null }>('registrar_comodato')
+export const useRecolherComodato = () => useRpcComodato<{ p_comodato_id: string; p_descartar: boolean; p_observacao?: string | null }>('recolher_comodato')
+export const useTrocarComodato = () => useRpcComodato<{ p_comodato_id: string; p_serie_nova: string; p_tecnico_id: string; p_defeito_fabrica: boolean; p_motivo: string }>('trocar_comodato')
+export const usePerdaComodato = () => useRpcComodato<{ p_comodato_id: string; p_motivo: string }>('perda_comodato')

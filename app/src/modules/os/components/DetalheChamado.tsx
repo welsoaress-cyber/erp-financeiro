@@ -42,6 +42,7 @@ export function DetalheChamado({ os, nomes, aoFechar }: Props) {
   const [painel, setPainel] = useState<'nenhum' | 'agendar' | 'remarcar' | 'pausar' | 'encerrar' | 'cancelar' | 'avaliar' | 'comissao'>('nenhum')
   const [data, setData] = useState(hojeISO()); const [hora, setHora] = useState('08:00'); const [motivo, setMotivo] = useState('')
   const [linhas, setLinhas] = useState<{ itemId: string; quantidade: string }[]>([])
+  const [equips, setEquips] = useState<{ itemId: string; serie: string }[]>([])
   const [diagnostico, setDiagnostico] = useState(''); const [sinal, setSinal] = useState(''); const [obsFim, setObsFim] = useState('')
   const [nota, setNota] = useState('5'); const [resolvido, setResolvido] = useState('sim')
   const [contaId, setContaId] = useState(''); const [venc, setVenc] = useState(hojeISO()); const [valorCom, setValorCom] = useState('')
@@ -111,7 +112,7 @@ export function DetalheChamado({ os, nomes, aoFechar }: Props) {
         {aberto && os.data_agendada && <Botao onClick={() => iniciar.mutate({ p_os_id: os.id })} carregando={iniciar.isPending}>Iniciar atendimento</Botao>}
         {atendendo && <Botao variante="secundario" onClick={() => setPainel('pausar')}>Pausar</Botao>}
         {pausado && <Botao onClick={() => retomar.mutate({ p_os_id: os.id })} carregando={retomar.isPending}>Retomar</Botao>}
-        {(atendendo || pausado) && <Botao onClick={() => { setLinhas([{ itemId: '', quantidade: '' }]); setPainel('encerrar') }}>Encerrar chamado</Botao>}
+        {(atendendo || pausado) && <Botao onClick={() => { setLinhas([{ itemId: '', quantidade: '' }]); setEquips([]); setPainel('encerrar') }}>Encerrar chamado</Botao>}
         {(aberto || atendendo || pausado) && <Botao variante="perigo" onClick={() => setPainel('cancelar')}>Cancelar</Botao>}
         {encerrado && os.avaliacao_resolvido == null && <Botao variante="secundario" onClick={() => setPainel('avaliar')}>Avaliar</Botao>}
         {encerrado && os.avaliacao_resolvido === false && (
@@ -166,6 +167,15 @@ export function DetalheChamado({ os, nomes, aoFechar }: Props) {
             </div>
           ))}
           <Botao variante="secundario" onClick={() => setLinhas((xs) => [...xs, { itemId: '', quantidade: '' }])}>+ Material</Botao>
+          <p className="pt-1 text-sm font-medium">Equipamentos em comodato (com número de série — ficam no cliente)</p>
+          {equips.map((l, i) => (
+            <div key={i} className="flex items-end gap-2">
+              <div className="flex-1"><Selecao rotulo={i === 0 ? 'Equipamento' : ''} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...itensNegocio.map((x) => ({ valor: x.id, rotulo: `${x.codigo} · ${x.nome}` }))]} value={l.itemId} onChange={(e) => setEquips((xs) => xs.map((x, j) => (j === i ? { ...x, itemId: e.target.value } : x)))} /></div>
+              <input placeholder="Nº de série" aria-label="Número de série" value={l.serie} onChange={(e) => setEquips((xs) => xs.map((x, j) => (j === i ? { ...x, serie: e.target.value } : x)))} className="h-10 w-40 rounded-md border border-line bg-white px-2 text-sm" />
+              <button type="button" aria-label="Remover" className="pb-2 text-ink-muted hover:text-red-700" onClick={() => setEquips((xs) => xs.filter((_, j) => j !== i))}>×</button>
+            </div>
+          ))}
+          <Botao variante="secundario" onClick={() => setEquips((xs) => [...xs, { itemId: '', serie: '' }])}>+ Equipamento (série)</Botao>
           <div className="grid grid-cols-3 gap-4">
             <Selecao rotulo="Diagnóstico" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...Object.entries(ROTULO_DIAGNOSTICO).map(([v, r]) => ({ valor: v, rotulo: r }))]} value={diagnostico} onChange={(e) => setDiagnostico(e.target.value)} />
             <Campo rotulo="Sinal (dBm, opcional)" type="number" step="0.1" value={sinal} onChange={(e) => setSinal(e.target.value)} placeholder="-18.5" />
@@ -175,6 +185,7 @@ export function DetalheChamado({ os, nomes, aoFechar }: Props) {
             p_os_id: os.id,
             p_itens: linhas.filter((l) => l.itemId && Number(l.quantidade.replace(',', '.')) > 0).map((l) => ({ item_id: l.itemId, quantidade: Number(l.quantidade.replace(',', '.')) })),
             p_diagnostico: diagnostico || null, p_sinal_dbm: sinal.trim() ? Number(sinal.replace(',', '.')) : null, p_observacao: obsFim.trim() || null,
+            p_equipamentos: equips.filter((l) => l.itemId && l.serie.trim().length >= 3).map((l) => ({ item_id: l.itemId, numero_serie: l.serie.trim() })),
           }, fechar)}>Confirmar encerramento</Botao>
         </div>
       )}

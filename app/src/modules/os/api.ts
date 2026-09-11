@@ -215,7 +215,7 @@ export const useResponderRemarcacao = () => useRpc<{ p_os_id: string; p_aprovar:
 export const useIniciarOs = () => useRpc<{ p_os_id: string }>('iniciar_os')
 export const usePausarOs = () => useRpc<{ p_os_id: string; p_motivo: string }>('pausar_os')
 export const useRetomarOs = () => useRpc<{ p_os_id: string }>('retomar_os')
-export const useEncerrarOs = () => useRpc<{ p_os_id: string; p_itens: { item_id: string; quantidade: number }[]; p_diagnostico?: string | null; p_sinal_dbm?: number | null; p_observacao?: string | null }>('encerrar_os')
+export const useEncerrarOs = () => useRpc<{ p_os_id: string; p_itens: { item_id: string; quantidade: number }[]; p_diagnostico?: string | null; p_sinal_dbm?: number | null; p_observacao?: string | null; p_equipamentos?: { item_id: string; numero_serie: string }[] }>('encerrar_os')
 export const useCancelarOs = () => useRpc<{ p_os_id: string; p_motivo: string }>('cancelar_os')
 export const useAvaliarOs = () => useRpc<{ p_os_id: string; p_resolvido: boolean; p_nota?: number | null }>('avaliar_os')
 export const useAprovarComissao = () => useRpc<{ p_os_id: string; p_conta_id: string; p_vencimento: string; p_valor?: number | null }>('aprovar_comissao_os')

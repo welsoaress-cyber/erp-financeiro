@@ -9,6 +9,8 @@ import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useAtualizarContrato } from '../api'
 import { usePaybackContratos } from '../../estoque/api'
 import { useOsCustoContratos } from '../../os/api'
+import { useComodatos, useEstoqueItens } from '../../estoque/api'
+import { ROTULO_COMODATO } from '../../estoque/tipos'
 import { Selecao } from '../../../core/ui/Selecao'
 import { codigoContrato, PERIODICIDADES, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type Periodicidade, type ResultadoContrato } from '../tipos'
 import { FaturamentoContrato } from './FaturamentoContrato'
@@ -31,6 +33,10 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   const payback = (paybacks.data ?? []).find((p) => p.contrato_id === contrato.id)
   const custosOs = useOsCustoContratos()
   const custoManutencao = (custosOs.data ?? []).find((c) => c.contrato_id === contrato.id)
+  const comodatos = useComodatos()
+  const itensEstoque = useEstoqueItens()
+  const equipamentos = (comodatos.data ?? []).filter((c) => c.contrato_id === contrato.id)
+  const nomeEquip = (id: string) => { const i = (itensEstoque.data ?? []).find((x) => x.id === id); return i ? i.nome : 'Equipamento' }
   const encerrado = contrato.status === 'encerrado'
   const [valor, setValor] = useState(String(contrato.valor))
   const [dia, setDia] = useState(String(contrato.dia_vencimento))
@@ -116,6 +122,14 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
             </div>
           )}
         </>
+      )}
+      {equipamentos.length > 0 && (
+        <div className="rounded-md border border-line p-3 text-sm">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">Equipamentos em comodato</p>
+          {equipamentos.map((c) => (
+            <p key={c.id} className="text-ink-muted"><span className="font-mono text-xs">{c.numero_serie}</span> · {nomeEquip(c.item_id)} · {ROTULO_COMODATO[c.status]}{c.status === 'instalado' ? ` desde ${formatarData(c.data_instalacao)}` : ''}</p>
+          ))}
+        </div>
       )}
       <FaturamentoContrato contrato={contrato} contas={contas} />
       <p className="text-xs text-ink-muted">Contrato {codigoContrato(contrato)} · Pessoa, negócio e plano não mudam depois de aberto: encerre e abra outro.</p>

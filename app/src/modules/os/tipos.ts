@@ -1,4 +1,4 @@
-export type TipoOs = 'instalacao' | 'manutencao' | 'reparo' | 'mudanca_endereco' | 'rompimento' | 'vistoria'
+export type TipoOs = 'instalacao' | 'manutencao' | 'reparo' | 'mudanca_endereco' | 'rompimento' | 'vistoria' | 'recolhimento'
 export type PrioridadeOs = 'normal' | 'urgente'
 export type StatusOs = 'aberto' | 'em_atendimento' | 'pausado' | 'encerrado' | 'cancelado'
 export type EventoOs = 'abertura' | 'atribuicao' | 'ciencia' | 'agendamento' | 'remarcacao_solicitada' | 'remarcacao_respondida' | 'inicio' | 'pausa' | 'retomada' | 'encerramento' | 'reabertura' | 'cancelamento' | 'avaliacao' | 'comissao'
@@ -6,7 +6,7 @@ export type DiagnosticoOs = 'conector' | 'cabo_rompido' | 'onu_queimada' | 'ener
 export type TipoMovTecnico = 'abastecimento' | 'consumo' | 'perda' | 'avaria' | 'devolucao'
 
 export const ROTULO_TIPO_OS: Record<TipoOs, string> = {
-  instalacao: 'Instalação', manutencao: 'Manutenção', reparo: 'Reparo', mudanca_endereco: 'Mudança de endereço', rompimento: 'Rompimento', vistoria: 'Vistoria',
+  instalacao: 'Instalação', manutencao: 'Manutenção', reparo: 'Reparo', mudanca_endereco: 'Mudança de endereço', rompimento: 'Rompimento', vistoria: 'Vistoria', recolhimento: 'Recolhimento',
 }
 export const ROTULO_STATUS_OS: Record<StatusOs, string> = {
   aberto: 'Aberto', em_atendimento: 'Em atendimento', pausado: 'Pausado', encerrado: 'Encerrado', cancelado: 'Cancelado',

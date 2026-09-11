@@ -41,4 +41,5 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 29 (A/B/C): `docs/31-ordens-servico.md` (Ordens de Serviço: chamados técnicos, bolsa do técnico, tempo desde o agendamento, comissão no Contas a Pagar, payback; 29A/B/C entregues: admin, técnico com login restrito e portal do cliente com avisos WhatsApp.
 - Etapa 30: `docs/32-comodato.md` (Comodato: equipamentos com série na casa do cliente; OS de recolhimento automática no encerramento do contrato; troca/perda/descarte com histórico imutável).
 - Etapa 31: `docs/33-pix-bloqueio.md` (Pix Mercado Pago no portal e no aviso WhatsApp com baixa automática via webhook; bloqueio assistido em Financeiro → Cobrança).
+- Etapa 32: `docs/34-bi-gerencial.md` (BI gerencial em tempo real: churn, MRR, ticket, inadimplência, payback médio, técnicos, CSV — menu Gerencial).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

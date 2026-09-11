@@ -31,6 +31,8 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 
 Use o seletor "Todos os negócios" para filtrar tudo por um negócio (ex.: só Servnet).
 
+> **Dica — organizar o menu:** os itens do menu lateral podem ser **arrastados** para a ordem que você preferir (segure e solte no lugar desejado). A ordem fica salva no navegador; em outro computador o menu volta ao padrão até você reordenar lá também.
+
 ## 3. Financeiro
 
 O menu Financeiro tem quatro abas: **Lançamentos**, **Contas a receber**, **Contas a pagar** e **Cobrança**.

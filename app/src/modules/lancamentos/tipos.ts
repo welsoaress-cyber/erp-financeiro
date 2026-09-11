@@ -76,5 +76,6 @@ export interface DadosLancamento {
   recorrente: boolean
   periodicidade: PeriodicidadeRecorrencia | null
   numero_parcelas: number | null
+  parcela_inicial?: number | null
   data_fim_recorrencia: string | null
 }

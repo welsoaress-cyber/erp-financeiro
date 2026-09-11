@@ -107,6 +107,7 @@ function paramsDe(d: DadosLancamento) {
     p_recorrente: d.recorrente,
     p_periodicidade: d.recorrente ? d.periodicidade : null,
     p_numero_parcelas: d.recorrente ? d.numero_parcelas : null,
+    p_parcela_inicial: d.recorrente ? (d.parcela_inicial ?? 1) : 1,
     p_data_fim_recorrencia: d.recorrente ? d.data_fim_recorrencia : null,
   }
 }

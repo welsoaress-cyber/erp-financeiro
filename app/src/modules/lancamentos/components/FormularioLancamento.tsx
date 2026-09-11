@@ -169,6 +169,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   const [recorrente, setRecorrente] = useState(lancamento?.recorrente ?? false)
   const [tipoRec, setTipoRec] = useState<TipoRecorrencia>(lancamento?.tipo_recorrencia ?? (lancamento?.numero_parcelas ? 'parcelada' : 'fixa'))
   const [numeroParcelas, setNumeroParcelas] = useState(lancamento?.numero_parcelas ? String(lancamento.numero_parcelas) : '')
+  const [parcelaInicial, setParcelaInicial] = useState(lancamento?.parcela_atual && lancamento.parcela_atual > 1 && !lancamento.lancamento_origem_id ? String(lancamento.parcela_atual) : '1')
   // periodicidade e término ficam no banco (compatibilidade); a tela trabalha com fixa (mensal, sem fim) e parcelamento (N parcelas)
   const periodicidade = lancamento?.periodicidade ?? 'mensal'
   const dataFimRecorrencia = lancamento?.data_fim_recorrencia ?? ''
@@ -204,9 +205,11 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
     if (ehTransferencia && destinoId && destinoId === contaId) novos.destino = 'Origem e destino devem ser contas diferentes.'
     if (!ehTransferencia && !categoriaId) novos.categoria = 'Informe a categoria.'
     const nParcelas = recorrente && tipoRec === 'parcelada' ? (numeroParcelas.trim() === '' ? null : Number(numeroParcelas)) : null
+    const nInicial = recorrente && tipoRec === 'parcelada' ? Number(parcelaInicial || '1') : 1
     if (recorrente && tipoRec === 'parcelada') {
       if (nParcelas === null) novos.recorrencia = 'Informe o número de parcelas.'
       else if (!Number.isInteger(nParcelas) || nParcelas < 2 || nParcelas > 360) novos.recorrencia = 'Número de parcelas entre 2 e 360.'
+      else if (!Number.isInteger(nInicial) || nInicial < 1 || nInicial > nParcelas) novos.recorrencia = 'A parcela inicial deve estar entre 1 e o total de parcelas.'
     }
     setErros(novos)
     if (Object.keys(novos).length > 0) return null
@@ -227,6 +230,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       recorrente,
       periodicidade: recorrente ? periodicidade : null,
       numero_parcelas: recorrente ? nParcelas : null,
+      parcela_inicial: recorrente && tipoRec === 'parcelada' ? nInicial : 1,
       data_fim_recorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
     }
   }
@@ -390,10 +394,20 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
                 </label>
               </div>
               {tipoRec === 'parcelada' && (
-                <div className="mt-3 grid grid-cols-2 gap-4">
+                <>
+                <div className="mt-3 grid grid-cols-3 gap-4">
                   <Campo rotulo="Número de parcelas" type="number" inputMode="numeric" min={2} max={360} step={1} placeholder="Ex.: 24" value={numeroParcelas} onChange={(e) => setNumeroParcelas(e.target.value)} disabled={parcelaGerada} />
-                  <Campo rotulo="Início (1ª parcela)" type="date" value={vencimento || data} onChange={(e) => { setVencimento(e.target.value); if (!editando) setData(e.target.value) }} disabled={parcelaGerada} />
+                  <Campo rotulo="Iniciar a partir da parcela" type="number" inputMode="numeric" min={1} max={360} step={1} value={parcelaInicial} onChange={(e) => setParcelaInicial(e.target.value)} disabled={parcelaGerada} title="Já pagou parcelas fora do sistema? Informe de qual continuar." />
+                  <Campo rotulo={Number(parcelaInicial || '1') > 1 ? `Início (parcela ${parcelaInicial})` : 'Início (1ª parcela)'} type="date" value={vencimento || data} onChange={(e) => { setVencimento(e.target.value); if (!editando) setData(e.target.value) }} disabled={parcelaGerada} />
                 </div>
+                {Number(parcelaInicial || '1') > 1 && Number(numeroParcelas) >= Number(parcelaInicial) && valor.trim() !== '' && !Number.isNaN(Number(valor.replace(',', '.'))) && (
+                  <p className="mt-2 rounded-md bg-surface px-3 py-2 text-xs text-ink-muted">
+                    Contrato: <b>{numeroParcelas}×</b> de <b>{Number(valor.replace(',', '.')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b> = {(Number(numeroParcelas) * Number(valor.replace(',', '.'))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {' · '}pagas fora do sistema: {Number(parcelaInicial) - 1}× ({((Number(parcelaInicial) - 1) * Number(valor.replace(',', '.'))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
+                    {' · '}restam: {Number(numeroParcelas) - Number(parcelaInicial) + 1}× ({((Number(numeroParcelas) - Number(parcelaInicial) + 1) * Number(valor.replace(',', '.'))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
+                  </p>
+                )}
+                </>
               )}
               {erros.recorrencia && <p className="mt-1 text-xs text-red-600">{erros.recorrencia}</p>}
               <p className="mt-2 text-xs text-ink-muted">

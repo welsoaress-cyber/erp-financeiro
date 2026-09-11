@@ -56,5 +56,6 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 42: `docs/45-fechamento-mes.md` (fechamento de mês: trava do realizado com baixa atrasada permitida; fechar/reabrir auditado em Financeiro → Lançamentos).
 - Etapa 43: `docs/46-estorno.md` (estorno formal: contra-lançamento negativo datado de hoje, original intocado mesmo em mês fechado).
 - Etapa 44: `docs/47-conciliacao.md` (conciliação bancária: conferir movimentos contra o extrato por conta/mês, aba Conciliação no Financeiro).
+- Etapa 45: `docs/48-parcela-inicial.md` (parcelamento pode iniciar de parcela específica — numeração espelha o contrato: 2/24…24/24).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

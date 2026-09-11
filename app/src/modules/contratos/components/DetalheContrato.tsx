@@ -8,6 +8,7 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useAtualizarContrato } from '../api'
 import { usePaybackContratos } from '../../estoque/api'
+import { useOsCustoContratos } from '../../os/api'
 import { Selecao } from '../../../core/ui/Selecao'
 import { codigoContrato, PERIODICIDADES, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type Periodicidade, type ResultadoContrato } from '../tipos'
 import { FaturamentoContrato } from './FaturamentoContrato'
@@ -28,6 +29,8 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   const atualizar = useAtualizarContrato()
   const paybacks = usePaybackContratos()
   const payback = (paybacks.data ?? []).find((p) => p.contrato_id === contrato.id)
+  const custosOs = useOsCustoContratos()
+  const custoManutencao = (custosOs.data ?? []).find((c) => c.contrato_id === contrato.id)
   const encerrado = contrato.status === 'encerrado'
   const [valor, setValor] = useState(String(contrato.valor))
   const [dia, setDia] = useState(String(contrato.dia_vencimento))
@@ -75,7 +78,11 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
               ? <span className="font-medium text-green-700">Pago em {formatarData(payback.data_payback_real)}{payback.payback_real_meses != null ? ` (${payback.payback_real_meses} ${payback.payback_real_meses === 1 ? 'mês' : 'meses'})` : ''}.</span>
               : <span className="text-red-700">Ainda não se pagou (faltam {formatarMoeda(Math.max(payback.custo_instalacao - payback.recebido, 0))}).</span>}
           </p>
+          {custoManutencao && <p className="mt-0.5 text-xs text-ink-muted">Manutenção pós-instalação: {formatarMoeda(custoManutencao.custo_material)} em {custoManutencao.chamados} chamado(s) — fora do payback.</p>}
         </div>
+      )}
+      {!payback && custoManutencao && (
+        <p className="text-xs text-ink-muted">Manutenção: {formatarMoeda(custoManutencao.custo_material)} em material ({custoManutencao.chamados} chamado(s)).</p>
       )}
 
       {atualizar.error && <Alerta tipo="erro">{mensagemDeErro(atualizar.error)}</Alerta>}

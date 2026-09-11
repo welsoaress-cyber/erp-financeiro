@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react'
 
-export type NomeIcone = 'painel' | 'financeiro' | 'lancamentos' | 'contas' | 'cartao' | 'categorias' | 'negocios' | 'pessoas' | 'contratos' | 'apps' | 'notificacoes' | 'disparos' | 'ftth' | 'estoque' | 'portal' | 'configuracoes' | 'sair'
+export type NomeIcone = 'painel' | 'financeiro' | 'lancamentos' | 'contas' | 'cartao' | 'categorias' | 'negocios' | 'pessoas' | 'contratos' | 'apps' | 'notificacoes' | 'disparos' | 'ftth' | 'estoque' | 'os' | 'portal' | 'configuracoes' | 'sair'
 
 const CAMINHOS: Record<NomeIcone, string> = {
   painel: 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z',
@@ -17,6 +17,7 @@ const CAMINHOS: Record<NomeIcone, string> = {
   disparos: 'M3 11l17-6v14L3 13v-2Zm5 3v4a2 2 0 0 0 4 0v-2.5M20 8v6',
   ftth: 'M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10Zm0-8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
   estoque: 'M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2V8.2ZM12 5.3l6.5 3.7L12 12.8 5.5 9 12 5.3ZM5 10.8l6 3.5v4.9l-6-3.5v-4.9Zm8 8.4v-4.9l6-3.5v4.9l-6 3.5Z',
+  os: 'M14 3l7 7-9 9-4 1-3 3-2-2 3-3 1-4 9-9Zm-2.5 5.5L16 13M5 16l3 3',
   portal: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0M3 3h18v18H3z',
   configuracoes: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.6 7.6 0 0 0-1.7-1L14.8 3H9.2l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.4 7.4 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.6h5.6l.4-2.6a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1Z',
   sair: 'M10 17l5-5-5-5M15 12H3M13 3h6v18h-6',

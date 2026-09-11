@@ -16,6 +16,7 @@ import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLacrePorta, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
 import { MapaCtos } from '../components/MapaCtos'
+import { useOrdens } from '../../os/api'
 import { buscarEndereco, ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
 
 type Aba = 'mapa' | 'ctos' | 'historico'
@@ -298,6 +299,8 @@ export function FtthPage() {
   const [editando, setEditando] = useState<CtoOcupacao | 'nova' | 'novo-pop' | null>(null)
   const historicoGeral = useHistoricoCto(null)
   const clientesPortas = useClientesMapa()
+  const ordens = useOrdens()
+  const ctosComChamado = useMemo(() => new Set((ordens.data ?? []).filter((o) => o.cto_id && (o.status === 'aberto' || o.status === 'em_atendimento' || o.status === 'pausado')).map((o) => o.cto_id as string)), [ordens.data])
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const clientesMapa: ClienteNoMapa[] = useMemo(() => {
     const ctoPorId = new Map((ctos.data ?? []).map((c) => [c.id, c]))
@@ -336,8 +339,8 @@ export function FtthPage() {
 
       {aba === 'mapa' && ctos.isSuccess && (
         <Cartao className="p-4">
-          <MapaCtos ctos={ctos.data} clientes={clientesMapa} comBusca aoClicarCto={(c) => setDetalhe(c)} />
-          <p className="mt-2 text-xs text-ink-muted">Azul grande: POP (fio tracejado até as CTOs) · Verde: disponível · Amarelo: ≥90% · Vermelho: lotada · Cinza: inativa · Pontos verdes-água: clientes marcados (fio até a CTO). Clique no pino para abrir.</p>
+          <MapaCtos ctos={ctos.data} clientes={clientesMapa} comBusca aoClicarCto={(c) => setDetalhe(c)} ctosComChamado={ctosComChamado} />
+          <p className="mt-2 text-xs text-ink-muted">Azul grande: POP (fio tracejado até as CTOs) · Anel vermelho tracejado: chamado aberto na CTO · Verde: disponível · Amarelo: ≥90% · Vermelho: lotada · Cinza: inativa · Pontos verdes-água: clientes marcados (fio até a CTO). Clique no pino para abrir.</p>
         </Cartao>
       )}
 

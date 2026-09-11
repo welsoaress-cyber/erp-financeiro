@@ -16,9 +16,11 @@ interface Props {
   buscaInicial?: string | null
   /** rota em desenho (vértices temporários a partir de uma âncora, ex.: a CTO) */
   desenho?: { ancora: [number, number]; pontos: [number, number][] } | null
+  /** CTOs com chamado (OS) aberto: anel vermelho pulsante de alerta */
+  ctosComChamado?: Set<string>
 }
 
-export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, marcadorSelecao, aoClicarCto, comBusca = false, buscaInicial = null, desenho = null }: Props) {
+export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, marcadorSelecao, aoClicarCto, comBusca = false, buscaInicial = null, desenho = null, ctosComChamado }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const mapa = useRef<L.Map | null>(null)
   const camada = useRef<L.LayerGroup | null>(null)
@@ -69,9 +71,11 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
         continue
       }
       const { pct, tom } = ocupacaoDe(c)
+      const emChamado = ctosComChamado?.has(c.id) ?? false
+      if (emChamado) L.circleMarker([c.latitude, c.longitude], { radius: 16, color: '#dc2626', fillOpacity: 0, weight: 3, dashArray: '4 3' }).addTo(g)
       const cor = c.status !== 'ativa' ? '#6b7280' : COR_OCUPACAO[tom]
       const pin = L.circleMarker([c.latitude, c.longitude], { radius: 10, color: cor, fillColor: cor, fillOpacity: 0.85, weight: 2 })
-      pin.bindTooltip(`${c.codigo} · ${pct}% (${c.ocupadas + c.reservadas}/${c.quantidade_portas})${c.com_defeito ? ` · ${c.com_defeito} defeito(s)` : ''}`)
+      pin.bindTooltip(`${c.codigo} · ${pct}% (${c.ocupadas + c.reservadas}/${c.quantidade_portas})${c.com_defeito ? ` · ${c.com_defeito} defeito(s)` : ''}${emChamado ? ' · CHAMADO ABERTO' : ''}`)
       pin.on('click', () => cbCto.current?.(c))
       pin.addTo(g)
     }
@@ -84,7 +88,7 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
       m.fitBounds(L.latLngBounds(ctos.map((c) => [c.latitude, c.longitude] as [number, number])).pad(0.2), { maxZoom: 16 })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctos, clientes, desenho])
+  }, [ctos, clientes, desenho, ctosComChamado])
 
   useEffect(() => {
     const m = mapa.current

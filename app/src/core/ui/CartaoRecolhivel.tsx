@@ -35,12 +35,14 @@ export function CartaoRecolhivel({ id, titulo, acao, recolhidoPadrao = true, chi
 
   return (
     <Cartao className="p-0">
-      <div className={`flex items-center justify-between gap-3 px-6 py-3 ${recolhido ? '' : 'border-b border-line'}`}>
-        <button type="button" onClick={alternar} aria-expanded={!recolhido} className="flex min-w-0 items-center gap-2 text-left">
-          <span className={`text-xs text-ink-muted transition-transform ${recolhido ? '' : 'rotate-90'}`}>▶</span>
-          {titulo}
-        </button>
-        {acao}
+      <div
+        onClick={alternar}
+        role="button"
+        aria-expanded={!recolhido}
+        className={`flex cursor-pointer select-none items-center justify-between gap-3 px-6 py-3 ${recolhido ? '' : 'border-b border-line'}`}
+      >
+        {titulo}
+        {acao && <span onClick={(e) => e.stopPropagation()}>{acao}</span>}
       </div>
       {!recolhido && children}
     </Cartao>

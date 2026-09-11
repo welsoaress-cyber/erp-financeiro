@@ -33,7 +33,7 @@ Use o seletor "Todos os negócios" para filtrar tudo por um negócio (ex.: só S
 
 > **Dica — organizar o menu:** os itens do menu lateral podem ser **arrastados** para a ordem que você preferir (segure e solte no lugar desejado). A ordem fica salva no navegador; em outro computador o menu volta ao padrão até você reordenar lá também.
 
-> **Dica — cartões do dashboard:** os cartões (Avisos no WhatsApp, Estoque, Resumo financeiro, Saldo por conta, Últimas movimentações) começam **recolhidos**: clique no título (seta ▶) para expandir ou recolher. A escolha de cada cartão também fica salva no navegador.
+> **Dica — cartões do dashboard:** os cartões (Avisos no WhatsApp, Estoque, Resumo financeiro, Saldo por conta, Últimas movimentações) começam **recolhidos**: clique em qualquer lugar da linha do título para expandir ou recolher. A escolha de cada cartão também fica salva no navegador.
 
 ## 3. Financeiro
 

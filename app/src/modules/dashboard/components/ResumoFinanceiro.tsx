@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Cartao } from '../../../core/ui/Cartao'
+import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
 import { formatarMoeda } from '../../../core/formatos'
 import type { Lancamento } from '../../lancamentos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
@@ -56,11 +56,11 @@ export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filt
   const saldoFinal = totalGeral.saldoInicial + totalGeral.receitaPrevista + totalGeral.receitaRealizada - totalGeral.despesaPrevista - totalGeral.despesaRealizada
 
   return (
-    <Cartao className="p-0">
-      <div className="flex items-center justify-between border-b border-line px-6 py-3">
-        <h2 className="text-sm font-semibold">Resumo financeiro do período</h2>
-        {mostrarDetalhe && <button type="button" onClick={() => setExpandido((v) => !v)} className="text-xs font-medium text-brand-600 hover:underline">{expandido ? 'Ver total consolidado' : 'Detalhar por negócio'}</button>}
-      </div>
+    <CartaoRecolhivel
+      id="resumo-financeiro"
+      titulo={<h2 className="text-sm font-semibold">Resumo financeiro do período</h2>}
+      acao={mostrarDetalhe ? <button type="button" onClick={() => setExpandido((v) => !v)} className="shrink-0 text-xs font-medium text-brand-600 hover:underline">{expandido ? 'Ver total consolidado' : 'Detalhar por negócio'}</button> : undefined}
+    >
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
@@ -102,6 +102,6 @@ export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filt
         </div>
       )}
       <p className="border-t border-line px-6 py-2 text-xs text-ink-muted">Previsto = lançamentos ainda previstos no mês; Realizado = já efetivados. Cancelados não entram.</p>
-    </Cartao>
+    </CartaoRecolhivel>
   )
 }

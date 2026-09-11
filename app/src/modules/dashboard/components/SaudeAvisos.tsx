@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Cartao } from '../../../core/ui/Cartao'
+import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { formatarData } from '../../../core/formatos'
 import type { Negocio } from '../../negocios/tipos'
@@ -34,11 +34,11 @@ export function SaudeAvisos({ negocios, saude }: Props) {
   const comAcao = porNegocio.filter((x) => x.situacao.acao !== null).length
 
   return (
-    <Cartao className="p-0">
-      <div className="flex items-center justify-between border-b border-line px-6 py-3">
-        <h2 className="text-sm font-semibold">Avisos no WhatsApp {comAcao > 0 ? <Distintivo tom="alerta">{`${comAcao} ação(ões) necessária(s)`}</Distintivo> : <Distintivo tom="ok">Tudo certo</Distintivo>}</h2>
-        <Link to="/notificacoes" className="text-xs font-medium text-brand-600 hover:underline">Abrir notificações</Link>
-      </div>
+    <CartaoRecolhivel
+      id="avisos-whatsapp"
+      titulo={<h2 className="text-sm font-semibold">Avisos no WhatsApp {comAcao > 0 ? <Distintivo tom="alerta">{`${comAcao} ação(ões) necessária(s)`}</Distintivo> : <Distintivo tom="ok">Tudo certo</Distintivo>}</h2>}
+      acao={<Link to="/notificacoes" className="shrink-0 text-xs font-medium text-brand-600 hover:underline">Abrir notificações</Link>}
+    >
       <ul className="divide-y divide-line">
         {porNegocio.map(({ negocio, situacao, ultimoEnvio }) => (
           <li key={negocio.id} className="flex items-center justify-between gap-3 px-6 py-3 text-sm">
@@ -53,6 +53,6 @@ export function SaudeAvisos({ negocios, saude }: Props) {
           </li>
         ))}
       </ul>
-    </Cartao>
+    </CartaoRecolhivel>
   )
 }

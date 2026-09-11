@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
+import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
 import { Alerta } from '../../../core/ui/Alerta'
 import { Carregando } from '../../../core/ui/Carregando'
 import { SeletorMes } from '../../../core/ui/SeletorMes'
@@ -105,11 +106,11 @@ export function DashboardPage() {
           <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate} />
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Cartao className="p-0">
-              <div className="flex items-center justify-between border-b border-line px-6 py-3">
-                <h2 className="text-sm font-semibold">Saldo por conta</h2>
-                <Link to="/contas" className="text-xs font-medium text-brand-600 hover:underline">Ver contas</Link>
-              </div>
+            <CartaoRecolhivel
+              id="saldo-por-conta"
+              titulo={<h2 className="text-sm font-semibold">Saldo por conta</h2>}
+              acao={<Link to="/contas" className="shrink-0 text-xs font-medium text-brand-600 hover:underline">Ver contas</Link>}
+            >
               {contasAtivas.length === 0 ? (
                 <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhuma conta ativa. <Link to="/contas" className="text-brand-600 hover:underline">Cadastre a primeira.</Link></p>
               ) : (
@@ -122,13 +123,13 @@ export function DashboardPage() {
                   ))}
                 </ul>
               )}
-            </Cartao>
+            </CartaoRecolhivel>
 
-            <Cartao className="p-0">
-              <div className="flex items-center justify-between border-b border-line px-6 py-3">
-                <h2 className="text-sm font-semibold">Últimas movimentações</h2>
-                <Link to="/financeiro/lancamentos" className="text-xs font-medium text-brand-600 hover:underline">Ver lançamentos</Link>
-              </div>
+            <CartaoRecolhivel
+              id="ultimas-movimentacoes"
+              titulo={<h2 className="text-sm font-semibold">Últimas movimentações</h2>}
+              acao={<Link to="/financeiro/lancamentos" className="shrink-0 text-xs font-medium text-brand-600 hover:underline">Ver lançamentos</Link>}
+            >
               {ultimosFiltrados.length === 0 ? (
                 <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhum lançamento efetivado ainda.</p>
               ) : (
@@ -148,7 +149,7 @@ export function DashboardPage() {
                   ))}
                 </ul>
               )}
-            </Cartao>
+            </CartaoRecolhivel>
           </div>
         </div>
       )}

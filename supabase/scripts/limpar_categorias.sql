@@ -19,6 +19,8 @@ do $$
 declare r record; v_apagadas int := 0; v_ficaram int := 0;
 begin
   alter table public.categorias disable trigger user;
+  alter table public.negocios   disable trigger user;
+  alter table public.carteira   disable trigger user;
 
   -- filhas primeiro, depois as raízes
   for r in
@@ -37,6 +39,8 @@ begin
   end loop;
 
   alter table public.categorias enable trigger user;
+  alter table public.negocios   enable trigger user;
+  alter table public.carteira   enable trigger user;
   raise notice 'Concluído: % categorias apagadas · % ficaram (em uso por lançamentos).', v_apagadas, v_ficaram;
 end $$;
 

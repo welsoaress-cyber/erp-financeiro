@@ -14,7 +14,7 @@ import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
-import { useAbaixoDe, useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLacrePorta, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
+import { useAbaixoDe, useClientesMapa, useCtos, useOltStatus, useDefeitoPorta, useHistoricoCto, useLacrePorta, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
 import { MapaCtos } from '../components/MapaCtos'
 import { useOrdens } from '../../os/api'
 import { buscarEndereco, ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
@@ -325,6 +325,11 @@ export function FtthPage() {
   const historicoGeral = useHistoricoCto(null)
   const clientesPortas = useClientesMapa()
   const ordens = useOrdens()
+  const olt = useOltStatus()
+  const popsOffline = useMemo(() => {
+    const porId = new Map((ctos.data ?? []).map((c) => [c.id, c.codigo]))
+    return (olt.data ?? []).filter((s) => !s.online).map((s) => porId.get(s.pop_id) ?? 'POP')
+  }, [olt.data, ctos.data])
   const ctosComChamado = useMemo(() => new Set((ordens.data ?? []).filter((o) => o.cto_id && (o.status === 'aberto' || o.status === 'em_atendimento' || o.status === 'pausado')).map((o) => o.cto_id as string)), [ordens.data])
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const clientesMapa: ClienteNoMapa[] = useMemo(() => {
@@ -362,6 +367,9 @@ export function FtthPage() {
 
       {ctos.isPending && <Carregando />}
 
+      {popsOffline.length > 0 && (
+        <div className="mb-4"><Alerta tipo="erro" titulo={`OLT sem resposta: ${popsOffline.join(', ')}`}>O agente da central reportou queda. Verifique energia e uplink da OLT.</Alerta></div>
+      )}
       {aba === 'mapa' && ctos.isSuccess && (
         <Cartao className="p-4">
           <MapaCtos ctos={ctos.data} clientes={clientesMapa} comBusca aoClicarCto={(c) => setDetalhe(c)} ctosComChamado={ctosComChamado} />

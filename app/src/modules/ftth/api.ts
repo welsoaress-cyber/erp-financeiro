@@ -193,3 +193,18 @@ export function useAbaixoDe(pontoId: string | null) {
     },
   })
 }
+
+export interface OltStatus { pop_id: string; online: boolean; latencia_ms: number | null; ultima_verificacao: string; mudou_em: string }
+
+export function useOltStatus() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: ['olt-status', organizacao.id],
+    refetchInterval: 120_000,
+    queryFn: async (): Promise<OltStatus[]> => {
+      const { data, error } = await supabase.from('olt_status').select('pop_id, online, latencia_ms, ultima_verificacao, mudou_em').eq('organizacao_id', organizacao.id)
+      if (error) throw error
+      return (data ?? []) as OltStatus[]
+    },
+  })
+}

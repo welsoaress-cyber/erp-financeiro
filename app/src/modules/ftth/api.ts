@@ -178,3 +178,18 @@ export function useDefeitoPorta() {
     onSuccess: invalidar,
   })
 }
+
+export interface PontoAbaixo { id: string; codigo: string; tipo: string; nivel: number; clientes: number }
+
+/** Tudo que é alimentado por um POP/CEO (impacto de rompimento). */
+export function useAbaixoDe(pontoId: string | null) {
+  return useQuery({
+    queryKey: ['ftth-abaixo', pontoId ?? 'x'],
+    enabled: pontoId !== null,
+    queryFn: async (): Promise<PontoAbaixo[]> => {
+      const { data, error } = await supabase.rpc('ftth_abaixo_de', { p_ponto_id: pontoId! })
+      if (error) throw error
+      return (data ?? []).map((p: PontoAbaixo) => ({ ...p, clientes: Number(p.clientes) }))
+    },
+  })
+}

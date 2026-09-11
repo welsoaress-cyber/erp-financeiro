@@ -3,7 +3,7 @@ export const ROTULO_STATUS_CTO: Record<StatusCto, string> = { ativa: 'Ativa', ma
 
 export type StatusPorta = 'livre' | 'ocupada' | 'reservada'
 
-export type TipoPontoRede = 'cto' | 'pop'
+export type TipoPontoRede = 'cto' | 'pop' | 'ceo'
 
 export interface Cto {
   id: string
@@ -14,6 +14,10 @@ export interface Cto {
   rota_pop: [number, number][] | null
   codigo: string
   lacre: string | null
+  olt_marca: string | null
+  olt_modelo: string | null
+  olt_ip: string | null
+  olt_portas_pon: number | null
   endereco: string | null
   referencia: string | null
   latitude: number
@@ -92,6 +96,10 @@ export interface DadosCto {
   splitter: string | null
   status: StatusCto
   observacao: string | null
+  olt_marca?: string | null
+  olt_modelo?: string | null
+  olt_ip?: string | null
+  olt_portas_pon?: number | null
 }
 
 /** Ocupação em % (ocupadas + reservadas sobre o total) e o tom do alerta ao vivo. */

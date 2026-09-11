@@ -14,7 +14,7 @@ import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
-import { useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLacrePorta, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
+import { useAbaixoDe, useClientesMapa, useCtos, useDefeitoPorta, useHistoricoCto, useLacrePorta, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
 import { MapaCtos } from '../components/MapaCtos'
 import { useOrdens } from '../../os/api'
 import { buscarEndereco, ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
@@ -28,9 +28,14 @@ function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, ao
   const tipo = cto?.tipo ?? tipoFixo ?? 'cto'
   const [popId, setPopId] = useState(cto?.pop_id ?? '')
   const pops = ctos.filter((c) => c.tipo === 'pop')
+  const pais = ctos.filter((c) => (c.tipo === 'pop' || c.tipo === 'ceo') && c.id !== cto?.id)
+  const [oltMarca, setOltMarca] = useState(cto?.olt_marca ?? ''); const [oltModelo, setOltModelo] = useState(cto?.olt_modelo ?? '')
+  const [oltIp, setOltIp] = useState(cto?.olt_ip ?? ''); const [oltPon, setOltPon] = useState(cto?.olt_portas_pon != null ? String(cto.olt_portas_pon) : '')
   const proximo = tipo === 'pop'
     ? `POP-${String(pops.length + 1).padStart(2, '0')}`
-    : `CTO-${String(ctos.filter((c) => c.tipo === 'cto').length + 1).padStart(3, '0')}`
+    : tipo === 'ceo'
+      ? `CEO-${String(ctos.filter((c) => c.tipo === 'ceo').length + 1).padStart(2, '0')}`
+      : `CTO-${String(ctos.filter((c) => c.tipo === 'cto').length + 1).padStart(3, '0')}`
   const [codigo, setCodigo] = useState(cto?.codigo ?? proximo)
   const [lacreCto, setLacreCto] = useState(cto?.lacre ?? '')
   const [endereco, setEndereco] = useState(cto?.endereco ?? '')
@@ -48,7 +53,7 @@ function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, ao
     if (!ponto) { setErroForm('Clique no mapa para marcar a localização da CTO.'); return }
     if (!Number.isInteger(n) || n < 1 || n > 64) { setErroForm('Quantidade de portas entre 1 e 64.'); return }
     setErroForm(null)
-    aoSalvar({ id: cto?.id, negocio_id: cto?.negocio_id ?? negocioServnet, codigo: codigo.trim(), lacre: lacreCto.trim().toUpperCase() || null, endereco: endereco.trim() || null, referencia: referencia.trim() || null, latitude: ponto[0], longitude: ponto[1], quantidade_portas: tipo === 'pop' ? 1 : n, splitter: tipo === 'pop' ? null : splitter || null, status, observacao: observacao.trim() || null, tipo, pop_id: tipo === 'cto' ? popId || null : null })
+    aoSalvar({ id: cto?.id, negocio_id: cto?.negocio_id ?? negocioServnet, codigo: codigo.trim(), lacre: lacreCto.trim().toUpperCase() || null, endereco: endereco.trim() || null, referencia: referencia.trim() || null, latitude: ponto[0], longitude: ponto[1], quantidade_portas: tipo === 'cto' ? n : 1, splitter: tipo === 'pop' ? null : splitter || null, status, observacao: observacao.trim() || null, tipo, pop_id: tipo === 'pop' ? null : popId || null, olt_marca: tipo === 'pop' ? oltMarca.trim() || null : null, olt_modelo: tipo === 'pop' ? oltModelo.trim() || null : null, olt_ip: tipo === 'pop' ? oltIp.trim() || null : null, olt_portas_pon: tipo === 'pop' && oltPon.trim() ? Number(oltPon) : null })
   }
 
   return (
@@ -59,10 +64,21 @@ function FormularioCto({ cto, tipoFixo, negocioServnet, ctos, salvando, erro, ao
         <Selecao rotulo="Status" opcoes={Object.entries(ROTULO_STATUS_CTO).map(([valor, rotulo]) => ({ valor, rotulo }))} value={status} onChange={(e) => setStatus(e.target.value as StatusCto)} />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        {tipo === 'cto' && (
-          <Selecao rotulo="Fibra vem do POP" opcoes={[{ valor: '', rotulo: pops.length === 0 ? 'Cadastre o POP primeiro' : 'Sem fio no mapa' }, ...pops.map((p) => ({ valor: p.id, rotulo: p.codigo }))]} value={popId} onChange={(e) => setPopId(e.target.value)} />
+        {tipo !== 'pop' && (
+          <Selecao rotulo="Alimentado por (POP ou CEO)" opcoes={[{ valor: '', rotulo: pais.length === 0 ? 'Cadastre o POP primeiro' : 'Sem fio no mapa' }, ...pais.map((p) => ({ valor: p.id, rotulo: `${p.codigo}${p.tipo === 'ceo' ? ' (CEO)' : ''}` }))]} value={popId} onChange={(e) => setPopId(e.target.value)} />
+        )}
+        {tipo === 'ceo' && (
+          <Selecao rotulo="Splitter primário (opcional)" opcoes={[{ valor: '', rotulo: 'Sem splitter' }, ...['1x2', '1x4', '1x8', '1x16'].map((x) => ({ valor: x, rotulo: x }))]} value={splitter ?? ''} onChange={(e) => setSplitter(e.target.value)} />
         )}
       </div>
+      {tipo === 'pop' && (
+        <div className="grid grid-cols-4 gap-4">
+          <Campo rotulo="OLT — marca" value={oltMarca} onChange={(e) => setOltMarca(e.target.value)} maxLength={40} placeholder="Huawei" />
+          <Campo rotulo="Modelo" value={oltModelo} onChange={(e) => setOltModelo(e.target.value)} maxLength={60} />
+          <Campo rotulo="IP" value={oltIp} onChange={(e) => setOltIp(e.target.value)} maxLength={15} placeholder="10.0.0.2" />
+          <Campo rotulo="Portas PON" type="number" min={1} max={128} value={oltPon} onChange={(e) => setOltPon(e.target.value)} />
+        </div>
+      )}
       {tipo === 'cto' && (
         <div className="grid grid-cols-2 gap-4">
           <Campo rotulo="Quantidade de portas" type="number" min={1} max={64} value={portas} onChange={(e) => setPortas(e.target.value)} />
@@ -127,6 +143,7 @@ function DiagramaSplitter({ cto, pop, portas, nomePessoa }: { cto: CtoOcupacao; 
 }
 
 function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void }) {
+  const abaixo = useAbaixoDe(cto.tipo !== 'cto' ? cto.id : null)
   const portas = usePortasCto(cto.id)
   const historico = useHistoricoCto(cto.id)
   const pessoas = usePessoas()
@@ -164,12 +181,20 @@ function DetalheCto({ cto, aoEditar }: { cto: CtoOcupacao; aoEditar: () => void 
         {cto.com_defeito > 0 && <span className="text-red-700">{cto.com_defeito} porta(s) com defeito</span>}
         {cto.drops_disponiveis > 0 && <span className="text-green-700">{cto.drops_disponiveis} drop(s) disponível(is)</span>}
         <span className="text-ink-muted">{cto.lacre && <span className="mr-2 font-mono">lacre {cto.lacre}</span>}{cto.endereco ?? ''}{cto.referencia ? ` · ${cto.referencia}` : ''}</span>
-        <Botao variante="secundario" onClick={aoEditar}>{cto.tipo === 'pop' ? 'Editar POP' : 'Editar CTO'}</Botao>
+        <Botao variante="secundario" onClick={aoEditar}>{cto.tipo === 'pop' ? 'Editar POP' : cto.tipo === 'ceo' ? 'Editar CEO' : 'Editar CTO'}</Botao>
       </div>
+      {cto.tipo !== 'cto' && (abaixo.data ?? []).length > 0 && (
+        <Alerta tipo="info" titulo={`Alimenta ${(abaixo.data ?? []).length} ponto(s) · ${(abaixo.data ?? []).reduce((s2, x) => s2 + x.clientes, 0)} cliente(s) conectado(s)`}>
+          Um rompimento aqui derruba: {(abaixo.data ?? []).map((x) => x.codigo).join(' · ')}
+        </Alerta>
+      )}
+      {cto.tipo === 'pop' && (cto.olt_marca || cto.olt_ip) && (
+        <p className="text-sm text-ink-muted">OLT: {[cto.olt_marca, cto.olt_modelo].filter(Boolean).join(' ')}{cto.olt_ip ? ` · IP ${cto.olt_ip}` : ''}{cto.olt_portas_pon ? ` · ${cto.olt_portas_pon} portas PON` : ''}</p>
+      )}
       {tom !== 'ok' && <Alerta tipo={tom === 'lotada' ? 'erro' : 'info'} titulo={tom === 'lotada' ? 'CTO lotada' : 'CTO quase lotada (≥90%)'}>Planeje uma nova CTO ou libere portas nesta região.</Alerta>}
       {erro != null && <Alerta tipo="erro">{mensagemDeErro(erro)}</Alerta>}
 
-      {cto.tipo === 'cto' && pop && (
+      {cto.tipo !== 'pop' && pop && (
         <div className="space-y-2">
           <Botao variante="secundario" onClick={() => { setDesenhandoPop((v) => !v); setPontosPop([]) }}>{desenhandoPop ? 'Cancelar desenho do fio do POP' : cto.rota_pop ? `Redesenhar fio ${pop.codigo} → ${cto.codigo}` : `Desenhar fio ${pop.codigo} → ${cto.codigo}`}</Botao>
           {desenhandoPop && (
@@ -296,7 +321,7 @@ export function FtthPage() {
   const salvar = useSalvarCto()
   const [aba, setAba] = useState<Aba>('mapa')
   const [detalhe, setDetalhe] = useState<CtoOcupacao | null>(null)
-  const [editando, setEditando] = useState<CtoOcupacao | 'nova' | 'novo-pop' | null>(null)
+  const [editando, setEditando] = useState<CtoOcupacao | 'nova' | 'novo-pop' | 'nova-ceo' | null>(null)
   const historicoGeral = useHistoricoCto(null)
   const clientesPortas = useClientesMapa()
   const ordens = useOrdens()
@@ -319,7 +344,7 @@ export function FtthPage() {
   return (
     <>
       <CabecalhoPagina titulo="Rede FTTH" descricao="CTOs, portas ópticas e vínculo de clientes"
-        acoes={<span className="flex gap-2"><Botao onClick={() => setEditando('novo-pop')}>Novo POP</Botao><Botao onClick={() => setEditando('nova')}>Nova CTO</Botao></span>} />
+        acoes={<span className="flex gap-2"><Botao variante="secundario" onClick={() => setEditando('nova-ceo')}>Nova CEO</Botao><Botao onClick={() => setEditando('novo-pop')}>Novo POP</Botao><Botao onClick={() => setEditando('nova')}>Nova CTO</Botao></span>} />
 
       {criticas.length > 0 && (
         <div className="mb-4"><Alerta tipo="erro" titulo={`${criticas.length} CTO(s) lotada(s) ou ≥90%`}>
@@ -340,7 +365,7 @@ export function FtthPage() {
       {aba === 'mapa' && ctos.isSuccess && (
         <Cartao className="p-4">
           <MapaCtos ctos={ctos.data} clientes={clientesMapa} comBusca aoClicarCto={(c) => setDetalhe(c)} ctosComChamado={ctosComChamado} />
-          <p className="mt-2 text-xs text-ink-muted">Azul grande: POP (fio tracejado até as CTOs) · Anel vermelho tracejado: chamado aberto na CTO · Verde: disponível · Amarelo: ≥90% · Vermelho: lotada · Cinza: inativa · Pontos verdes-água: clientes marcados (fio até a CTO). Clique no pino para abrir.</p>
+          <p className="mt-2 text-xs text-ink-muted">Azul grande: POP · Âmbar: CEO (emenda) · Anel vermelho tracejado: chamado aberto · Fio tracejado: caminho da fibra · Verde: disponível · Amarelo: ≥90% · Vermelho: lotada · Cinza: inativa · Pontos verdes-água: clientes marcados (fio até a CTO). Clique no pino para abrir.</p>
         </Cartao>
       )}
 
@@ -385,12 +410,12 @@ export function FtthPage() {
         {detalheAtual && <DetalheCto cto={detalheAtual} aoEditar={() => { setEditando(detalheAtual); setDetalhe(null) }} />}
       </Modal>
 
-      <Modal aberto={editando !== null} aoFechar={() => { setEditando(null); salvar.reset() }} largura="lg" titulo={editando === 'nova' ? 'Nova CTO' : editando === 'novo-pop' ? 'Novo POP (central do provedor)' : (editando as CtoOcupacao)?.tipo === 'pop' ? 'Editar POP' : 'Editar CTO'}>
+      <Modal aberto={editando !== null} aoFechar={() => { setEditando(null); salvar.reset() }} largura="lg" titulo={editando === 'nova' ? 'Nova CTO' : editando === 'novo-pop' ? 'Novo POP (central do provedor)' : editando === 'nova-ceo' ? 'Nova CEO (caixa de emenda)' : (editando as CtoOcupacao)?.tipo === 'pop' ? 'Editar POP' : (editando as CtoOcupacao)?.tipo === 'ceo' ? 'Editar CEO' : 'Editar CTO'}>
         {editando !== null && servnet && (
           <FormularioCto
             key={typeof editando === 'string' ? editando : editando.id}
             cto={typeof editando === 'string' ? undefined : editando}
-            tipoFixo={editando === 'novo-pop' ? 'pop' : editando === 'nova' ? 'cto' : undefined}
+            tipoFixo={editando === 'novo-pop' ? 'pop' : editando === 'nova-ceo' ? 'ceo' : editando === 'nova' ? 'cto' : undefined}
             negocioServnet={servnet.id}
             ctos={ctos.data ?? []}
             salvando={salvar.isPending}

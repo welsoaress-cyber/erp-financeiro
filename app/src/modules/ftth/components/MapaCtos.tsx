@@ -51,7 +51,7 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
     g.clearLayers()
     const porId = new Map(ctos.map((c) => [c.id, c]))
     for (const c of ctos) {
-      if (c.tipo === 'cto' && c.pop_id) {
+      if (c.tipo !== 'pop' && c.pop_id) {
         const pop = porId.get(c.pop_id)
         if (pop) L.polyline([[pop.latitude, pop.longitude], ...(c.rota_pop ?? []), [c.latitude, c.longitude]], { color: '#2563eb', weight: 2, opacity: 0.6, dashArray: '6 4' }).addTo(g)
       }
@@ -65,7 +65,16 @@ export function MapaCtos({ ctos, clientes = [], altura = '28rem', aoClicarMapa, 
     for (const c of ctos) {
       if (c.tipo === 'pop') {
         const pin = L.circleMarker([c.latitude, c.longitude], { radius: 12, color: '#1d4ed8', fillColor: '#2563eb', fillOpacity: 0.9, weight: 3 })
-        pin.bindTooltip(`${c.codigo} · POP (central)`)
+        pin.bindTooltip(`${c.codigo} · POP (central)${c.olt_marca ? ` · OLT ${c.olt_marca}` : ''}`)
+        pin.on('click', () => cbCto.current?.(c))
+        pin.addTo(g)
+        continue
+      }
+      if (c.tipo === 'ceo') {
+        const emChamadoCeo = ctosComChamado?.has(c.id) ?? false
+        if (emChamadoCeo) L.circleMarker([c.latitude, c.longitude], { radius: 14, color: '#dc2626', fillOpacity: 0, weight: 3, dashArray: '4 3' }).addTo(g)
+        const pin = L.circleMarker([c.latitude, c.longitude], { radius: 8, color: '#b45309', fillColor: '#f59e0b', fillOpacity: 0.9, weight: 2 })
+        pin.bindTooltip(`${c.codigo} · CEO (emenda)${c.splitter ? ` · splitter ${c.splitter}` : ''}${emChamadoCeo ? ' · CHAMADO ABERTO' : ''}`)
         pin.on('click', () => cbCto.current?.(c))
         pin.addTo(g)
         continue

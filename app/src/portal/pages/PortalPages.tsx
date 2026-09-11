@@ -11,7 +11,7 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useContratosCliente, useFaturas, useIndicacoesCliente, useIndicar, usePagamentos, usePagarComPix, usePromocoesCliente, useProximasFaturas } from '../api'
+import { useAceitarContrato, useContratosCliente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
 import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
@@ -138,6 +138,42 @@ export function PortalPagamentosPage() {
   )
 }
 
+function AceiteContrato() {
+  const aceites = useMeusAceites()
+  const aceitar = useAceitarContrato()
+  const [lendo, setLendo] = useState<string | null>(null)
+  const termo = useTermoContrato(lendo)
+  const pendentes = (aceites.data ?? []).filter((a) => !a.aceito)
+  const feitos = (aceites.data ?? []).filter((a) => a.aceito)
+  if ((aceites.data ?? []).length === 0) return null
+  return (
+    <Cartao>
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Termo de adesão</h2>
+      {aceitar.error != null && <Alerta tipo="erro">{mensagemDeErro(aceitar.error)}</Alerta>}
+      {pendentes.map((a) => (
+        <div key={a.contrato_id} className="mb-2 rounded-md border border-amber-400/40 bg-amber-500/10 p-3 text-sm">
+          <p className="font-medium">Contrato {codigoContrato(a.codigo)} · {a.plano} — aguardando o seu aceite digital.</p>
+          {lendo === a.contrato_id ? (
+            <>
+              <pre className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded-md bg-surface p-3 font-sans text-xs">{termo.data ?? 'Carregando…'}</pre>
+              <span className="mt-2 flex gap-2">
+                <Botao carregando={aceitar.isPending} onClick={() => aceitar.mutate({ contratoId: a.contrato_id }, { onSuccess: () => setLendo(null) })}>Li e aceito</Botao>
+                <Botao variante="secundario" onClick={() => setLendo(null)}>Fechar</Botao>
+              </span>
+              <p className="mt-1 text-xs text-ink-muted">O aceite registra data, hora, IP e o texto exato — vale como concordância com o termo.</p>
+            </>
+          ) : (
+            <Botao variante="secundario" onClick={() => setLendo(a.contrato_id)}>Ler o termo e aceitar</Botao>
+          )}
+        </div>
+      ))}
+      {feitos.map((a) => (
+        <p key={a.contrato_id} className="text-xs text-ink-muted">Contrato {codigoContrato(a.codigo)} aceito em {a.data_aceite ? formatarData(a.data_aceite.slice(0, 10)) : '—'}. ✔</p>
+      ))}
+    </Cartao>
+  )
+}
+
 export function PortalPlanoPage() {
   const contratos = useContratosCliente()
   const r = usePortal()
@@ -145,6 +181,7 @@ export function PortalPlanoPage() {
   return (
     <div className="space-y-4">
       <Titulo>Meu plano</Titulo>
+      <AceiteContrato />
       {contratos.isPending ? <Carregando /> : (contratos.data ?? []).length === 0 ? <Alerta tipo="info">Nenhum plano contratado.</Alerta> : (contratos.data ?? []).map((c) => (
         <Cartao key={c.id}>
           <div className="flex flex-wrap items-start justify-between gap-2">

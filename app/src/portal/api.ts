@@ -200,3 +200,38 @@ export function usePagarComPix() {
     },
   })
 }
+
+// ---------------------------------------------------------------------------
+// Aceite digital do contrato (etapa 36)
+// ---------------------------------------------------------------------------
+export interface MeuAceite { contrato_id: string; codigo: number; negocio: string; plano: string; aceito: boolean; data_aceite: string | null }
+
+export const useMeusAceites = () => useLista<MeuAceite>('aceites', 'portal_meus_aceites', [])
+
+export function useTermoContrato(contratoId: string | null) {
+  const { usuario } = useAuth()
+  return useQuery({
+    queryKey: [...chave(usuario?.id), 'termo', contratoId ?? 'x'],
+    enabled: contratoId !== null,
+    queryFn: async (): Promise<string> => {
+      const { data, error } = await supabase.rpc('contrato_texto_termo', { p_contrato_id: contratoId! })
+      if (error) throw error
+      return data as string
+    },
+  })
+}
+
+export function useAceitarContrato() {
+  const invalidar = useInvalidarPortal()
+  return useMutation({
+    mutationFn: async (p: { contratoId: string }) => {
+      const { data, error } = await supabase.functions.invoke('portal-aceite', { body: { contrato_id: p.contratoId } })
+      if (error) {
+        const detalhe = await (error as { context?: Response }).context?.json?.().catch(() => null)
+        throw new Error(detalhe?.erro ?? 'Não foi possível registrar o aceite agora.')
+      }
+      if (!data?.ok) throw new Error(data?.erro ?? 'Não foi possível registrar o aceite.')
+    },
+    onSuccess: invalidar,
+  })
+}

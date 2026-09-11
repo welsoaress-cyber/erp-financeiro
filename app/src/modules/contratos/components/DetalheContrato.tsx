@@ -10,6 +10,8 @@ import { useAtualizarContrato } from '../api'
 import { usePaybackContratos } from '../../estoque/api'
 import { useOsCustoContratos } from '../../os/api'
 import { useComodatos, useEstoqueItens } from '../../estoque/api'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '../../../core/supabase/client'
 import { ROTULO_COMODATO } from '../../estoque/tipos'
 import { Selecao } from '../../../core/ui/Selecao'
 import { codigoContrato, PERIODICIDADES, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type Periodicidade, type ResultadoContrato } from '../tipos'
@@ -34,6 +36,14 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   const custosOs = useOsCustoContratos()
   const custoManutencao = (custosOs.data ?? []).find((c) => c.contrato_id === contrato.id)
   const comodatos = useComodatos()
+  const aceite = useQuery({
+    queryKey: ['aceite', contrato.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('aceites_contrato').select('data_aceite, ip').eq('contrato_id', contrato.id).maybeSingle()
+      if (error) throw error
+      return data as { data_aceite: string; ip: string | null } | null
+    },
+  })
   const itensEstoque = useEstoqueItens()
   const equipamentos = (comodatos.data ?? []).filter((c) => c.contrato_id === contrato.id)
   const nomeEquip = (id: string) => { const i = (itensEstoque.data ?? []).find((x) => x.id === id); return i ? i.nome : 'Equipamento' }
@@ -132,7 +142,7 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
         </div>
       )}
       <FaturamentoContrato contrato={contrato} contas={contas} />
-      <p className="text-xs text-ink-muted">Contrato {codigoContrato(contrato)} · Pessoa, negócio e plano não mudam depois de aberto: encerre e abra outro.</p>
+      <p className="text-xs text-ink-muted">{aceite.data ? `Aceite digital em ${formatarData(aceite.data.data_aceite.slice(0, 10))}${aceite.data.ip ? ` (IP ${aceite.data.ip})` : ''}. ` : 'Sem aceite digital do cliente ainda. '}Contrato {codigoContrato(contrato)} · Pessoa, negócio e plano não mudam depois de aberto: encerre e abra outro.</p>
     </div>
   )
 }

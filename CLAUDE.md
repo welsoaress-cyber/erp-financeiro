@@ -46,4 +46,5 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 34: `docs/36-olt-monitoramento.md` (agente local pinga a OLT → Edge olt-ping → aviso WhatsApp ao admin quando cai/volta; alerta na tela FTTH).
 - Etapa 35: `docs/37-backup.md` (backup semanal via GitHub Actions → artifact privado 90 dias; secret SUPABASE_DB_URL).
 - Etapa 36: `docs/38-aceite-contrato.md` (aceite digital do contrato no portal: termo por negócio, snapshot+hash, IP/user-agent via Edge portal-aceite).
+- Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

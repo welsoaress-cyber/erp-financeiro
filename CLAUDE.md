@@ -48,5 +48,6 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 35: `docs/37-backup.md` (backup semanal via GitHub Actions → artifact privado 90 dias; secret SUPABASE_DB_URL).
 - Etapa 36: `docs/38-aceite-contrato.md` (aceite digital do contrato no portal: termo por negócio, snapshot+hash, IP/user-agent via Edge portal-aceite).
 - Etapa 37: `docs/39-excluir-pessoa-busca.md` (excluir pessoa sem histórico via função definer; busca em Contratos por nome/nº/CPF/login/telefone; menu reordenável e dashboard recolhível).
+- Etapa 38: `docs/40-compra-print.md` (compra de estoque por print: OCR Tesseract.js no navegador pré-preenche a Nova compra).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

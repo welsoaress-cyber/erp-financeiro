@@ -9,6 +9,7 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { Carregando } from '../../../core/ui/Carregando'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
+import { ImportarPrint } from '../components/ImportarPrint'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
@@ -102,6 +103,7 @@ function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: 
   const [pagtos, setPagtos] = useState<LinhaPagto[]>([{ contaId: '', valor: '', pago: true }])
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+  const [importando, setImportando] = useState(false)
   const catsDespesa = (categorias.data ?? []).filter((c) => c.tipo === 'despesa' && c.ativo)
   const totalItens = linhas.reduce((s, l) => s + (Number(l.valorTotal.replace(',', '.')) || 0), 0)
   const totalPagto = pagtos.reduce((s, p) => s + (Number(p.valor.replace(',', '.')) || 0), 0)
@@ -151,6 +153,20 @@ function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: 
   return (
     <div className="space-y-4">
       {erro && <Alerta tipo="erro">{erro}</Alerta>}
+      {importando ? (
+        <ImportarPrint
+          aoFechar={() => setImportando(false)}
+          aoExtrair={(d) => {
+            if (d.descricao) setDescricao(d.descricao)
+            const total = d.total != null ? String(d.total.toFixed(2)).replace('.', ',') : ''
+            setLinhas((xs) => [{ ...xs[0], quantidade: d.quantidade != null ? String(d.quantidade) : xs[0].quantidade || '1', valorTotal: total || xs[0].valorTotal }, ...xs.slice(1)])
+            if (total) setPagtos((xs) => [{ ...xs[0], valor: total }, ...xs.slice(1)])
+            setImportando(false)
+          }}
+        />
+      ) : (
+        <Botao variante="secundario" onClick={() => setImportando(true)}>📷 Importar de print (Shopee, Mercado Livre…)</Botao>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <Campo rotulo="Data" type="date" value={data} onChange={(e) => setData(e.target.value)} />
         <Selecao rotulo="Categoria da despesa" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...catsDespesa.map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} />

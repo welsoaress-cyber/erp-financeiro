@@ -141,6 +141,7 @@ Estoque da Servnet com **custo médio ponderado** e movimentações imutáveis:
 
 - **Itens**: o item nasce zerado; o saldo entra por **Ajuste de inventário** (define a quantidade que você tem) ou por **Nova compra**.
 - **Nova compra**: vários itens + **pagamento misto** (parte no cartão → fatura; parte Pix/dinheiro → efetivado) — a despesa entra sozinha no Financeiro.
+- **Importar de print**: dentro da Nova compra, clique em "📷 Importar de print", cole (Ctrl+V) ou arraste o print do pedido (Shopee, Mercado Livre, e-mail). O sistema lê a imagem no próprio navegador e preenche descrição, quantidade e valor total — você só confere, escolhe o item e a conta, e registra. Funciona melhor com print de tela (não foto); a primeira leitura demora alguns segundos (baixa o leitor de texto).
 - **Movimentações**: histórico imutável (compra, instalação, devolução, ajuste, perda, transferência para a bolsa do técnico).
 - **Instalações/Relatórios**: consumo por mês/origem e custo de instalação por contrato (payback).
 

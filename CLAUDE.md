@@ -9,6 +9,7 @@ Leia `docs/01-arquitetura.md` antes de propor mudanças de estrutura. Cada etapa
 - **Só migrations versionadas alteram o banco.** Nenhuma outra ferramenta (DeepSeek, painel, scripts avulsos) cria objetos. Se uma migration falhar em produção, reportar o erro exato e parar; nunca contornar. Ver `docs/15-incidente-producao.md`.
 - **Uma etapa por vez.** Entregar migration + testes SQL + app + e2e + doc, commitar, enviar, mergear na `main` (para o deploy do Cloudflare sair sozinho) e então pedir para o proprietário testar — não deixar em branch/PR parado esperando ação dele. Não antecipar funcionalidades. MVP simples.
 - **Avisar antes** de implementar algo que prejudique a arquitetura (regra 9), com o motivo em uma ou duas frases, e então entregar sob premissas explícitas.
+- **Manual sempre atualizado.** Toda etapa nova que mudar telas ou fluxos inclui, na MESMA entrega, a atualização de `docs/manual/README.md` (texto e, quando a tela mudou, prints regerados com `cd app && npm run build && node scripts/prints-manual.mjs` — acrescentando os dados novos ao fixture do script).
 
 ## Stack e convenções
 - `app/`: React 19 + TypeScript + Vite + Tailwind v4 + TanStack Query v5 + supabase-js + react-router 8. Deploy: Cloudflare Workers (assets estáticos) via push em `main`.

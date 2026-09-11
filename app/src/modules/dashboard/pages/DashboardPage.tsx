@@ -20,6 +20,7 @@ import { useResultadoPorNegocio, useSaldoInicial, useSaudeNotificacoes, useUltim
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 import { AlertasEstoque } from '../components/AlertasEstoque'
 import { SaudeAvisos } from '../components/SaudeAvisos'
+import { RelatorioCobranca } from '../components/RelatorioCobranca'
 
 function Indicador({ rotulo, valor, tom = 'neutro', detalhe }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto'; detalhe?: string }) {
   const cor = tom === 'positivo' ? 'text-green-700' : tom === 'negativo' ? 'text-red-700' : tom === 'auto' ? (valor < 0 ? 'text-red-700' : 'text-green-700') : ''
@@ -98,6 +99,8 @@ export function DashboardPage() {
             <Indicador rotulo="Despesas do mês" valor={totais.despesas} tom="negativo" detalhe={`Previsto: ${formatarMoeda(prev.despesas)}`} />
             <Indicador rotulo="Resultado do mês" valor={totais.resultado} tom="auto" detalhe={`Projetado (com previstos): ${formatarMoeda(totais.resultado + prev.receitas - prev.despesas)}`} />
           </div>
+
+          <RelatorioCobranca bate={bate} />
 
           <SaudeAvisos negocios={(negocios.data ?? []).filter((n) => bate(n.id))} saude={saudeNotificacoes.data} />
 

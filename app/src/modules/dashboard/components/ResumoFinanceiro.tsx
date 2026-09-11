@@ -5,10 +5,10 @@ import type { Lancamento } from '../../lancamentos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import type { SaldoInicialNegocio } from '../api'
 
-interface Grupo { receitaPrevista: number; receitaRealizada: number; despesaPrevista: number; despesaRealizada: number; saldoInicial: number }
-const GRUPO_ZERO: Grupo = { receitaPrevista: 0, receitaRealizada: 0, despesaPrevista: 0, despesaRealizada: 0, saldoInicial: 0 }
+interface Grupo { receitaPrevista: number; receitaRealizada: number; despesaPrevista: number; despesaRealizada: number; invPrevisto: number; invRealizado: number; saldoInicial: number }
+const GRUPO_ZERO: Grupo = { receitaPrevista: 0, receitaRealizada: 0, despesaPrevista: 0, despesaRealizada: 0, invPrevisto: 0, invRealizado: 0, saldoInicial: 0 }
 function somar(a: Grupo, b: Grupo): Grupo {
-  return { receitaPrevista: a.receitaPrevista + b.receitaPrevista, receitaRealizada: a.receitaRealizada + b.receitaRealizada, despesaPrevista: a.despesaPrevista + b.despesaPrevista, despesaRealizada: a.despesaRealizada + b.despesaRealizada, saldoInicial: a.saldoInicial + b.saldoInicial }
+  return { receitaPrevista: a.receitaPrevista + b.receitaPrevista, receitaRealizada: a.receitaRealizada + b.receitaRealizada, despesaPrevista: a.despesaPrevista + b.despesaPrevista, despesaRealizada: a.despesaRealizada + b.despesaRealizada, invPrevisto: a.invPrevisto + b.invPrevisto, invRealizado: a.invRealizado + b.invRealizado, saldoInicial: a.saldoInicial + b.saldoInicial }
 }
 function Linha({ rotulo, previsto, realizado, tom }: { rotulo: string; previsto: number; realizado: number; tom: 'receita' | 'despesa' }) {
   const cor = tom === 'receita' ? 'text-green-700' : 'text-red-700'
@@ -24,12 +24,13 @@ function Linha({ rotulo, previsto, realizado, tom }: { rotulo: string; previsto:
 
 /** Resumo Financeiro do Período: saldo inicial, receitas e despesas (previsto × realizado) e
  * resultado, consolidado ou por negócio. Baseado nos mesmos lançamentos do mês do Financeiro. */
-export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filtro, bate }: {
+export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filtro, bate, naturezaDe }: {
   lancamentos: Lancamento[]
   saldoInicial: SaldoInicialNegocio[]
   negocioPorId: Map<string, string>
   filtro: string
   bate: (negocioId: string | null) => boolean
+  naturezaDe: Map<string, 'operacional' | 'investimento'>
 }) {
   const [expandido, setExpandido] = useState(false)
   const grupos = useMemo(() => {
@@ -44,11 +45,15 @@ export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filt
       const k = chave(l.negocio_id)
       const g = { ...GRUPO_ZERO, ...(m.get(k) ?? {}) }
       if (l.tipo === 'receita') { if (l.status === 'previsto') g.receitaPrevista += l.valor; else g.receitaRealizada += l.valor }
-      else if (l.status === 'previsto') g.despesaPrevista += l.valor; else g.despesaRealizada += l.valor
+      else {
+        const inv = l.categoria_id != null && naturezaDe.get(l.categoria_id) === 'investimento'
+        if (l.status === 'previsto') { g.despesaPrevista += l.valor; if (inv) g.invPrevisto += l.valor }
+        else { g.despesaRealizada += l.valor; if (inv) g.invRealizado += l.valor }
+      }
       m.set(k, g)
     }
     return m
-  }, [lancamentos, saldoInicial])
+  }, [lancamentos, saldoInicial, naturezaDe])
   const nomeDe = (k: string) => (k === 'pessoal' ? ROTULO_PESSOAL : negocioPorId.get(k) ?? '—')
   const linhas = [...grupos.keys()].filter((k) => bate(k === 'pessoal' ? null : k)).sort((a, b) => nomeDe(a).localeCompare(nomeDe(b), 'pt-BR'))
   const totalGeral = linhas.reduce((t, k) => somar(t, grupos.get(k) ?? GRUPO_ZERO), GRUPO_ZERO)
@@ -70,6 +75,22 @@ export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filt
             <tr className="border-b border-line bg-surface/60"><td className="px-4 py-2 font-medium">Saldo inicial do mês</td><td className="px-4 py-2 text-right text-ink-muted">—</td><td className="px-4 py-2 text-right text-ink-muted">—</td><td className={`px-4 py-2 text-right font-medium tabular-nums ${totalGeral.saldoInicial < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(totalGeral.saldoInicial)}</td></tr>
             <Linha rotulo="Receitas" previsto={totalGeral.receitaPrevista} realizado={totalGeral.receitaRealizada} tom="receita" />
             <Linha rotulo="Despesas" previsto={-totalGeral.despesaPrevista} realizado={-totalGeral.despesaRealizada} tom="despesa" />
+            {(totalGeral.invPrevisto > 0 || totalGeral.invRealizado > 0) && (
+              <>
+                <tr className="border-b border-line text-xs text-ink-muted">
+                  <td className="px-4 py-1 pl-8">das quais investimentos (ativos)</td>
+                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoeda(-totalGeral.invPrevisto)}</td>
+                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoeda(-totalGeral.invRealizado)}</td>
+                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoeda(-(totalGeral.invPrevisto + totalGeral.invRealizado))}</td>
+                </tr>
+                <tr className="border-b border-line">
+                  <td className="px-4 py-2 font-medium">Resultado operacional (sem investimentos)</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{formatarMoeda(totalGeral.receitaPrevista - (totalGeral.despesaPrevista - totalGeral.invPrevisto))}</td>
+                  <td className={`px-4 py-2 text-right font-medium tabular-nums ${totalGeral.receitaRealizada - (totalGeral.despesaRealizada - totalGeral.invRealizado) < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(totalGeral.receitaRealizada - (totalGeral.despesaRealizada - totalGeral.invRealizado))}</td>
+                  <td className="px-4 py-2 text-right font-medium tabular-nums">{formatarMoeda((totalGeral.receitaPrevista + totalGeral.receitaRealizada) - (totalGeral.despesaPrevista + totalGeral.despesaRealizada) + totalGeral.invPrevisto + totalGeral.invRealizado)}</td>
+                </tr>
+              </>
+            )}
             <tr className="border-b border-line bg-surface/60"><td className="px-4 py-2 font-semibold">Resultado do período</td>
               <td className="px-4 py-2 text-right font-medium tabular-nums">{formatarMoeda(totalGeral.receitaPrevista - totalGeral.despesaPrevista)}</td>
               <td className={`px-4 py-2 text-right font-semibold tabular-nums ${totalGeral.receitaRealizada - totalGeral.despesaRealizada < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(totalGeral.receitaRealizada - totalGeral.despesaRealizada)}</td>
@@ -101,7 +122,7 @@ export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filt
           </table>
         </div>
       )}
-      <p className="border-t border-line px-6 py-2 text-xs text-ink-muted">Previsto = lançamentos ainda previstos no mês; Realizado = já efetivados. Cancelados não entram.</p>
+      <p className="border-t border-line px-6 py-2 text-xs text-ink-muted">Previsto = lançamentos ainda previstos no mês; Realizado = já efetivados. Cancelados não entram. Investimentos = despesas em categorias marcadas como "Investimento / ativo".</p>
     </CartaoRecolhivel>
   )
 }

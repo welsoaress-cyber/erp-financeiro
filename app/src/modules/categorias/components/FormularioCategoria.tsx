@@ -3,7 +3,7 @@ import { Alerta } from '../../../core/ui/Alerta'
 import { Botao } from '../../../core/ui/Botao'
 import { Campo } from '../../../core/ui/Campo'
 import { Selecao } from '../../../core/ui/Selecao'
-import { TIPOS_CATEGORIA, type Categoria, type DadosCategoria, type TipoCategoria } from '../tipos'
+import { ROTULO_NATUREZA, TIPOS_CATEGORIA, type Categoria, type DadosCategoria, type NaturezaCategoria, type TipoCategoria } from '../tipos'
 
 interface Props {
   categoria?: Categoria
@@ -21,6 +21,8 @@ export function FormularioCategoria({ categoria, todas, tipoInicial, paiInicial,
   const [nome, setNome] = useState(categoria?.nome ?? '')
   const [tipo, setTipo] = useState<TipoCategoria>(categoria?.tipo ?? tipoInicial)
   const [paiId, setPaiId] = useState<string>(categoria?.categoria_pai_id ?? paiInicial ?? '')
+  const naturezaDoPai = (id: string): NaturezaCategoria => todas.find((c) => c.id === id)?.natureza ?? 'operacional'
+  const [natureza, setNatureza] = useState<NaturezaCategoria>(categoria?.natureza ?? (paiInicial ? naturezaDoPai(paiInicial) : 'operacional'))
   const [ativo, setAtivo] = useState(categoria?.ativo ?? true)
   const [erroNome, setErroNome] = useState<string | null>(null)
 
@@ -36,7 +38,7 @@ export function FormularioCategoria({ categoria, todas, tipoInicial, paiInicial,
     if (limpo.length === 0) return setErroNome('Informe o nome da categoria.')
     if (limpo.length > 60) return setErroNome('Máximo de 60 caracteres.')
     setErroNome(null)
-    aoSalvar({ nome: limpo, tipo, categoria_pai_id: paiId || null, ativo })
+    aoSalvar({ nome: limpo, tipo, categoria_pai_id: paiId || null, natureza: tipo === 'despesa' ? natureza : 'operacional', ativo })
   }
 
   return (
@@ -55,10 +57,22 @@ export function FormularioCategoria({ categoria, todas, tipoInicial, paiInicial,
         rotulo="Categoria pai (opcional)"
         opcoes={[{ valor: '', rotulo: 'Nenhuma (categoria principal)' }, ...opcoesPai.map((c) => ({ valor: c.id, rotulo: c.nome }))]}
         value={paiId}
-        onChange={(e) => setPaiId(e.target.value)}
+        onChange={(e) => { setPaiId(e.target.value); if (!editando && e.target.value) setNatureza(naturezaDoPai(e.target.value)) }}
         disabled={temFilhas}
         ajuda={temFilhas ? 'Esta categoria possui subcategorias e não pode virar subcategoria.' : 'Somente categorias principais do mesmo tipo podem ser pai.'}
       />
+      {tipo === 'despesa' && (
+        <div>
+          <p className="mb-1 text-sm font-medium">Natureza</p>
+          <div role="radiogroup" aria-label="Natureza" className="grid grid-cols-2 gap-1 rounded-md border border-line p-1">
+            {(Object.keys(ROTULO_NATUREZA) as NaturezaCategoria[]).map((n) => (
+              <button key={n} type="button" role="radio" aria-checked={natureza === n} onClick={() => setNatureza(n)}
+                className={`rounded px-2 py-1.5 text-sm ${natureza === n ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>{ROTULO_NATUREZA[n]}</button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-ink-muted">Investimento (móveis, equipamentos, obra) fica fora do resultado operacional do mês.</p>
+        </div>
+      )}
       {editando && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-brand-600" />

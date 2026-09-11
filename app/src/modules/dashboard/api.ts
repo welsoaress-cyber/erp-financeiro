@@ -78,3 +78,27 @@ export function useSaudeNotificacoes() {
     },
   })
 }
+
+/** Cobrança do período: receitas confirmadas, a receber e vencidas (inadimplentes). */
+export interface LancamentoCobranca { negocio_id: string | null; pessoa_id: string | null; valor: number; status: string; data_efetivacao: string | null; data_vencimento: string }
+
+export function useCobranca(inicio: string, fim: string) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: ['dashboard', organizacao.id, 'cobranca', inicio, fim],
+    queryFn: async (): Promise<{ efetivadas: LancamentoCobranca[]; previstas: LancamentoCobranca[] }> => {
+      const sel = 'negocio_id, pessoa_id, valor, status, data_efetivacao, data_vencimento'
+      const [ef, pr] = await Promise.all([
+        supabase.from('lancamentos').select(sel).eq('organizacao_id', organizacao.id)
+          .eq('tipo', 'receita').eq('status', 'efetivado')
+          .gte('data_efetivacao', inicio).lte('data_efetivacao', fim),
+        supabase.from('lancamentos').select(sel).eq('organizacao_id', organizacao.id)
+          .eq('tipo', 'receita').eq('status', 'previsto').lte('data_vencimento', fim),
+      ])
+      if (ef.error) throw ef.error
+      if (pr.error) throw pr.error
+      const num = (xs: typeof ef.data) => (xs ?? []).map((l) => ({ ...l, valor: Number(l.valor) })) as LancamentoCobranca[]
+      return { efetivadas: num(ef.data), previstas: num(pr.data) }
+    },
+  })
+}

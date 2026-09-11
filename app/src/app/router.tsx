@@ -9,6 +9,10 @@ import { PortalCadastroPage, PortalLoginEmailPage, PortalLoginPage, PortalNovaSe
 import { PortalFaturaPdfPage, PortalFaturasPage, PortalIndiquePage, PortalPagamentosPage, PortalPlanoPage, PortalPromocoesPage } from '../portal/pages/PortalPages'
 import { PortalChamadosPage, PortalDadosPage, PortalFidelidadePage, PortalInicioPage } from '../portal/pages/PortalServnetPages'
 import { IndicacaoPublicaPage } from '../portal/pages/IndicacaoPublicaPage'
+import { TecnicoShell } from '../tecnico/TecnicoShell'
+import { TecnicoLoginPage } from '../tecnico/pages/TecnicoLoginPage'
+import { TecnicoChamadosPage } from '../tecnico/pages/TecnicoChamadosPage'
+import { TecnicoBolsaPage } from '../tecnico/pages/TecnicoBolsaPage'
 
 export const router = createBrowserRouter([
   // Portal do cliente (login próprio, sem acesso ao ERP)
@@ -33,6 +37,16 @@ export const router = createBrowserRouter([
       { path: 'fidelidade', element: <PortalFidelidadePage /> },
       { path: 'chamados', element: <PortalChamadosPage /> },
       { path: 'dados', element: <PortalDadosPage /> },
+    ],
+  },
+  // Área do técnico (login próprio, sem acesso ao ERP)
+  { path: '/tecnico/entrar', element: <TecnicoLoginPage /> },
+  {
+    path: '/tecnico',
+    element: <TecnicoShell />,
+    children: [
+      { index: true, element: <TecnicoChamadosPage /> },
+      { path: 'bolsa', element: <TecnicoBolsaPage /> },
     ],
   },
   {

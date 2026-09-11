@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
 import type { BolsaResumo, OrdemServico, OsCustoContrato, OsHistorico, OsMaterial, Tecnico, TecnicoEstoque, TecnicoMov } from './tipos'
@@ -218,3 +219,38 @@ export const useEncerrarOs = () => useRpc<{ p_os_id: string; p_itens: { item_id:
 export const useCancelarOs = () => useRpc<{ p_os_id: string; p_motivo: string }>('cancelar_os')
 export const useAvaliarOs = () => useRpc<{ p_os_id: string; p_resolvido: boolean; p_nota?: number | null }>('avaliar_os')
 export const useAprovarComissao = () => useRpc<{ p_os_id: string; p_conta_id: string; p_vencimento: string; p_valor?: number | null }>('aprovar_comissao_os')
+
+export interface ReposicaoPendente { id: string; tecnico_id: string; item_id: string; quantidade: number; criado_em: string }
+
+export function useReposicoesPendentes() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'reposicoes'],
+    queryFn: async (): Promise<ReposicaoPendente[]> => {
+      const { data, error } = await supabase.from('reposicao_solicitacoes').select('id, tecnico_id, item_id, quantidade, criado_em').eq('organizacao_id', organizacao.id).eq('atendida', false).order('criado_em')
+      if (error) throw error
+      return (data ?? []).map((r) => ({ ...r, quantidade: Number(r.quantidade) })) as ReposicaoPendente[]
+    },
+  })
+}
+
+/** Cria o login do técnico (usuário/senha) sem derrubar a sessão do admin: usa um cliente auxiliar. */
+export function useCriarLoginTecnico() {
+  const invalidar = useInvalidarOs()
+  return useMutation({
+    mutationFn: async (d: { tecnico_id: string; login: string; senha: string; nome: string }) => {
+      const login = d.login.trim().toLowerCase()
+      if (!/^[a-z0-9._-]{3,30}$/.test(login)) throw new Error('Login inválido: use 3 a 30 letras minúsculas, números, ponto, hífen ou _.')
+      if (d.senha.length < 8) throw new Error('Senha do técnico precisa de pelo menos 8 caracteres.')
+      const aux = createClient(import.meta.env.VITE_SUPABASE_URL as string, import.meta.env.VITE_SUPABASE_ANON_KEY as string, { auth: { persistSession: false, autoRefreshToken: false } })
+      const { data, error } = await aux.auth.signUp({ email: `${login}@tecnico.local`, password: d.senha, options: { data: { tecnico: 'true', nome: d.nome } } })
+      if (error) throw error
+      const usuarioId = data.user?.id
+      if (!usuarioId) throw new Error('O Supabase não devolveu o usuário. Verifique se a confirmação de e-mail está DESLIGADA no projeto (Auth → Providers → Email).')
+      await aux.auth.signOut().catch(() => undefined)
+      const { error: eUp } = await supabase.from('tecnicos').update({ usuario_id: usuarioId, login }).eq('id', d.tecnico_id)
+      if (eUp) throw eUp
+    },
+    onSuccess: invalidar,
+  })
+}

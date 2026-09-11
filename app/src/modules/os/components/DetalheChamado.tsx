@@ -9,6 +9,7 @@ import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useContas } from '../../contas/api'
 import { useEstoqueItens } from '../../estoque/api'
 import { fmtQtd } from '../../estoque/tipos'
+import { useFotosOs } from '../../../tecnico/api'
 import {
   useAbrirOs, useAgendarOs, useAprovarComissao, useAtualizarOs, useAvaliarOs, useCancelarOs, useCienciaOs,
   useEncerrarOs, useIniciarOs, useOsHistorico, useOsMateriais, usePausarOs, useResponderRemarcacao, useRetomarOs,
@@ -27,6 +28,7 @@ interface Props {
 /** Detalhe e ações do chamado (visão do admin). */
 export function DetalheChamado({ os, nomes, aoFechar }: Props) {
   const materiais = useOsMateriais(os.id)
+  const fotos = useFotosOs(os.id)
   const historico = useOsHistorico(os.id)
   const tecnicos = useTecnicos()
   const contas = useContas()
@@ -93,6 +95,11 @@ export function DetalheChamado({ os, nomes, aoFechar }: Props) {
           {(materiais.data ?? []).length > 0 && <p className="font-medium">Material: {formatarMoeda((materiais.data ?? []).reduce((s, m) => s + m.valor_total, 0))}</p>}
           {os.avaliacao_resolvido != null && <p>Avaliação: {os.avaliacao_resolvido ? `resolvido, nota ${os.avaliacao_nota}` : 'não resolvido'}</p>}
           {os.comissao_lancamento_id && <p className="text-green-700">Comissão gerada no Contas a Pagar.</p>}
+          {(fotos.data ?? []).length > 0 && (
+            <div className="mt-2 flex gap-2">
+              {(fotos.data ?? []).map((f) => <a key={f.id} href={f.url} target="_blank" rel="noreferrer"><img src={f.url} alt="Foto do chamado" className="size-20 rounded-md border border-line object-cover" /></a>)}
+            </div>
+          )}
         </div>
       )}
 

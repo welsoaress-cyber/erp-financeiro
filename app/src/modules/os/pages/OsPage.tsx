@@ -15,7 +15,7 @@ import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useCtos } from '../../ftth/api'
 import { useEstoqueItens } from '../../estoque/api'
-import { useBolsaResumo, useOrdens, useSalvarTecnico, useTecnicos } from '../api'
+import { useBolsaResumo, useCriarLoginTecnico, useOrdens, useReposicoesPendentes, useSalvarTecnico, useTecnicos } from '../api'
 import { fmtMinutos, ROTULO_STATUS_OS, ROTULO_TIPO_OS, type OrdemServico, type Tecnico } from '../tipos'
 import { NovoChamado } from '../components/NovoChamado'
 import { DetalheChamado } from '../components/DetalheChamado'
@@ -37,6 +37,8 @@ export function OsPage() {
   const ctos = useCtos()
   const itens = useEstoqueItens()
   const salvarTecnico = useSalvarTecnico()
+  const criarLogin = useCriarLoginTecnico()
+  const reposicoes = useReposicoesPendentes()
 
   const [aba, setAba] = useState<Aba>('dashboard')
   const [negocioId, setNegocioId] = useState('')
@@ -48,6 +50,8 @@ export function OsPage() {
   const [tecnicoBolsa, setTecnicoBolsa] = useState<Tecnico | null>(null)
   const [tecnicoEdicao, setTecnicoEdicao] = useState<Tecnico | null>(null)
   const [nomeTec, setNomeTec] = useState(''); const [foneTec, setFoneTec] = useState('')
+  const [tecnicoLogin, setTecnicoLogin] = useState<Tecnico | null>(null)
+  const [loginTec, setLoginTec] = useState(''); const [senhaTec, setSenhaTec] = useState('')
 
   const servnet = (negocios.data ?? []).find((n) => n.nome.toLowerCase().includes('servnet')) ?? (negocios.data ?? [])[0]
   const negocioAtual = negocioId || servnet?.id || ''
@@ -58,6 +62,7 @@ export function OsPage() {
   const nomeItem = useMemo(() => new Map((itens.data ?? []).map((i) => [i.id, `${i.codigo} · ${i.nome}`])), [itens.data])
   const rotuloContrato = (id: string | null) => { const c = (contratos.data ?? []).find((x) => x.id === id); return c ? codigoContrato(c) : null }
 
+  const tecnicosNegocioIds = useMemo(() => new Set((tecnicos.data ?? []).filter((t) => t.negocio_id === negocioAtual).map((t) => t.id)), [tecnicos.data, negocioAtual])
   const abertas = lista.filter((o) => ABERTOS.includes(o.status))
   const encerradasMes = lista.filter((o) => o.status === 'encerrado' && o.data_fim && o.data_fim.slice(0, 7) === hojeISO().slice(0, 7))
   // alertas: urgente sem início > 4h, pausado > 24h, técnico com 5+ abertos, bolsa negativa/abaixo do mínimo
@@ -65,7 +70,9 @@ export function OsPage() {
   const pausados = abertas.filter((o) => o.status === 'pausado' && o.pausado_em && horasDesde(o.pausado_em) > 24)
   const sobrecarga = (tecnicos.data ?? []).filter((t) => t.negocio_id === negocioAtual && abertas.filter((o) => o.tecnico_id === t.id).length >= 5)
   const bolsasAlerta = (bolsas.data ?? []).filter((b) => b.negocio_id === negocioAtual && (b.itens_negativos > 0 || b.itens_abaixo_minimo > 0))
+  const reposicoesNegocio = (reposicoes.data ?? []).filter((r) => tecnicosNegocioIds.has(r.tecnico_id))
   const alertas = [
+    ...reposicoesNegocio.map((r) => `${nomeTecnico.get(r.tecnico_id) ?? 'Técnico'} pediu reposição: ${nomeItem.get(r.item_id) ?? 'item'} (${r.quantidade})`),
     ...urgentes.map((o) => `Urgente sem atendimento: ${o.numero} (${Math.floor(horasDesde(o.criado_em))}h)`),
     ...pausados.map((o) => `Pausado há mais de 1 dia: ${o.numero}`),
     ...sobrecarga.map((t) => `${t.nome} com ${abertas.filter((o) => o.tecnico_id === t.id).length} chamados abertos`),
@@ -198,6 +205,7 @@ export function OsPage() {
                     <span className="ml-2 text-xs text-ink-muted">{t.telefone ?? ''} · bolsa {formatarMoeda(b?.valor_em_campo ?? 0)}{b && b.itens_negativos > 0 ? ` · ${b.itens_negativos} negativo(s)` : ''}</span>
                   </span>
                   <span className="flex gap-3 text-xs">
+                    {t.usuario_id ? <span className="text-ink-muted">login: {t.login ?? '—'}</span> : <button type="button" className="text-brand-700 hover:underline" onClick={() => { setTecnicoLogin(t); setLoginTec(''); setSenhaTec('') }}>Criar login</button>}
                     <button type="button" className="text-brand-700 hover:underline" onClick={() => setTecnicoBolsa(t)}>Bolsa</button>
                     <button type="button" className="text-brand-700 hover:underline" onClick={() => { setTecnicoEdicao(t); setNomeTec(t.nome); setFoneTec(t.telefone ?? ''); setModal('tecnico') }}>Editar</button>
                   </span>
@@ -233,6 +241,21 @@ export function OsPage() {
           <DetalheChamado key={osAtual.id + osAtual.status + String(osAtual.remarcacao_data ?? '') + String(osAtual.avaliacao_resolvido ?? '') + String(osAtual.comissao_lancamento_id ?? '') + String(osAtual.data_agendada ?? '') + (osAtual.hora_agendada ?? '')} os={osAtual}
             nomes={{ pessoa: osAtual.pessoa_id ? nomePessoa.get(osAtual.pessoa_id) ?? null : null, tecnico: osAtual.tecnico_id ? nomeTecnico.get(osAtual.tecnico_id) ?? null : null, cto: osAtual.cto_id ? nomeCto.get(osAtual.cto_id) ?? null : null, contrato: rotuloContrato(osAtual.contrato_id), item: nomeItem }}
             aoFechar={() => setOsVista(null)} />
+        )}
+      </Modal>
+
+      <Modal aberto={tecnicoLogin !== null} aoFechar={() => { setTecnicoLogin(null); criarLogin.reset() }} largura="md" titulo={tecnicoLogin ? `Login de ${tecnicoLogin.nome}` : ''}>
+        {tecnicoLogin && (
+          <div className="space-y-4">
+            {criarLogin.error != null && <Alerta tipo="erro">{mensagemDeErro(criarLogin.error)}</Alerta>}
+            <Campo rotulo="Usuário (sem e-mail)" value={loginTec} onChange={(e) => setLoginTec(e.target.value)} maxLength={30} placeholder="ex.: joao" autoCapitalize="none" />
+            <Campo rotulo="Senha inicial (mín. 8)" type="text" value={senhaTec} onChange={(e) => setSenhaTec(e.target.value)} maxLength={60} />
+            <p className="text-xs text-ink-muted">O técnico entra em <b>{location.origin}/tecnico/entrar</b> com esse usuário e senha. Ele vê só os chamados dele e a bolsa — nada do financeiro.</p>
+            <div className="flex justify-end">
+              <Botao disabled={loginTec.trim().length < 3 || senhaTec.length < 8} carregando={criarLogin.isPending}
+                onClick={() => criarLogin.mutate({ tecnico_id: tecnicoLogin.id, login: loginTec, senha: senhaTec, nome: tecnicoLogin.nome }, { onSuccess: () => setTecnicoLogin(null) })}>Criar login</Botao>
+            </div>
+          </div>
         )}
       </Modal>
 

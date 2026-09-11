@@ -29,6 +29,7 @@ export interface Tecnico {
   negocio_id: string
   pessoa_id: string
   usuario_id: string | null
+  login: string | null
   nome: string
   telefone: string | null
   ativo: boolean

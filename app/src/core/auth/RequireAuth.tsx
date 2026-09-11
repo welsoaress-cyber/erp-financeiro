@@ -10,6 +10,8 @@ export function RequireAuth() {
   if (!sessao) return <Navigate to="/entrar" replace state={{ de: location.pathname }} />
   // login de cliente do portal nunca entra no ERP
   if (usuario?.user_metadata?.portal === 'true') return <Navigate to="/portal" replace />
+  // login de técnico só vê a área do técnico
+  if (usuario?.user_metadata?.tecnico === 'true') return <Navigate to="/tecnico" replace />
   return <Outlet />
 }
 
@@ -17,6 +19,6 @@ export function RequireAuth() {
 export function SomenteAnonimo() {
   const { sessao, carregando, usuario } = useAuth()
   if (carregando) return <Carregando telaCheia />
-  if (sessao) return <Navigate to={usuario?.user_metadata?.portal === 'true' ? '/portal' : '/'} replace />
+  if (sessao) return <Navigate to={usuario?.user_metadata?.portal === 'true' ? '/portal' : usuario?.user_metadata?.tecnico === 'true' ? '/tecnico' : '/'} replace />
   return <Outlet />
 }

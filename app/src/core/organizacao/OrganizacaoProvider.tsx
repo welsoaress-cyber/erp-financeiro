@@ -51,6 +51,9 @@ export function OrganizacaoProvider({ children }: { children: ReactNode }) {
   if (organizacoes.length === 0 && (usuario?.user_metadata?.portal === 'true')) {
     return <Navigate to="/portal" replace />
   }
+  if (organizacoes.length === 0 && (usuario?.user_metadata?.tecnico === 'true')) {
+    return <Navigate to="/tecnico" replace />
+  }
   if (organizacoes.length === 0) {
     return (
       <div className="mx-auto mt-16 max-w-lg space-y-4 p-6">

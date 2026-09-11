@@ -57,5 +57,6 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 43: `docs/46-estorno.md` (estorno formal: contra-lançamento negativo datado de hoje, original intocado mesmo em mês fechado).
 - Etapa 44: `docs/47-conciliacao.md` (conciliação bancária: conferir movimentos contra o extrato por conta/mês, aba Conciliação no Financeiro).
 - Etapa 45: `docs/48-parcela-inicial.md` (parcelamento pode iniciar de parcela específica — numeração espelha o contrato: 2/24…24/24).
+- Etapa 46: `docs/49-pix-reconciliacao.md` (Edge pix-reconciliar: re-consulta no MP os Pix pendentes >1h ao abrir a Cobrança — nunca bloquear quem pagou).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

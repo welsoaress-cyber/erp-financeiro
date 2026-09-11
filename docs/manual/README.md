@@ -75,6 +75,7 @@ A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do pr
 1. Faça o bloqueio/desbloqueio no seu sistema de rede (OLT/ReceitaNet).
 2. Clique **"Bloqueei na rede" / "Desbloqueei na rede"** — o contrato muda de status sozinho (ativo ↔ suspenso). "Ignorar" descarta a sugestão.
 3. Embaixo, os **Pix recentes**: quem pagou pelo portal e quem está aguardando. O pagamento Pix dá baixa automática na fatura.
+4. Ao abrir esta tela, o sistema **re-verifica no Mercado Pago** os Pix aguardando há mais de 1 hora (caso algum aviso automático tenha se perdido) e dá a baixa na hora — o resultado aparece no topo da lista de Pix.
 
 ### 3.5 Conciliação bancária
 

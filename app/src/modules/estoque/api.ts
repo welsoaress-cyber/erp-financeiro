@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { Comodato, ConsumoItem, ConsumoMensal, DadosItem, EstoqueCategoria, EstoqueInstalacao, EstoqueItem, EstoqueMov } from './tipos'
+import type { Comodato, ConsumoItem, ConsumoMensal, DadosItem, EstoqueCategoria, EstoqueInstalacao, EstoqueItem, EstoqueMov, Patrimonio, PatrimonioHistorico } from './tipos'
 
 const chave = (org: string) => ['estoque', org] as const
 
@@ -265,3 +265,44 @@ export const useRegistrarComodato = () => useRpcComodato<{ p_negocio_id: string;
 export const useRecolherComodato = () => useRpcComodato<{ p_comodato_id: string; p_descartar: boolean; p_observacao?: string | null }>('recolher_comodato')
 export const useTrocarComodato = () => useRpcComodato<{ p_comodato_id: string; p_serie_nova: string; p_tecnico_id: string; p_defeito_fabrica: boolean; p_motivo: string }>('trocar_comodato')
 export const usePerdaComodato = () => useRpcComodato<{ p_comodato_id: string; p_motivo: string }>('perda_comodato')
+
+// ---- Patrimônio ----
+export function usePatrimonios() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'patrimonios'],
+    queryFn: async (): Promise<Patrimonio[]> => {
+      const { data, error } = await supabase.from('patrimonios').select('*').eq('organizacao_id', organizacao.id).order('numero')
+      if (error) throw error
+      return (data ?? []).map((p) => ({ ...p, valor_aquisicao: Number(p.valor_aquisicao) })) as Patrimonio[]
+    },
+  })
+}
+export function useSalvarPatrimonio() {
+  const { organizacao } = useOrganizacao()
+  const invalidar = useInvalidarEstoque()
+  return useMutation({
+    mutationFn: async (d: Partial<Patrimonio> & { id?: string }) => {
+      const { id, ...dados } = d
+      const q = id
+        ? supabase.from('patrimonios').update(dados).eq('id', id)
+        : supabase.from('patrimonios').insert({ ...dados, numero: 0, organizacao_id: organizacao.id })
+      const { data, error } = await q.select().single()
+      if (error) throw error
+      return data as Patrimonio
+    },
+    onSuccess: invalidar,
+  })
+}
+export function usePatrimonioHistorico(patrimonioId: string | null) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'patrimonio-hist', patrimonioId],
+    enabled: Boolean(patrimonioId),
+    queryFn: async (): Promise<PatrimonioHistorico[]> => {
+      const { data, error } = await supabase.from('patrimonio_historico').select('*').eq('patrimonio_id', patrimonioId).order('criado_em', { ascending: false })
+      if (error) throw error
+      return data ?? []
+    },
+  })
+}

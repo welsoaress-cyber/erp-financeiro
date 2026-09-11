@@ -132,3 +132,29 @@ export interface Comodato {
   os_recolhimento_id: string | null
   observacao: string | null
 }
+
+// ---- Patrimônio (bens individuais, fora do estoque de consumo) ----
+export type EstadoPatrimonio = 'novo' | 'bom' | 'regular' | 'ruim'
+export type StatusPatrimonio = 'ativo' | 'vendido' | 'perdido' | 'descartado'
+export const ROTULO_ESTADO_PAT: Record<EstadoPatrimonio, string> = { novo: 'Novo', bom: 'Bom', regular: 'Regular', ruim: 'Ruim' }
+export const ROTULO_STATUS_PAT: Record<StatusPatrimonio, string> = { ativo: 'Ativo', vendido: 'Vendido', perdido: 'Perdido', descartado: 'Descartado' }
+
+export interface Patrimonio {
+  id: string
+  organizacao_id: string
+  negocio_id: string
+  numero: number
+  nome: string
+  numero_serie: string | null
+  valor_aquisicao: number
+  data_aquisicao: string
+  nota_fiscal: string | null
+  localizacao: string
+  estado: EstadoPatrimonio
+  status: StatusPatrimonio
+  observacao: string | null
+  criado_em: string
+}
+export const codigoPatrimonio = (p: Pick<Patrimonio, 'numero'>) => `PAT-${String(p.numero).padStart(3, '0')}`
+
+export interface PatrimonioHistorico { id: string; patrimonio_id: string; evento: string; detalhe: string; criado_em: string }

@@ -38,7 +38,7 @@ Use o seletor "Todos os negócios" para filtrar tudo por um negócio (ex.: só S
 
 ## 3. Financeiro
 
-O menu Financeiro tem quatro abas: **Lançamentos**, **Contas a receber**, **Contas a pagar** e **Cobrança**.
+O menu Financeiro tem cinco abas: **Lançamentos**, **Contas a receber**, **Contas a pagar**, **Cobrança** e **Conciliação**.
 
 ### 3.1 Lançamentos
 
@@ -74,6 +74,10 @@ A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do pr
 1. Faça o bloqueio/desbloqueio no seu sistema de rede (OLT/ReceitaNet).
 2. Clique **"Bloqueei na rede" / "Desbloqueei na rede"** — o contrato muda de status sozinho (ativo ↔ suspenso). "Ignorar" descarta a sugestão.
 3. Embaixo, os **Pix recentes**: quem pagou pelo portal e quem está aguardando. O pagamento Pix dá baixa automática na fatura.
+
+### 3.5 Conciliação bancária
+
+Escolha a conta e o mês e marque cada movimento que você encontrou no extrato do banco (ou use "Conferir todos"). Os cartões mostram conferidos × pendentes com as somas. Rotina de dono: no início do mês, conferir o mês anterior movimento a movimento e então **Fechar o mês** — saldo do sistema conferido vira fato, não fé.
 
 ## 4. Contas
 

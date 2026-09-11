@@ -2,6 +2,7 @@ import type { DefinicaoModulo } from '../../core/modulos/tipos'
 import { LancamentosPage } from '../lancamentos/pages/LancamentosPage'
 import { ContasPagarPage, ContasReceberPage } from './pages/ContasPage'
 import { CobrancaPage } from './pages/CobrancaPage'
+import { ConciliacaoPage } from './pages/ConciliacaoPage'
 
 /** Módulo Financeiro: Lançamentos (movido), Contas a Receber e Contas a Pagar compartilham o mês selecionado. */
 export const moduloFinanceiro: DefinicaoModulo = {
@@ -15,5 +16,6 @@ export const moduloFinanceiro: DefinicaoModulo = {
     { id: 'receber', titulo: 'Contas a receber', rota: '/financeiro/receber', Pagina: ContasReceberPage },
     { id: 'pagar', titulo: 'Contas a pagar', rota: '/financeiro/pagar', Pagina: ContasPagarPage },
     { id: 'cobranca', titulo: 'Cobrança', rota: '/financeiro/cobranca', Pagina: CobrancaPage },
+    { id: 'conciliacao', titulo: 'Conciliação', rota: '/financeiro/conciliacao', Pagina: ConciliacaoPage },
   ],
 }

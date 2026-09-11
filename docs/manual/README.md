@@ -49,6 +49,7 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 - **Previsto** = ainda não aconteceu (conta a pagar/receber). **Efetivado** = dinheiro entrou/saiu de verdade.
 - Para dar baixa: abra o lançamento → **Efetivar** → confirme a data e a conta (pode trocar a conta na hora da baixa; pagamento em atraso pode ter encargos).
 - Lançamento pode ser **recorrente** (fixo ou parcelado): ao efetivar uma parcela, a próxima nasce sozinha.
+- Parcelamento que já estava em andamento fora do sistema: informe o total contratado e **"Iniciar a partir da parcela"** (ex.: 24× começando na 2) — a numeração continua 2/24…24/24 e o resumo mostra o que foi pago fora e o que resta.
 - Mensalidades de contrato entram sozinhas (faturamento automático); meses futuros aparecem como **projeção** (não são gravados).
 - **Estornar**: efetivado errado (pago em duplicidade, valor errado) → abra o lançamento → **Estornar** (motivo obrigatório). Nasce um contra-lançamento de hoje devolvendo o valor; o original não muda — funciona até com o mês dele fechado. **Cancelar** é para quando o mês ainda está aberto e o lançamento nunca deveria ter existido.
 - **Fechar mês**: depois de conferir um mês passado com o extrato, clique em **🔒 Fechar mês** (ao lado do seletor). Nada efetivado dentro dele poderá ser alterado, cancelado ou excluído — cobranças em aberto continuam baixáveis (o dinheiro entra no mês atual). Para mexer no passado, use **reabrir** (fica auditado).

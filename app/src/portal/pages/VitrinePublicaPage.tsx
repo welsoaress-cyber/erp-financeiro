@@ -15,13 +15,17 @@ export function VitrinePublicaPage() {
       <header className="text-center">
         {v.logo && <img src={v.logo} alt={v.negocio} className="mx-auto mb-3 h-14 object-contain" />}
         <h1 className="text-2xl font-bold" style={{ color: v.cor }}>🎁 Indique e Ganhe · {v.negocio}</h1>
-        <p className="mt-1 text-sm text-ink-muted">Indique um amigo. Quando ele instalar, você escolhe um destes presentes — entrega na sua casa em até 10 dias úteis.</p>
+        <p className="mt-1 text-sm text-ink-muted">Indique um amigo. Quando ele instalar, você escolhe um presente — entrega na sua casa em até 10 dias úteis.</p>
+        <p className="mx-auto mt-2 max-w-xl rounded-md bg-surface px-3 py-2 text-sm font-medium">🎯 A regra é simples: <b>quanto maior o plano que o seu indicado fechar, melhor a vitrine</b> de presentes que abre para você. Uma escolha por indicação instalada — indicou 3, ganhou 3.</p>
         {v.texto && <p className="mt-2 text-sm">{v.texto}</p>}
       </header>
       {v.faixas.length === 0 && v.premios.length === 0 && <p className="text-center text-sm text-ink-muted">Os prêmios serão divulgados em breve.</p>}
       {(v.faixas.length > 0 ? v.faixas : [...new Set(v.premios.map((p) => p.faixa))].sort().map((f) => ({ faixa: f, nome: `Faixa ${f}`, teto: 0 }))).map((f) => (
         <section key={f.faixa}>
-          <h2 className="mb-2 border-b border-line pb-1 text-sm font-semibold uppercase tracking-wide" style={{ color: v.cor }}>{f.nome}</h2>
+          <div className="mb-3 rounded-lg px-4 py-3 text-white" style={{ backgroundColor: v.cor }}>
+            <p className="text-lg font-bold uppercase tracking-wide">📶 Plano {f.nome}</p>
+            <p className="mt-0.5 text-sm opacity-90">Seu indicado instalou <b>este plano</b>? Você escolhe <b>1 presente</b> desta vitrine.</p>
+          </div>
           {porFaixa(f.faixa).length === 0 ? <p className="text-xs text-ink-muted">Prêmios desta faixa em breve.</p> : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {porFaixa(f.faixa).map((p, i) => (

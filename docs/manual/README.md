@@ -23,7 +23,7 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 
 É a primeira tela. Mostra, para o mês escolhido no canto superior direito:
 
-- **Cartões do topo**: saldo total das contas, receitas/despesas do mês (realizado e previsto) e resultado.
+- **Cartões do topo**: saldo total das contas, receitas/despesas do mês (realizado e previsto) e resultado. O "previsto" inclui a **projeção dos contratos** do mês exibido (mensalidades ainda não faturadas) — por isso um mês futuro já mostra a receita esperada.
 - **Cobrança do período**: três anéis — Confirmadas (recebidas), A receber (no prazo) e Inadimplentes (vencidas, acumulado) — com filtro Dia · Semana · Mês e atalho para Contas a receber.
 - **Avisos no WhatsApp**: se a régua de cobrança de cada negócio está em dia, com erro ou sem configuração.
 - **Estoque**: itens zerados ou abaixo do mínimo.

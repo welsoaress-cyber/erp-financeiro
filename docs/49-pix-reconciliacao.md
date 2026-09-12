@@ -19,3 +19,7 @@ agora"). Se a Edge estiver indisponível, a tela segue normalmente.
 Deploy da função `pix-reconciliar` no painel do Supabase (Edge Functions →
 Deploy, Verify JWT LIGADO). Usa o mesmo secret `MP_ACCESS_TOKEN` já
 configurado para o Pix — nada novo.
+
+
+## Verificação ativa no portal (pix-verificar)
+O portal, enquanto mostra o QR, chama a Edge `pix-verificar` a cada 4s: ela reconsulta o pagamento na API do Mercado Pago e baixa a fatura na hora se aprovado — o cliente vê "Pago" em segundos sem depender da entrega do webhook do MP (instável). Verify JWT ligado; só age na cobrança pendente do próprio cliente.

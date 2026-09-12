@@ -256,10 +256,15 @@ export function usePixStatus(lancamentoId: string | null, ativo: boolean) {
     enabled: Boolean(usuario && lancamentoId && ativo),
     refetchInterval: ativo ? 4000 : false,
     queryFn: async (): Promise<string> => {
-      const { data, error } = await supabase.rpc('portal_pix_cobranca', { p_lancamento_id: lancamentoId })
-      if (error) throw error
-      const r = Array.isArray(data) ? data[0] : data
-      const status = (r?.status ?? 'pendente') as string
+      // reconsulta o Mercado Pago e baixa na hora se aprovado (não depende do webhook)
+      const { data: v } = await supabase.functions.invoke('pix-verificar', { body: { lancamento_id: lancamentoId } })
+      let status = (v?.status ?? '') as string
+      if (!status) { // Edge indisponível: cai para a leitura do banco
+        const { data, error } = await supabase.rpc('portal_pix_cobranca', { p_lancamento_id: lancamentoId })
+        if (error) throw error
+        const r = Array.isArray(data) ? data[0] : data
+        status = (r?.status ?? 'pendente') as string
+      }
       if (status === 'pago') invalidar() // atualiza a lista de faturas na hora
       return status
     },

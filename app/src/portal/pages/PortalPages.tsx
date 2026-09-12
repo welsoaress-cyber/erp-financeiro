@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
+import QRCode from 'qrcode'
 import { Cartao } from '../../core/ui/Cartao'
 import { Alerta } from '../../core/ui/Alerta'
 import { Botao } from '../../core/ui/Botao'
@@ -14,6 +15,18 @@ import { usePortal } from '../contexto'
 import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePixStatus, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
 import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
+
+/** QR gerado no navegador a partir do copia-e-cola (funciona para cobrança nova ou reaproveitada). */
+function QrPix({ codigo }: { codigo: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let ativo = true
+    QRCode.toDataURL(codigo, { width: 220, margin: 1 }).then((u) => { if (ativo) setUrl(u) }).catch(() => setUrl(null))
+    return () => { ativo = false }
+  }, [codigo])
+  if (!url) return null
+  return <img src={url} alt="QR Code Pix" className="mx-auto my-3 size-52 rounded-md bg-white p-2" />
+}
 
 /** Cronômetro regressivo até a expiração do Pix. */
 function Cronometro({ expiraEm }: { expiraEm: string }) {
@@ -41,7 +54,7 @@ function BotaoPix({ fatura }: { fatura: Fatura }) {
         ) : (
           <>
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Pague com Pix — <Cronometro expiraEm={pix.expira_em ?? new Date(Date.now() + 86_400_000).toISOString()} /></p>
-            {pix.qr_base64 && <img src={`data:image/png;base64,${pix.qr_base64}`} alt="QR Code Pix" className="mx-auto my-3 size-48 rounded-md bg-white p-2" />}
+            <QrPix codigo={pix.copia_cola} />
             <p className="break-all rounded bg-black/20 p-2 font-mono text-[11px]">{pix.copia_cola}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Botao onClick={() => void copiar(pix.copia_cola)}>{copiado ? 'Copiado!' : 'Copiar código'}</Botao>

@@ -61,5 +61,6 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 47: `docs/50-confianca.md` (voto de confiança na Cobrança: segura o bloqueio até data; furou → volta destacado; cumprida/furada resolvidas em gerar_bloqueios).
 - Etapa 48: `docs/51-regua-cobranca.md` (régua de cobrança configurável por negócio — listas regua_antes/regua_apos, padrão enxuto 2·dia·3; dias_antes/apos derivados).
 - Etapa 49: `docs/52-vitrine-premios.md` (vitrine de prêmios do Indique e Ganhe: faixas e prêmios com foto configuráveis, escolha visual no portal com trava, aviso WhatsApp na conversão, vitrine pública /portal/premios/:slug).
+- Etapa 50: menu próprio Indicações (módulo app/src/modules/indicacoes — métricas, converter/escolher/entregar e vitrine; Portal do cliente ficou só com aparência/promoções/acessos).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

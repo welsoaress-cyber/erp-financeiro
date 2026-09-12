@@ -5,7 +5,7 @@ A escolha do presente dependia do admin registrar manualmente, as faixas
 eram fixas no código e o cliente não via os prêmios — sem foto, sem apelo.
 
 ## A solução
-**Admin (Portal do cliente → Vitrine de prêmios):**
+**Admin (menu Indicações → Vitrine de prêmios; era no Portal até a etapa 50):**
 - **Faixas configuráveis** (`indicacao_faixas`): plano do indicado com
   mensalidade até R$ X → faixa N (teto do prêmio R$ Y); a última faixa fica
   com "plano até" vazio e pega tudo acima. Editáveis sem mexer em código.

@@ -15,6 +15,7 @@ import { moduloEstoque } from '../modules/estoque'
 import { moduloOs } from '../modules/os'
 import { moduloGerencial } from '../modules/gerencial'
 import { moduloPortal } from '../modules/portal'
+import { moduloIndicacoes } from '../modules/indicacoes'
 import { moduloConfiguracoes } from '../modules/configuracoes'
 
 /** Registro único de módulos. A ordem aqui é a ordem do menu. */
@@ -27,6 +28,7 @@ export const MODULOS: DefinicaoModulo[] = [
   moduloNegocios,
   moduloPessoas,
   moduloContratos,
+  moduloIndicacoes,
   moduloFtth,
   moduloEstoque,
   moduloOs,

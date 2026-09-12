@@ -31,15 +31,17 @@ Deno.serve(async (req) => {
   const { data: userData, error: eUser } = await sbUser.auth.getUser()
   if (eUser || !userData.user) return json({ ok: false, erro: 'não autenticado' }, 401)
 
+  // resolve a pessoa como o resto do portal: portal_pessoa() com o JWT do cliente
+  const { data: pessoaId, error: ePessoa } = await sbUser.rpc('portal_pessoa')
+  if (ePessoa || !pessoaId) return json({ ok: false, erro: 'portal não vinculado' }, 403)
+
   const sb = createClient(SB_URL, SB_SERVICE)
-  const { data: acesso } = await sb.from('portal_acessos').select('pessoa_id').eq('usuario_id', userData.user.id).maybeSingle()
-  if (!acesso?.pessoa_id) return json({ ok: false, erro: 'portal não vinculado' }, 403)
 
   // 2) fatura válida, do cliente, com Pix ativo no negócio
   const { data: dados, error: eDados } = await sb.rpc('pix_dados_lancamento', { p_lancamento_id: lancamento_id })
   const d = Array.isArray(dados) ? dados[0] : dados
   if (eDados || !d) return json({ ok: false, erro: 'fatura não encontrada ou já paga' }, 404)
-  if (d.pessoa_id !== acesso.pessoa_id) return json({ ok: false, erro: 'fatura de outro cliente' }, 403)
+  if (d.pessoa_id !== pessoaId) return json({ ok: false, erro: 'fatura de outro cliente' }, 403)
   if (!d.pix_automatico) return json({ ok: false, erro: 'Pix automático não está ativo para este serviço' }, 400)
   if (d.cobranca_pendente) return json({ ok: true, copia_cola: d.cobranca_pendente, reaproveitada: true })
 

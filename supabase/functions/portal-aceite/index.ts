@@ -23,9 +23,11 @@ Deno.serve(async (req) => {
   const { data: userData, error: eUser } = await sbUser.auth.getUser()
   if (eUser || !userData.user) return json({ ok: false, erro: 'não autenticado' }, 401)
 
+  // resolve a pessoa como o resto do portal: portal_pessoa() com o JWT do cliente
+  const { data: pessoaId, error: ePessoa } = await sbUser.rpc('portal_pessoa')
+  if (ePessoa || !pessoaId) return json({ ok: false, erro: 'portal não vinculado' }, 403)
+
   const sb = createClient(SB_URL, SB_SERVICE)
-  const { data: acesso } = await sb.from('portal_acessos').select('pessoa_id').eq('usuario_id', userData.user.id).maybeSingle()
-  if (!acesso?.pessoa_id) return json({ ok: false, erro: 'portal não vinculado' }, 403)
 
   const corpo = await req.json().catch(() => ({}))
   const contratoId = String(corpo?.contrato_id ?? '')
@@ -36,7 +38,7 @@ Deno.serve(async (req) => {
 
   const { data, error } = await sb.rpc('registrar_aceite_contrato', {
     p_contrato_id: contratoId,
-    p_pessoa_id: acesso.pessoa_id,
+    p_pessoa_id: pessoaId,
     p_ip: ip,
     p_user_agent: userAgent,
   })

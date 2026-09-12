@@ -12,7 +12,7 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useAtualizarContato, useContratosCliente, useFaturas, useFidelidade, usePromocoesCliente, useSolicitacoes, useSolicitar, useStatusRede, useAbrirVisita, useAvaliarVisita, useResponderRemarcacaoVisita, useVisitas, type VisitaTecnica } from '../api'
+import { useAtualizarContato, useContratosCliente, useFaturas, useFidelidade, useIndicacoesCliente, usePromocoesCliente, useSolicitacoes, useSolicitar, useStatusRede, useAbrirVisita, useAvaliarVisita, useResponderRemarcacaoVisita, useVisitas, type VisitaTecnica } from '../api'
 import { ROTULO_REDE, ROTULO_SITUACAO, ROTULO_STATUS_SOLICITACAO, ROTULO_TIPO_SOLICITACAO, TOM, codigoContrato, linkIndicacao, linkWhatsApp, type EstadoSelo, type Fidelidade, type TipoSolicitacao } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
@@ -63,6 +63,19 @@ export function CartaoFidelidade({ f, compacto }: { f: Fidelidade; compacto?: bo
   )
 }
 
+/** Aviso no início: indicação instalada com presente aguardando escolha. */
+function BannerPresente() {
+  const indicacoes = useIndicacoesCliente()
+  const pendentes = (indicacoes.data ?? []).filter((i) => i.aguardando_escolha).length
+  if (pendentes === 0) return null
+  return (
+    <Link to="/portal/indique" className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:opacity-90">
+      <span>🎁 <b>Sua indicação foi instalada!</b> {pendentes === 1 ? 'Escolha o seu presente.' : `Você tem ${pendentes} presentes para escolher.`}</span>
+      <span aria-hidden>→</span>
+    </Link>
+  )
+}
+
 export function PortalInicioPage() {
   const r = usePortal()
   const faturas = useFaturas(); const contratos = useContratosCliente(); const fidelidade = useFidelidade(); const promocoes = usePromocoesCliente()
@@ -78,7 +91,8 @@ export function PortalInicioPage() {
     <div className="space-y-6">
       <div><h1 className="text-xl font-semibold">Olá, {r.pessoa.nome.split(' ')[0]}</h1><p className="text-sm text-ink-muted">{formatarDocumento(r.pessoa.documento)}</p></div>
       <BannerRede />
-      {suporte && <a href={linkWhatsApp(suporte, `Olá, sou ${r.pessoa.nome} (${formatarDocumento(r.pessoa.documento)}) e preciso de ajuda.`)} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 hover:opacity-90"><span><b>Suporte pelo WhatsApp</b> · fale com a gente agora</span><span aria-hidden>→</span></a>}
+      <BannerPresente />
+      {suporte &&<a href={linkWhatsApp(suporte, `Olá, sou ${r.pessoa.nome} (${formatarDocumento(r.pessoa.documento)}) e preciso de ajuda.`)} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 hover:opacity-90"><span><b>Suporte pelo WhatsApp</b> · fale com a gente agora</span><span aria-hidden>→</span></a>}
       {r.vencidas > 0 && <Alerta tipo="erro" titulo={`${r.vencidas} fatura(s) vencida(s)`}>Regularize para evitar o bloqueio. <Link to="/portal/faturas" className="underline">Ver faturas</Link>.</Alerta>}
       <div className="grid gap-6 md:grid-cols-2">
         <Cartao>

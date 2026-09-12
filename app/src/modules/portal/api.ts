@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { AcessoPortal, DadosPortalConfig, DadosPromocao, IndicacaoAdmin, PortalConfig, PromocaoAdmin, SolicitacaoAdmin, StatusRede, StatusRedeAdmin } from './tipos'
+import type { AcessoPortal, DadosFaixa, DadosPortalConfig, DadosPremio, DadosPromocao, IndicacaoAdmin, IndicacaoFaixa, IndicacaoPremio, PortalConfig, PromocaoAdmin, SolicitacaoAdmin, StatusRede, StatusRedeAdmin } from './tipos'
 
 const chave = (org: string) => ['portal-admin', org] as const
 function useInvalidar() { const { organizacao } = useOrganizacao(); const qc = useQueryClient(); return () => { void qc.invalidateQueries({ queryKey: chave(organizacao.id) }); void qc.invalidateQueries({ queryKey: ['contratos', organizacao.id] }) } }
@@ -29,6 +29,34 @@ export function useSalvarPromocao() {
   return useMutation({
     mutationFn: async (p: { id?: string; dados: DadosPromocao }) => {
       const q = p.id ? supabase.from('promocoes').update(p.dados).eq('id', p.id) : supabase.from('promocoes').insert({ ...p.dados, organizacao_id: organizacao.id })
+      const { error } = await q.select().single(); if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+export function useFaixasAdmin() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({ queryKey: [...chave(organizacao.id), 'faixas'], queryFn: async (): Promise<IndicacaoFaixa[]> => { const { data, error } = await supabase.from('indicacao_faixas').select('*').eq('organizacao_id', organizacao.id).order('faixa'); if (error) throw error; return (data ?? []).map((f) => ({ ...f, plano_ate: f.plano_ate == null ? null : Number(f.plano_ate), teto: Number(f.teto) })) } })
+}
+export function useSalvarFaixa() {
+  const { organizacao } = useOrganizacao(); const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { id?: string; dados: DadosFaixa }) => {
+      const q = p.id ? supabase.from('indicacao_faixas').update(p.dados).eq('id', p.id) : supabase.from('indicacao_faixas').insert({ ...p.dados, organizacao_id: organizacao.id })
+      const { error } = await q.select().single(); if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+export function usePremiosAdmin() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({ queryKey: [...chave(organizacao.id), 'premios'], queryFn: async (): Promise<IndicacaoPremio[]> => { const { data, error } = await supabase.from('indicacao_premios').select('*').eq('organizacao_id', organizacao.id).order('faixa').order('nome'); if (error) throw error; return data ?? [] } })
+}
+export function useSalvarPremio() {
+  const { organizacao } = useOrganizacao(); const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { id?: string; dados: DadosPremio }) => {
+      const q = p.id ? supabase.from('indicacao_premios').update(p.dados).eq('id', p.id) : supabase.from('indicacao_premios').insert({ ...p.dados, organizacao_id: organizacao.id })
       const { error } = await q.select().single(); if (error) throw error
     },
     onSuccess: invalidar,

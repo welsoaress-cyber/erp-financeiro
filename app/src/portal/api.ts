@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../core/supabase/client'
 import { useAuth } from '../core/auth/useAuth'
-import type { AvisoRede, ContratoCliente, Fatura, Fidelidade, Indicacao, Pagamento, PortalResumo, PresenteOpcao, Promocao, ProximaFatura, Solicitacao, TipoSolicitacao } from './tipos'
+import type { AvisoRede, ContratoCliente, Fatura, Fidelidade, Indicacao, Pagamento, PortalResumo, PresenteOpcao, Promocao, ProximaFatura, Solicitacao, TipoSolicitacao, VitrinePublica } from './tipos'
 
 const chave = (u: string | undefined) => ['portal', u ?? ''] as const
 const num = <T extends object>(rows: T[], campos: (keyof T)[]) => rows.map((r) => { const c = { ...r } as Record<keyof T, unknown>; for (const k of campos) c[k] = Number(c[k]); return c as T })
@@ -90,6 +90,17 @@ export function useInfoIndicacao(codigo: string) {
       const { data, error } = await supabase.rpc('portal_info_indicacao', { p_codigo: codigo })
       if (error) throw error
       return data ?? null
+    },
+  })
+}
+/** Vitrine pública de prêmios (sem login) — divulgação da campanha. */
+export function useVitrinePublica(slug: string) {
+  return useQuery({
+    queryKey: ['portal-publico', 'vitrine', slug],
+    queryFn: async (): Promise<VitrinePublica | null> => {
+      const { data, error } = await supabase.rpc('vitrine_publica', { p_slug: slug })
+      if (error) throw error
+      return (data ?? null) as VitrinePublica | null
     },
   })
 }

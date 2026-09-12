@@ -10,3 +10,6 @@ O cliente lê o **termo de adesão** no portal (Meu plano) e aceita digitalmente
 ## Testes
 
 `supabase/tests/aceite_test.sql`: termo renderizado com os dados do contrato, aceite via service com IP e hash, duplicado bloqueado, situação no portal, imutabilidade, visão do admin. `verificar_tudo.sql`: **51 de 51**.
+
+
+> **Correção (12/09/2026):** o código da Edge `portal-aceite` não havia sido versionado nesta etapa — só existia deployado no projeto antigo. Agora está em `supabase/functions/portal-aceite/index.ts` (Verify JWT ligado, sem secrets próprios).

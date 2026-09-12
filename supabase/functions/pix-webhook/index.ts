@@ -25,13 +25,19 @@ Deno.serve(async (req) => {
 
   // fonte da verdade: consulta o pagamento na API do MP
   const res = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, { headers: { Authorization: `Bearer ${MP_TOKEN}` } })
-  if (!res.ok) return json({ ok: false, erro: `consulta MP: ${res.status}` }, 200) // 200 para o MP não repetir eternamente
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    console.log('pix-webhook consulta MP falhou', id, res.status, txt.slice(0, 200))
+    return json({ ok: false, erro: `consulta MP: ${res.status}` }, 200) // 200 para o MP não repetir eternamente
+  }
   const p = await res.json()
+  console.log('pix-webhook pagamento', id, 'status=', p.status, 'valor=', p.transaction_amount)
 
   const sb = createClient(SB_URL, SB_SERVICE)
   if (p.status === 'approved') {
     const { data, error } = await sb.rpc('pix_confirmar', { p_txid: String(p.id), p_valor_pago: p.transaction_amount, p_resposta: { status: p.status, date_approved: p.date_approved } })
-    if (error) return json({ ok: false, erro: error.message }, 200)
+    if (error) { console.log('pix-webhook pix_confirmar erro', error.message); return json({ ok: false, erro: error.message }, 200) }
+    console.log('pix-webhook baixado', id, JSON.stringify(data))
     return json({ ok: true, resultado: data })
   }
   if (p.status === 'cancelled' || p.status === 'expired' || p.status === 'rejected') {

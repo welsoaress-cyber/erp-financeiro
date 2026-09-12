@@ -24,6 +24,9 @@ eram fixas no código e o cliente não via os prêmios — sem foto, sem apelo.
   cliente; mesmo padrão da página pública de indicação da 0023).
 
 **Portal do cliente:**
+- **Catálogo antes de indicar** (0076, `portal_vitrine`): a página Indique e
+  ganhe mostra a vitrine completa (só exibição, por faixa) para motivar a
+  indicação — a escolha de verdade continua liberando só na conversão.
 - **Aviso no início**: banner "🎁 Sua indicação foi instalada — escolha seu
   presente" quando houver escolha pendente (várias conversões = várias
   escolhas independentes, cada uma na faixa do plano do seu indicado).

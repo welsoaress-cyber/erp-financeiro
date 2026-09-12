@@ -93,6 +93,19 @@ export function useInfoIndicacao(codigo: string) {
     },
   })
 }
+/** Vitrine do cliente logado (negócio do contrato dele) — catálogo antes de indicar. */
+export function usePortalVitrine() {
+  const { usuario } = useAuth()
+  return useQuery({
+    queryKey: [...chave(usuario?.id), 'vitrine'],
+    enabled: Boolean(usuario),
+    queryFn: async (): Promise<VitrinePublica | null> => {
+      const { data, error } = await supabase.rpc('portal_vitrine')
+      if (error) throw error
+      return (data ?? null) as VitrinePublica | null
+    },
+  })
+}
 /** Vitrine pública de prêmios (sem login) — divulgação da campanha. */
 export function useVitrinePublica(slug: string) {
   return useQuery({

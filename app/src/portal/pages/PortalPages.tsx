@@ -11,7 +11,7 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
+import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
 import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
@@ -252,6 +252,35 @@ function EscolhaPresente({ indicacaoId }: { indicacaoId: string }) {
   )
 }
 
+/** Catálogo de presentes (só exibição): motiva a indicar antes da conversão. */
+function VitrineCatalogo() {
+  const vitrine = usePortalVitrine()
+  const v = vitrine.data
+  if (!v || v.premios.length === 0) return null
+  const porFaixa = (f: number) => v.premios.filter((p) => p.faixa === f)
+  return (
+    <Cartao>
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-muted">🎁 Vitrine de presentes</h2>
+      <p className="mb-3 text-sm text-ink-muted">Quando a sua indicação for instalada, você escolhe <b>1 presente</b> aqui no portal — a vitrine que abre depende do plano que o seu indicado fechar.</p>
+      <div className="space-y-4">
+        {v.faixas.map((f) => (
+          <div key={f.faixa}>
+            <p className="mb-2 rounded-md px-3 py-2 text-sm font-semibold text-white" style={{ backgroundColor: v.cor }}>📶 Plano {f.nome}</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {porFaixa(f.faixa).map((p, i) => (
+                <div key={i} className="overflow-hidden rounded-lg border border-line">
+                  {p.foto ? <img src={p.foto} alt={p.nome} className="aspect-square w-full object-cover" /> : <div className="flex aspect-square w-full items-center justify-center bg-surface text-4xl">🎁</div>}
+                  <p className="px-2 py-1.5 text-center text-xs font-medium">{p.nome}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Cartao>
+  )
+}
+
 export function PortalIndiquePage() {
   const r = usePortal()
   const indicacoes = useIndicacoesCliente()
@@ -302,6 +331,7 @@ export function PortalIndiquePage() {
           <div className="self-end"><Botao type="submit" carregando={indicar.isPending}>Indicar</Botao></div>
         </form>
       </Cartao>
+      <VitrineCatalogo />
       <Cartao className="p-0">
         <div className="border-b border-line px-4 py-3"><h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Suas indicações</h2></div>
         {indicacoes.isPending ? <div className="p-6"><Carregando /></div> : (indicacoes.data ?? []).length === 0 ? <p className="px-4 py-8 text-center text-sm text-ink-muted">Nenhuma indicação ainda.</p> : (

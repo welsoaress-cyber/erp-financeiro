@@ -12,12 +12,13 @@ eram fixas no código e o cliente não via os prêmios — sem foto, sem apelo.
   Sem faixas cadastradas vale a régua antiga (≤60→30, ≤80→50, acima→80).
 - **Prêmios** (`indicacao_premios`): foto (comprimida no navegador para
   data URL ≤ 400 KB — sem Storage, custo zero), nome, faixa e vínculo ao
-  item da categoria **Brindes** do Estoque (validado por trigger). Prêmio
-  com saldo zero **some da vitrine sozinho** (não prometer o que não tem).
+  item da categoria **Brindes** do Estoque (validado por trigger). Desde a
+  0075 (compra sob demanda), o saldo **não filtra a vitrine** — é exigido só
+  na entrega (`entregar_presente_indicacao` baixa o estoque).
 - **Adicionar em lote**: escolhe a faixa, seleciona várias fotos de uma vez
   (cada foto vira um prêmio; nome inicial vem do arquivo, editável antes de
-  criar; o item da categoria Brindes é criado junto com saldo 0 — o prêmio
-  entra na vitrine quando houver entrada no estoque).
+  criar; o item da categoria Brindes é criado junto com saldo 0 — dar
+  entrada antes de marcar Entregue).
 - **Copiar link público**: vitrine sem login em `/portal/premios/<slug>`
   (função `vitrine_publica`, anon, só nome/foto/faixa — nenhum dado de
   cliente; mesmo padrão da página pública de indicação da 0023).

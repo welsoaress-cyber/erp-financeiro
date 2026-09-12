@@ -43,7 +43,9 @@ export function IndicacoesPage() {
   const [novoIndicante, setNovoIndicante] = useState(''); const [novoNome, setNovoNome] = useState(''); const [novoTel, setNovoTel] = useState('')
   const [presenteSel, setPresenteSel] = useState<Record<string, string>>({})
   const ativos = useMemo(() => (negocios.data ?? []).filter((n) => n.ativo), [negocios.data])
-  const negocio = ativos.find((n) => n.id === negocioSel) ?? ativos[0] ?? null
+  // padrão: Servnet (onde a campanha roda); o seletor troca quando precisar
+  const servnet = ativos.find((n) => n.nome.toLowerCase().includes('servnet'))
+  const negocio = ativos.find((n) => n.id === negocioSel) ?? servnet ?? ativos[0] ?? null
   const config = (configs.data ?? []).find((c) => c.negocio_id === negocio?.id) ?? null
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const inds = (indicacoes.data ?? []).filter((i) => i.negocio_id === negocio?.id)

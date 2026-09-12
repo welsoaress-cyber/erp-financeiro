@@ -15,7 +15,7 @@ import { ROTULO_TIPO as ROTULO_TIPO_CONTA } from '../../contas/tipos'
 import { ROTULO_TIPO } from '../../lancamentos/tipos'
 import { useNegocios } from '../../negocios/api'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { useLancamentos } from '../../lancamentos/api'
+import { useLancamentos, useProjecaoContratos } from '../../lancamentos/api'
 import { useResultadoPorNegocio, useSaldoInicial, useSaudeNotificacoes, useUltimosLancamentos } from '../api'
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 import { AlertasEstoque } from '../components/AlertasEstoque'
@@ -43,6 +43,7 @@ export function DashboardPage() {
   const resultado = useResultadoPorNegocio(mes)
   const ultimos = useUltimosLancamentos()
   const lancamentosMes = useLancamentos(mes)
+  const projecao = useProjecaoContratos(mes)
   const saldoInicial = useSaldoInicial(mes)
   const saudeNotificacoes = useSaudeNotificacoes()
 
@@ -64,6 +65,11 @@ export function DashboardPage() {
     if (l.tipo === 'despesa') t.despesas += l.valor
     return t
   }, { receitas: 0, despesas: 0 })
+  // projeção dos contratos (meses ainda não faturados) entra no previsto do mês exibido
+  for (const pj of (projecao.data ?? []).filter((x) => bate(x.negocio_id))) {
+    if (pj.tipo === 'receita') prev.receitas += Number(pj.valor)
+    if (pj.tipo === 'despesa') prev.despesas += Number(pj.valor)
+  }
   const temNegocios = (negocios.data ?? []).length > 0
 
   const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending || lancamentosMes.isPending || saldoInicial.isPending

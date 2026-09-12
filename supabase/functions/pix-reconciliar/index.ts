@@ -9,7 +9,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 const SB_URL = Deno.env.get('SUPABASE_URL')!
 const SB_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY')!
-const MP_TOKEN = Deno.env.get('MP_ACCESS_TOKEN') ?? ''
+const MP_TOKEN = (Deno.env.get('MP_ACCESS_TOKEN') ?? '').trim()
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,

@@ -11,7 +11,7 @@ export function VitrinePublicaPage() {
   if (!v) return <p className="p-10 text-center text-sm text-ink-muted">Vitrine não encontrada.</p>
   const porFaixa = (f: number) => v.premios.filter((p) => p.faixa === f)
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <header className="text-center">
         {v.logo && <img src={v.logo} alt={v.negocio} className="mx-auto mb-3 h-14 object-contain" />}
         <h1 className="text-2xl font-bold" style={{ color: v.cor }}>🎁 Indique e Ganhe · {v.negocio}</h1>
@@ -27,7 +27,7 @@ export function VitrinePublicaPage() {
             <p className="mt-0.5 text-sm opacity-90">Seu indicado instalou <b>este plano</b>? Você escolhe <b>1 presente</b> desta vitrine.</p>
           </div>
           {porFaixa(f.faixa).length === 0 ? <p className="text-xs text-ink-muted">Prêmios desta faixa em breve.</p> : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {porFaixa(f.faixa).map((p, i) => (
                 <div key={i} className="overflow-hidden rounded-lg border border-line">
                   {p.foto

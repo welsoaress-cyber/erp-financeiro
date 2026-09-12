@@ -15,7 +15,7 @@ const EVO_KEY = Deno.env.get('EVOLUTION_API_KEY') ?? ''
 const CRON_SECRET = Deno.env.get('NOTIFICACOES_CRON_SECRET') ?? ''
 // Pix no aviso de cobrança (etapa 31): com MP_ACCESS_TOKEN configurado e Pix
 // ativo no negócio, o aviso ganha o copia-e-cola no fim da mensagem.
-const MP_TOKEN = Deno.env.get('MP_ACCESS_TOKEN') ?? ''
+const MP_TOKEN = (Deno.env.get('MP_ACCESS_TOKEN') ?? '').trim()
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 

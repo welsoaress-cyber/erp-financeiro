@@ -131,7 +131,7 @@ function FormLote({ negocioId, faixas, aoConcluir }: { negocioId: string; faixas
   return (
     <div className="space-y-4">
       {(erro || criar.error) && <Alerta tipo="erro">{erro ?? mensagemDeErro(criar.error)}</Alerta>}
-      <p className="text-sm text-ink-muted">Escolha a faixa e selecione as fotos de uma vez — cada foto vira um prêmio, com o item criado automaticamente na categoria <b>Brindes</b> do Estoque (saldo 0: dê entrada quando comprar; sem saldo o prêmio ainda não aparece na vitrine). Ajuste os nomes antes de criar.</p>
+      <p className="text-sm text-ink-muted">Escolha a faixa e selecione as fotos de uma vez — cada foto vira um prêmio, com o item criado automaticamente na categoria <b>Brindes</b> do Estoque (saldo 0: dê entrada quando comprar — a entrega exige saldo). Ajuste os nomes antes de criar.</p>
       <div className="flex flex-wrap items-end gap-3">
         <Selecao rotulo="Faixa" opcoes={faixas.map((f) => ({ valor: String(f.faixa), rotulo: `${f.faixa} · ${f.nome} (até ${formatarMoeda(f.teto)})` }))} value={faixa} onChange={(e) => setFaixa(e.target.value)} />
         <Botao variante="secundario" onClick={() => arquivoRef.current?.click()}>Selecionar fotos…</Botao>
@@ -173,7 +173,7 @@ export function VitrinePremiosAdmin({ negocioId, negocioSlug }: { negocioId: str
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-6 py-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Vitrine de prêmios (Indique e Ganhe)</h2>
-          <p className="text-xs text-ink-muted">O cliente escolhe o presente pela vitrine do portal, na faixa do plano do indicado. Sem saldo em estoque, o prêmio some sozinho.</p>
+          <p className="text-xs text-ink-muted">O cliente escolhe o presente pela vitrine do portal, na faixa do plano do indicado. A compra pode ser depois da escolha: o saldo só é exigido na entrega.</p>
         </div>
         <span className="flex gap-2">
           <Botao variante="secundario" onClick={copiar}>{copiado ? 'Link copiado!' : 'Copiar link público'}</Botao>
@@ -210,7 +210,7 @@ export function VitrinePremiosAdmin({ negocioId, negocioSlug }: { negocioId: str
                     <div className="px-2 py-2">
                       <p className="truncate text-sm font-medium">{p.nome}</p>
                       <p className="text-xs text-ink-muted">{p.faixa}ª faixa · saldo {saldo}</p>
-                      {(!p.ativo || saldo < 1) && <Distintivo tom={saldo < 1 ? 'alerta' : 'neutro'}>{saldo < 1 ? 'Sem saldo — fora da vitrine' : 'Inativo'}</Distintivo>}
+                      {(!p.ativo || saldo < 1) && <Distintivo tom={!p.ativo ? 'neutro' : 'alerta'}>{!p.ativo ? 'Inativo' : 'Sem saldo — comprar antes de entregar'}</Distintivo>}
                     </div>
                   </button>
                 )

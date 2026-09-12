@@ -84,7 +84,7 @@ do $$ declare v r%rowtype; i public.indicacoes%rowtype; v_novo uuid; v_plano uui
   assert position('https://portal.exemplo.dev' in g.mensagem) > 0, 'T3 link do portal na mensagem';
 end $$;
 
--- T4: vitrine no portal — só prêmios da faixa com saldo; escolha grava prêmio e trava
+-- T4: vitrine no portal — prêmios da faixa (mesmo sem saldo: compra sob demanda); escolha grava prêmio e trava
 reset role;
 do $$ declare v r%rowtype; begin
   select * into v from r;
@@ -96,9 +96,8 @@ do $$ declare v r%rowtype; i_id uuid; begin
   select * into v from r;
   select id into i_id from public.portal_indicacoes() where aguardando_escolha limit 1;
   assert i_id is not null, 'T4 aguardando escolha';
-  assert (select count(*) from public.portal_presentes_indicacao(i_id)) = 1, 'T4 só o prêmio da faixa com saldo';
-  assert (select nome from public.portal_presentes_indicacao(i_id)) = 'Fone Bluetooth Pro'
-     and (select foto from public.portal_presentes_indicacao(i_id)) like 'data:image/%', 'T4 prêmio com foto';
+  assert (select count(*) from public.portal_presentes_indicacao(i_id)) = 2, 'T4 os dois prêmios da faixa (com e sem saldo)';
+  assert exists (select 1 from public.portal_presentes_indicacao(i_id) where nome = 'Fone Bluetooth Pro' and foto like 'data:image/%'), 'T4 prêmio com foto';
   begin
     perform public.portal_escolher_presente(i_id, v.cx);
     raise exception 'T4 prêmio de outra faixa deveria falhar';
@@ -112,13 +111,13 @@ do $$ declare v r%rowtype; i_id uuid; begin
   exception when check_violation then null; end;
 end $$;
 
--- T5: vitrine pública sem login (anon) — nome/foto/faixa; sem saldo não aparece
+-- T5: vitrine pública sem login (anon) — nome/foto/faixa; sem saldo também aparece
 set local role anon;
 do $$ declare j jsonb; begin
   j := public.vitrine_publica('vitrine-t');
   assert j->>'negocio' = 'VITRINE T', 'T5 negócio';
   assert jsonb_array_length(j->'faixas') = 3, 'T5 três faixas';
-  assert jsonb_array_length(j->'premios') = 2, 'T5 smartwatch sem saldo fora: ' || (j->'premios')::text;
+  assert jsonb_array_length(j->'premios') = 3, 'T5 os três prêmios (sem saldo incluso): ' || (j->'premios')::text;
   assert public.vitrine_publica('nao-existe') is null, 'T5 slug inválido';
 end $$;
 

@@ -14,6 +14,9 @@ do $$ declare v_org uuid; v_neg uuid; v_ind uuid; v_plano uuid; v_conta uuid; v_
   insert into public.pessoas (organizacao_id, nome, telefone) values (v_org, 'Indicante V', '11933330001') returning id into v_ind;
   insert into public.planos (organizacao_id, negocio_id, nome, valor_tabela, periodicidade) values (v_org, v_neg, '200 Mb', 80, 'mensal') returning id into v_plano;
   insert into public.contas (organizacao_id, nome, tipo, negocio_id) values (v_org, 'Caixa Vit', 'dinheiro', v_neg) returning id into v_conta;
+  -- o indicante também é cliente (a vitrine do portal resolve pelo contrato dele)
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento, conta_id, faturamento_automatico)
+  values (v_org, v_neg, v_ind, v_plano, 80, 'mensal', current_date, 10, v_conta, false);
   insert into public.estoque_categorias (organizacao_id, negocio_id, nome) values (v_org, v_neg, 'Brindes') returning id into v_cat;
   insert into public.estoque_categorias (organizacao_id, negocio_id, nome) values (v_org, v_neg, 'Materiais') returning id into v_out;
   insert into public.estoque_itens (organizacao_id, negocio_id, categoria_id, codigo, nome, unidade_medida) values (v_org, v_neg, v_cat, 'VT-CX', 'Caixa de som', 'unidade') returning id into p1;
@@ -119,6 +122,14 @@ do $$ declare j jsonb; begin
   assert jsonb_array_length(j->'faixas') = 3, 'T5 três faixas';
   assert jsonb_array_length(j->'premios') = 3, 'T5 os três prêmios (sem saldo incluso): ' || (j->'premios')::text;
   assert public.vitrine_publica('nao-existe') is null, 'T5 slug inválido';
+end $$;
+
+-- T6: cliente logado vê a vitrine completa antes de indicar (portal_vitrine)
+set local role authenticated;
+set local request.jwt.claim.sub = '77777777-7777-7777-7777-777777777777';
+do $$ declare j jsonb; begin
+  j := public.portal_vitrine();
+  assert j->>'negocio' = 'VITRINE T' and jsonb_array_length(j->'premios') = 3, 'T6 vitrine do cliente logado';
 end $$;
 
 rollback;

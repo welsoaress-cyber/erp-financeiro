@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { Cartao } from '../../core/ui/Cartao'
 import { Alerta } from '../../core/ui/Alerta'
@@ -11,26 +11,45 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
+import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePixStatus, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
 import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
+/** Cronômetro regressivo até a expiração do Pix. */
+function Cronometro({ expiraEm }: { expiraEm: string }) {
+  const [agora, setAgora] = useState(Date.now())
+  useEffect(() => { const t = setInterval(() => setAgora(Date.now()), 1000); return () => clearInterval(t) }, [])
+  const restante = Math.max(0, new Date(expiraEm).getTime() - agora)
+  if (restante <= 0) return <span className="text-red-400">expirado — gere um novo Pix</span>
+  const h = Math.floor(restante / 3_600_000), m = Math.floor((restante % 3_600_000) / 60_000), s = Math.floor((restante % 60_000) / 1000)
+  return <span>expira em {h > 0 ? `${h}h ` : ''}{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}</span>
+}
+
 function BotaoPix({ fatura }: { fatura: Fatura }) {
   const pagar = usePagarComPix()
-  const [pix, setPix] = useState<{ copia_cola: string; ticket_url?: string | null } | null>(null)
+  const [pix, setPix] = useState<{ copia_cola: string; ticket_url?: string | null; qr_base64?: string | null; expira_em?: string | null } | null>(null)
   const [copiado, setCopiado] = useState(false)
+  const status = usePixStatus(fatura.id, Boolean(pix)) // verifica sozinho a cada 4s
+  const pago = status.data === 'pago'
   async function copiar(codigo: string) { try { await navigator.clipboard.writeText(codigo); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { /* sem clipboard */ } }
   if (fatura.situacao === 'paga' || fatura.situacao === 'gratis') return null
   if (pix) {
     return (
       <div className="mt-2 rounded-md border border-line bg-surface p-3 text-left">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Pix copia e cola</p>
-        <p className="mt-1 break-all font-mono text-[11px]">{pix.copia_cola}</p>
-        <span className="mt-2 flex flex-wrap gap-2">
-          <Botao onClick={() => void copiar(pix.copia_cola)}>{copiado ? 'Copiado!' : 'Copiar código'}</Botao>
-          {pix.ticket_url && <a href={pix.ticket_url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center rounded-md border border-line px-4 text-sm hover:bg-white/5">Ver QR Code</a>}
-        </span>
-        <p className="mt-2 text-xs text-ink-muted">Depois do pagamento a fatura baixa sozinha em alguns minutos.</p>
+        {pago ? (
+          <div className="flex items-center gap-2 text-green-500"><span className="text-2xl">✔</span><span className="font-semibold">Pagamento identificado! Sua fatura foi baixada.</span></div>
+        ) : (
+          <>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Pague com Pix — <Cronometro expiraEm={pix.expira_em ?? new Date(Date.now() + 86_400_000).toISOString()} /></p>
+            {pix.qr_base64 && <img src={`data:image/png;base64,${pix.qr_base64}`} alt="QR Code Pix" className="mx-auto my-3 size-48 rounded-md bg-white p-2" />}
+            <p className="break-all rounded bg-black/20 p-2 font-mono text-[11px]">{pix.copia_cola}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Botao onClick={() => void copiar(pix.copia_cola)}>{copiado ? 'Copiado!' : 'Copiar código'}</Botao>
+              <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted"><span className="size-2 animate-pulse rounded-full bg-green-500" />aguardando pagamento…</span>
+            </div>
+            <p className="mt-2 text-xs text-ink-muted">Abra o app do seu banco → Pix → Pagar → cole o código ou escaneie o QR. A fatura baixa sozinha assim que o pagamento cair.</p>
+          </>
+        )}
       </div>
     )
   }

@@ -227,7 +227,7 @@ export function useAvaliarVisita() {
 // ---------------------------------------------------------------------------
 // Pix (etapa 31)
 // ---------------------------------------------------------------------------
-export interface PixGerado { copia_cola: string; ticket_url?: string | null }
+export interface PixGerado { copia_cola: string; ticket_url?: string | null; qr_base64?: string | null; expira_em?: string | null }
 
 export function usePagarComPix() {
   return useMutation({
@@ -235,14 +235,33 @@ export function usePagarComPix() {
       // reaproveita cobrança pendente antes de gerar outra
       const { data: existente } = await supabase.rpc('portal_pix_cobranca', { p_lancamento_id: p.lancamentoId })
       const ex = Array.isArray(existente) ? existente[0] : existente
-      if (ex?.status === 'pendente' && ex.copia_cola) return { copia_cola: ex.copia_cola, ticket_url: ex.ticket_url }
+      if (ex?.status === 'pendente' && ex.copia_cola) return { copia_cola: ex.copia_cola, ticket_url: ex.ticket_url, expira_em: ex.expira_em }
       const { data, error } = await supabase.functions.invoke('pix-gerar', { body: { lancamento_id: p.lancamentoId } })
       if (error) {
         const detalhe = await (error as { context?: Response }).context?.json?.().catch(() => null)
         throw new Error(detalhe?.erro ?? 'Não foi possível gerar o Pix agora. Tente de novo ou fale com o suporte.')
       }
       if (!data?.ok) throw new Error(data?.erro ?? 'Não foi possível gerar o Pix.')
-      return { copia_cola: data.copia_cola, ticket_url: data.ticket_url }
+      return { copia_cola: data.copia_cola, ticket_url: data.ticket_url, qr_base64: data.qr_base64, expira_em: data.expira_em }
+    },
+  })
+}
+
+/** Verifica sozinho, a cada 4s, se a cobrança Pix já foi paga (baixa via webhook). */
+export function usePixStatus(lancamentoId: string | null, ativo: boolean) {
+  const { usuario } = useAuth()
+  const invalidar = useInvalidarPortal()
+  return useQuery({
+    queryKey: [...chave(usuario?.id), 'pix-status', lancamentoId],
+    enabled: Boolean(usuario && lancamentoId && ativo),
+    refetchInterval: ativo ? 4000 : false,
+    queryFn: async (): Promise<string> => {
+      const { data, error } = await supabase.rpc('portal_pix_cobranca', { p_lancamento_id: lancamentoId })
+      if (error) throw error
+      const r = Array.isArray(data) ? data[0] : data
+      const status = (r?.status ?? 'pendente') as string
+      if (status === 'pago') invalidar() // atualiza a lista de faturas na hora
+      return status
     },
   })
 }

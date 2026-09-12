@@ -69,6 +69,7 @@ Deno.serve(async (req) => {
 
   const copiaCola = mp?.point_of_interaction?.transaction_data?.qr_code
   const ticket = mp?.point_of_interaction?.transaction_data?.ticket_url
+  const qrBase64 = mp?.point_of_interaction?.transaction_data?.qr_code_base64 ?? null
   if (!copiaCola) return json({ ok: false, erro: 'Mercado Pago não devolveu o código Pix' }, 502)
 
   // 4) registra no banco (motor service_role)
@@ -77,5 +78,5 @@ Deno.serve(async (req) => {
     p_ticket_url: ticket ?? null, p_expira_em: corpo.date_of_expiration, p_resposta: { status: mp.status },
   })
   if (eReg) return json({ ok: false, erro: `registro: ${eReg.message}` }, 500)
-  return json({ ok: true, copia_cola: copiaCola, ticket_url: ticket ?? null })
+  return json({ ok: true, copia_cola: copiaCola, ticket_url: ticket ?? null, qr_base64: qrBase64, expira_em: corpo.date_of_expiration })
 })

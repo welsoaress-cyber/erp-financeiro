@@ -9,6 +9,7 @@ import { PortalCadastroPage, PortalLoginEmailPage, PortalLoginPage, PortalNovaSe
 import { PortalFaturaPdfPage, PortalFaturasPage, PortalIndiquePage, PortalPagamentosPage, PortalPlanoPage, PortalPromocoesPage } from '../portal/pages/PortalPages'
 import { PortalChamadosPage, PortalDadosPage, PortalFidelidadePage, PortalInicioPage } from '../portal/pages/PortalServnetPages'
 import { IndicacaoPublicaPage } from '../portal/pages/IndicacaoPublicaPage'
+import { VitrinePublicaPage } from '../portal/pages/VitrinePublicaPage'
 import { TecnicoShell } from '../tecnico/TecnicoShell'
 import { TecnicoLoginPage } from '../tecnico/pages/TecnicoLoginPage'
 import { TecnicoChamadosPage } from '../tecnico/pages/TecnicoChamadosPage'
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
   { path: '/portal/nova-senha', element: <PortalNovaSenhaPage /> },
   { path: '/portal/vincular', element: <PortalVincularPage /> },
   { path: '/portal/indicacao/:codigo', element: <IndicacaoPublicaPage /> },
+  { path: '/portal/premios/:slug', element: <VitrinePublicaPage /> },
   {
     path: '/portal',
     element: <PortalShell />,

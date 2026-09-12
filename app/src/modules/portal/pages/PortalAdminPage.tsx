@@ -21,6 +21,7 @@ import { useEstoqueItens } from '../../estoque/api'
 import { useContratos } from '../../contratos/api'
 import type { IndicacaoAdmin, PortalConfig, PromocaoAdmin } from '../tipos'
 import { OperacaoPortal } from '../components/OperacaoPortal'
+import { VitrinePremiosAdmin } from '../components/VitrinePremiosAdmin'
 
 type Janela = { tipo: 'config' } | { tipo: 'promocao'; promocao?: PromocaoAdmin } | { tipo: 'converter'; indicacao: IndicacaoAdmin } | { tipo: 'nova-indicacao' } | null
 
@@ -42,7 +43,7 @@ function FormConfig({ negocioId, config, aoConcluir }: { negocioId: string; conf
   const [ativo, setAtivo] = useState(config?.ativo ?? true); const [logo, setLogo] = useState(config?.logo_url ?? ''); const [cor, setCor] = useState(config?.cor_primaria ?? '#1e3a8a')
   const [texto, setTexto] = useState(config?.texto_promocional ?? ''); const [pix, setPix] = useState(config?.chave_pix ?? ''); const [instr, setInstr] = useState(config?.instrucoes_pagamento ?? ''); const [beneficio, setBeneficio] = useState(String(config?.beneficio_indicacao ?? 0))
   const [pixAuto, setPixAuto] = useState(config?.pix_automatico ?? false); const [contaPix, setContaPix] = useState(config?.conta_pix_id ?? '')
-  const [tema, setTema] = useState(config?.tema ?? 'escuro'); const [zap, setZap] = useState(config?.whatsapp_suporte ?? ''); const [tipoBen, setTipoBen] = useState(config?.beneficio_tipo ?? 'mes_gratis'); const [fidelidade, setFidelidade] = useState(config?.fidelidade_ativa ?? true); const [site, setSite] = useState(config?.site_url ?? '')
+  const [tema, setTema] = useState(config?.tema ?? 'escuro'); const [zap, setZap] = useState(config?.whatsapp_suporte ?? ''); const [tipoBen, setTipoBen] = useState(config?.beneficio_tipo ?? 'mes_gratis'); const [fidelidade, setFidelidade] = useState(config?.fidelidade_ativa ?? true); const [site, setSite] = useState(config?.site_url ?? ''); const [urlPortal, setUrlPortal] = useState(config?.url_portal ?? '')
   const [erro, setErro] = useState<string | null>(null)
   function aoEnviar(e: FormEvent) {
     e.preventDefault()
@@ -52,8 +53,9 @@ function FormConfig({ negocioId, config, aoConcluir }: { negocioId: string; conf
     const zapDig = zap.replace(/\D/g, '')
     if (zapDig && (zapDig.length < 12 || zapDig.length > 13)) { setErro('WhatsApp de suporte com código do país e DDD (ex.: 5511999999999).'); return }
     if (site && !/^https:\/\//.test(site)) { setErro('O site deve começar com https://'); return }
+    if (urlPortal && !/^https:\/\//.test(urlPortal)) { setErro('O endereço do portal deve começar com https://'); return }
     setErro(null)
-    salvar.mutate({ id: config?.id, negocioId, dados: { ativo, logo_url: logo || null, cor_primaria: cor, texto_promocional: texto.trim() || null, chave_pix: pix.trim() || null, instrucoes_pagamento: instr.trim() || null, beneficio_indicacao: Math.round(b * 100) / 100, tema, whatsapp_suporte: zapDig || null, beneficio_tipo: tipoBen, fidelidade_ativa: fidelidade, site_url: site.trim().replace(/\/$/, '') || null, pix_automatico: pixAuto, conta_pix_id: contaPix || null } }, { onSuccess: aoConcluir })
+    salvar.mutate({ id: config?.id, negocioId, dados: { ativo, logo_url: logo || null, cor_primaria: cor, texto_promocional: texto.trim() || null, chave_pix: pix.trim() || null, instrucoes_pagamento: instr.trim() || null, beneficio_indicacao: Math.round(b * 100) / 100, tema, whatsapp_suporte: zapDig || null, beneficio_tipo: tipoBen, fidelidade_ativa: fidelidade, site_url: site.trim().replace(/\/$/, '') || null, url_portal: urlPortal.trim().replace(/\/$/, '') || null, pix_automatico: pixAuto, conta_pix_id: contaPix || null } }, { onSuccess: aoConcluir })
   }
   return (
     <form onSubmit={aoEnviar} className="space-y-4" noValidate>
@@ -67,6 +69,7 @@ function FormConfig({ negocioId, config, aoConcluir }: { negocioId: string; conf
         <Selecao rotulo="Tema do portal" opcoes={[{ valor: 'escuro', rotulo: 'Escuro (padrão SERVNET)' }, { valor: 'claro', rotulo: 'Claro' }]} value={tema} onChange={(e) => setTema(e.target.value as 'escuro' | 'claro')} />
         <Campo rotulo="WhatsApp de suporte (com 55 e DDD)" inputMode="tel" value={zap} onChange={(e) => setZap(e.target.value)} placeholder="5511999999999" />
         <Campo rotulo="Site do provedor (link de indicação)" value={site} onChange={(e) => setSite(e.target.value)} placeholder="https://www.servnet.net.br" />
+        <Campo rotulo="Endereço do portal (link nos avisos WhatsApp)" value={urlPortal} onChange={(e) => setUrlPortal(e.target.value)} placeholder="https://erp.exemplo.dev/portal" />
       </div>
       <div className="rounded-md border border-line p-3">
         <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={pixAuto} onChange={(e) => setPixAuto(e.target.checked)} className="size-4 accent-brand-600" />Pix automático (Mercado Pago) — o cliente paga pelo portal e a baixa é automática</label>
@@ -166,6 +169,7 @@ export function PortalAdminPage() {
             </Cartao>
           </div>
           <OperacaoPortal negocioId={negocio.id} />
+          <VitrinePremiosAdmin negocioId={negocio.id} negocioSlug={negocio.slug} />
           <Cartao className="p-0">
             <div className="flex items-center justify-between border-b border-line px-6 py-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Indicações (Indique e Ganhe)</h2>

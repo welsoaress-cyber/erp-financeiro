@@ -1,4 +1,4 @@
-export interface PortalConfig { id: string; organizacao_id: string; negocio_id: string; ativo: boolean; logo_url: string | null; cor_primaria: string; texto_promocional: string | null; chave_pix: string | null; instrucoes_pagamento: string | null; beneficio_indicacao: number; tema: 'escuro' | 'claro'; whatsapp_suporte: string | null; beneficio_tipo: 'valor' | 'mes_gratis'; fidelidade_ativa: boolean; site_url: string | null; pix_automatico: boolean; conta_pix_id: string | null }
+export interface PortalConfig { id: string; organizacao_id: string; negocio_id: string; ativo: boolean; logo_url: string | null; cor_primaria: string; texto_promocional: string | null; chave_pix: string | null; instrucoes_pagamento: string | null; beneficio_indicacao: number; tema: 'escuro' | 'claro'; whatsapp_suporte: string | null; beneficio_tipo: 'valor' | 'mes_gratis'; fidelidade_ativa: boolean; site_url: string | null; pix_automatico: boolean; conta_pix_id: string | null; url_portal: string | null }
 export type DadosPortalConfig = Omit<PortalConfig, 'id' | 'organizacao_id' | 'negocio_id'>
 export interface PromocaoAdmin { id: string; organizacao_id: string; negocio_id: string; plano_id: string | null; titulo: string; descricao: string; regras: string | null; como_aderir: string | null; data_inicio: string; data_fim: string | null; ativa: boolean }
 export type DadosPromocao = Omit<PromocaoAdmin, 'id' | 'organizacao_id'>
@@ -8,3 +8,8 @@ export type StatusRede = 'ok' | 'lentidao' | 'queda' | 'manutencao'
 export interface StatusRedeAdmin { id: string; negocio_id: string; status: StatusRede; titulo: string | null; descricao: string | null; atualizado_em: string }
 export interface SolicitacaoAdmin { id: string; negocio_id: string; pessoa_id: string; pessoa: string; negocio: string; tipo: 'suporte' | 'fatura' | 'duvida' | 'upgrade'; descricao: string | null; protocolo: string; status: 'aberta' | 'em_andamento' | 'concluida'; resposta: string | null; criado_em: string }
 export const ROTULO_REDE: Record<StatusRede, string> = { ok: 'Operando normalmente', lentidao: 'Lentidão', queda: 'Queda', manutencao: 'Manutenção programada' }
+
+export interface IndicacaoFaixa { id: string; negocio_id: string; faixa: number; nome: string; plano_ate: number | null; teto: number; ativo: boolean }
+export interface DadosFaixa { negocio_id: string; faixa: number; nome: string; plano_ate: number | null; teto: number; ativo: boolean }
+export interface IndicacaoPremio { id: string; negocio_id: string; nome: string; foto: string | null; faixa: number; item_id: string; ativo: boolean }
+export interface DadosPremio { negocio_id: string; nome: string; foto: string | null; faixa: number; item_id: string; ativo: boolean }

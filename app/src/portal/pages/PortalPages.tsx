@@ -207,25 +207,45 @@ export function PortalPlanoPage() {
   )
 }
 
-/** Indicação convertida aguardando a escolha do presente (regra: sem troca depois). */
+/** Dias úteis (seg–sex) desde uma data — prazo de entrega do presente. */
+function diasUteisDesde(inicio: string): number {
+  let d = new Date(inicio.slice(0, 10) + 'T12:00:00')
+  const hoje = new Date()
+  let n = 0
+  while (d < hoje) {
+    d = new Date(d.getTime() + 86_400_000)
+    if (d.getDay() !== 0 && d.getDay() !== 6) n++
+  }
+  return n
+}
+
+/** Vitrine: indicação convertida aguardando a escolha do presente (sem troca depois). */
 function EscolhaPresente({ indicacaoId }: { indicacaoId: string }) {
   const opcoes = usePresentesIndicacao(indicacaoId)
   const escolher = useEscolherPresente()
   const [itemId, setItemId] = useState('')
+  const selecionado = (opcoes.data ?? []).find((o) => o.item_id === itemId)
   if (opcoes.isPending) return <p className="mt-1 text-xs text-ink-muted">Carregando presentes…</p>
   if ((opcoes.data ?? []).length === 0) return <p className="mt-1 text-xs text-ink-muted">🎁 Seu indicado foi instalado! O provedor vai liberar as opções de presente.</p>
+  if (escolher.isSuccess) return <div className="mt-2"><Alerta tipo="sucesso">🎉 Presente confirmado! Entrega em até 10 dias úteis, na sua casa.</Alerta></div>
   return (
     <div className="mt-2 rounded-md border border-line bg-surface/60 p-3">
-      <p className="text-xs font-medium">🎁 Parabéns! Escolha o seu presente (não é possível trocar depois):</p>
+      <p className="text-sm font-medium">🎁 Parabéns! Toque no presente que você quer (não é possível trocar depois):</p>
       {escolher.error != null && <div className="mt-1"><Alerta tipo="erro">{mensagemDeErro(escolher.error)}</Alerta></div>}
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {(opcoes.data ?? []).map((o) => (
-          <label key={o.item_id} className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${itemId === o.item_id ? 'border-brand-600 bg-brand-600/10 font-medium' : 'border-line'}`}>
-            <input type="radio" name={`presente-${indicacaoId}`} className="size-3.5 accent-brand-600" checked={itemId === o.item_id} onChange={() => setItemId(o.item_id)} />
-            {o.nome}
-          </label>
+          <button key={o.item_id} type="button" onClick={() => setItemId(o.item_id)}
+            className={`overflow-hidden rounded-lg border text-left transition ${itemId === o.item_id ? 'border-brand-600 ring-2 ring-brand-600' : 'border-line hover:border-brand-600/50'}`}>
+            {o.foto
+              ? <img src={o.foto} alt={o.nome} className="aspect-square w-full object-cover" />
+              : <div className="flex aspect-square w-full items-center justify-center bg-surface text-5xl">🎁</div>}
+            <p className="px-2 py-2 text-center text-sm font-medium">{o.nome}</p>
+          </button>
         ))}
-        <Botao onClick={() => { if (itemId && window.confirm('Confirmar este presente? Não será possível trocar.')) escolher.mutate({ indicacaoId, itemId }) }} disabled={!itemId} carregando={escolher.isPending}>Confirmar</Botao>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="text-xs text-ink-muted">{selecionado ? `Escolhido: ${selecionado.nome}` : 'Toque em um presente para escolher.'}</p>
+        <Botao onClick={() => { if (itemId && window.confirm(`Confirmar "${selecionado?.nome}"? Não será possível trocar.`)) escolher.mutate({ indicacaoId, itemId }) }} disabled={!itemId} carregando={escolher.isPending}>Confirmar presente</Botao>
       </div>
       <p className="mt-1 text-xs text-ink-muted">Entrega em até 10 dias úteis, na sua casa.</p>
     </div>
@@ -293,10 +313,17 @@ export function PortalIndiquePage() {
               </div>
               {i.aguardando_escolha && <EscolhaPresente indicacaoId={i.id} />}
               {i.presente && (
-                <p className="mt-1 text-xs text-ink-muted">
-                  🎁 Presente: <span className="font-medium text-ink">{i.presente}</span>
-                  {i.presente_entregue_em ? ` — entregue em ${formatarData(i.presente_entregue_em)}` : ' — entrega em até 10 dias úteis'}
-                </p>
+                <div className="mt-1 flex items-center gap-2 text-xs text-ink-muted">
+                  {i.presente_foto && <img src={i.presente_foto} alt={i.presente} className="size-10 rounded-md border border-line object-cover" />}
+                  <p>
+                    🎁 Presente: <span className="font-medium text-ink">{i.presente}</span>
+                    {i.presente_entregue_em
+                      ? ` — entregue em ${formatarData(i.presente_entregue_em)}`
+                      : i.convertida_em
+                        ? (diasUteisDesde(i.convertida_em) >= 10 ? ' — entrega para os próximos dias (prazo vencendo)' : ` — entrega em até ${10 - diasUteisDesde(i.convertida_em)} dia(s) útil(eis)`)
+                        : ' — entrega em até 10 dias úteis'}
+                  </p>
+                </div>
               )}
             </li>
           ))}</ul>

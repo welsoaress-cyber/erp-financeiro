@@ -111,6 +111,8 @@ Categoria de despesa tem **Natureza**: *Despesa operacional* (dia a dia) ou *Inv
 Cada operação sua (Servnet, etc.) é um **negócio**. Quase tudo no sistema é filtrável por negócio; contas e contratos pertencem a um negócio.
 
 > **Campanha Indique e Ganhe com presente:** no menu **Portal do cliente**, use **Nova indicação** para registrar quem chegou pelo WhatsApp (o sistema barra telefone repetido ou que já é de cliente). Quando o indicado for instalado, **Converter** — o indicante escolhe o presente no portal (só os da faixa do plano fechado, sem troca) ou você registra a escolha na linha. Ao levar o presente, clique **Entregue**: baixa 1 unidade da categoria "Brindes" do Estoque e congela o custo. Prazo de 10 dias úteis (a linha avisa quando atrasa); o painel mostra conversões, custo dos presentes e mensalidade gerada.
+>
+> **Vitrine de prêmios (etapa 49):** ainda no Portal do cliente, o cartão **Vitrine de prêmios** cadastra as **faixas** (plano do indicado até R$ X → prêmio até R$ Y — editáveis, sem mexer em código) e os **prêmios** com foto (tirada/enviada na hora, comprimida no navegador), faixa e item da categoria Brindes. Prêmio sem saldo em estoque some da vitrine sozinho. O cliente escolhe pelo portal numa grade com foto grande (feita para celular): toca, confirma e a escolha **trava**; cada indicação convertida gera uma escolha independente, na faixa do plano que aquele indicado fechou, com o prazo de entrega visível. Na conversão, o indicante recebe **aviso no WhatsApp** (pela régua de notificações; configure o "Endereço do portal" em Configurar portal para o link ir junto). O botão **Copiar link público** dá a vitrine sem login (`/portal/premios/<negócio>`) para divulgar em grupos e status.
 
 ## 8. Pessoas
 

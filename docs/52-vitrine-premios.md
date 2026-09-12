@@ -14,6 +14,10 @@ eram fixas no código e o cliente não via os prêmios — sem foto, sem apelo.
   data URL ≤ 400 KB — sem Storage, custo zero), nome, faixa e vínculo ao
   item da categoria **Brindes** do Estoque (validado por trigger). Prêmio
   com saldo zero **some da vitrine sozinho** (não prometer o que não tem).
+- **Adicionar em lote**: escolhe a faixa, seleciona várias fotos de uma vez
+  (cada foto vira um prêmio; nome inicial vem do arquivo, editável antes de
+  criar; o item da categoria Brindes é criado junto com saldo 0 — o prêmio
+  entra na vitrine quando houver entrada no estoque).
 - **Copiar link público**: vitrine sem login em `/portal/premios/<slug>`
   (função `vitrine_publica`, anon, só nome/foto/faixa — nenhum dado de
   cliente; mesmo padrão da página pública de indicação da 0023).

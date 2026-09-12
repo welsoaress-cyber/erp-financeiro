@@ -62,6 +62,39 @@ export function useSalvarPremio() {
     onSuccess: invalidar,
   })
 }
+/** Cadastro em lote: cada foto vira um prêmio; o item da categoria Brindes é criado junto (saldo 0 — dar entrada na compra). */
+export function useCriarPremiosLote() {
+  const { organizacao } = useOrganizacao(); const invalidar = useInvalidar(); const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: { negocioId: string; faixa: number; premios: { nome: string; foto: string }[] }) => {
+      // categoria Brindes do negócio (cria se não existir)
+      const { data: cats, error: eCat } = await supabase.from('estoque_categorias').select('id, nome').eq('negocio_id', p.negocioId)
+      if (eCat) throw eCat
+      let catId = (cats ?? []).find((c) => c.nome.toLowerCase().startsWith('brinde'))?.id as string | undefined
+      if (!catId) {
+        const { data: nova, error } = await supabase.from('estoque_categorias').insert({ organizacao_id: organizacao.id, negocio_id: p.negocioId, nome: 'Brindes' }).select('id').single()
+        if (error) throw error
+        catId = nova.id as string
+      }
+      let criados = 0
+      for (const pr of p.premios) {
+        const codigo = `BR-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+        const { data: item, error: eItem } = await supabase.from('estoque_itens').insert({
+          organizacao_id: organizacao.id, negocio_id: p.negocioId, categoria_id: catId, codigo,
+          nome: pr.nome.slice(0, 80), unidade_medida: 'unidade',
+        }).select('id').single()
+        if (eItem) throw new Error(`"${pr.nome}": ${eItem.message} (${criados} prêmio(s) já criados)`)
+        const { error: ePremio } = await supabase.from('indicacao_premios').insert({
+          organizacao_id: organizacao.id, negocio_id: p.negocioId, nome: pr.nome.slice(0, 80), foto: pr.foto, faixa: p.faixa, item_id: item.id,
+        })
+        if (ePremio) throw new Error(`"${pr.nome}": ${ePremio.message} (${criados} prêmio(s) já criados)`)
+        criados++
+      }
+      return criados
+    },
+    onSuccess: () => { invalidar(); void qc.invalidateQueries({ queryKey: ['estoque', organizacao.id] }) },
+  })
+}
 export function useIndicacoesAdmin() {
   const { organizacao } = useOrganizacao()
   return useQuery({ queryKey: [...chave(organizacao.id), 'indicacoes'], queryFn: async (): Promise<IndicacaoAdmin[]> => { const { data, error } = await supabase.from('indicacoes').select('*').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }).limit(300); if (error) throw error; return (data ?? []).map((i) => ({ ...i, beneficio_valor: Number(i.beneficio_valor) })) } })

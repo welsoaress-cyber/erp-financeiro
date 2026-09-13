@@ -1,0 +1,12 @@
+{
+  "name": "agente-telegram-painel",
+  "private": true,
+  "type": "module",
+  "description": "PoC userbot para explorar/automatizar o painel de revenda via Telegram (roda na máquina do proprietário, fora do deploy do ERP)",
+  "scripts": { "explorar": "node explorar.mjs" },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "input": "^1.0.1",
+    "telegram": "^2.26.22"
+  }
+}

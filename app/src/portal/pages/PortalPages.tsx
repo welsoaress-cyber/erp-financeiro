@@ -43,7 +43,8 @@ function BotaoPix({ fatura }: { fatura: Fatura }) {
   const [pix, setPix] = useState<{ copia_cola: string; ticket_url?: string | null; qr_base64?: string | null; expira_em?: string | null } | null>(null)
   const [copiado, setCopiado] = useState(false)
   const status = usePixStatus(fatura.id, Boolean(pix)) // verifica sozinho a cada 4s
-  const pago = status.data === 'pago'
+  const pago = status.data?.status === 'pago'
+  const diag = status.data?.edge === false ? 'pix-verificar não publicada' : status.data?.mp_status ? `MP: ${status.data.mp_status}${status.data.diag ? ` · ${status.data.diag}` : ''}` : null
   async function copiar(codigo: string) { try { await navigator.clipboard.writeText(codigo); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { /* sem clipboard */ } }
   if (fatura.situacao === 'paga' || fatura.situacao === 'gratis') return null
   if (pix) {
@@ -60,6 +61,7 @@ function BotaoPix({ fatura }: { fatura: Fatura }) {
               <Botao onClick={() => void copiar(pix.copia_cola)}>{copiado ? 'Copiado!' : 'Copiar código'}</Botao>
               <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted"><span className="size-2 animate-pulse rounded-full bg-green-500" />aguardando pagamento…</span>
             </div>
+            {diag && <p className="mt-1 text-[11px] text-amber-500">{diag}</p>}
             <p className="mt-2 text-xs text-ink-muted">Abra o app do seu banco → Pix → Pagar → cole o código ou escaneie o QR. A fatura baixa sozinha assim que o pagamento cair.</p>
           </>
         )}

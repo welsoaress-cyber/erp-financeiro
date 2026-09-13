@@ -39,21 +39,27 @@ Deno.serve(async (req) => {
     .eq('pessoa_id', pessoaId)
     .order('criado_em', { ascending: false })
     .limit(1).maybeSingle()
-  if (!cob) return json({ ok: true, status: 'sem_cobranca' })
+  if (!cob) return json({ ok: true, status: 'sem_cobranca', diag: 'sem cobrança pendente para este lançamento' })
   if (cob.status === 'pago') return json({ ok: true, status: 'pago' })
   if (cob.status !== 'pendente') return json({ ok: true, status: cob.status })
 
   // fonte da verdade: consulta o pagamento na API do MP
   const res = await fetch(`https://api.mercadopago.com/v1/payments/${cob.txid}`, { headers: { Authorization: `Bearer ${MP_TOKEN}` } })
-  if (!res.ok) return json({ ok: true, status: 'pendente' }) // sem drama: segue aguardando
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    console.log('pix-verificar consulta MP falhou', cob.txid, res.status, txt.slice(0, 200))
+    return json({ ok: true, status: 'pendente', mp_status: `http_${res.status}`, diag: txt.slice(0, 160) })
+  }
   const p = await res.json()
+  console.log('pix-verificar', cob.txid, 'mp_status=', p.status)
   if (p.status === 'approved') {
-    await sb.rpc('pix_confirmar', { p_txid: String(cob.txid), p_valor_pago: p.transaction_amount, p_resposta: { status: p.status, date_approved: p.date_approved, via: 'portal' } })
-    return json({ ok: true, status: 'pago' })
+    const { error } = await sb.rpc('pix_confirmar', { p_txid: String(cob.txid), p_valor_pago: p.transaction_amount, p_resposta: { status: p.status, date_approved: p.date_approved, via: 'portal' } })
+    if (error) return json({ ok: true, status: 'pendente', mp_status: 'approved', diag: `confirmar: ${error.message}` })
+    return json({ ok: true, status: 'pago', mp_status: 'approved' })
   }
   if (p.status === 'cancelled' || p.status === 'expired' || p.status === 'rejected') {
     await sb.rpc('pix_marcar_erro', { p_txid: String(cob.txid), p_status: p.status === 'rejected' ? 'erro' : p.status === 'expired' ? 'expirado' : 'cancelado', p_resposta: { status: p.status } })
-    return json({ ok: true, status: p.status })
+    return json({ ok: true, status: p.status, mp_status: p.status })
   }
-  return json({ ok: true, status: 'pendente' })
+  return json({ ok: true, status: 'pendente', mp_status: p.status })
 })

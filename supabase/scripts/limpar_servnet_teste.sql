@@ -8,7 +8,9 @@
 -- APAGA (só do negócio Servnet):
 --   • TODOS os lançamentos do negócio (com e sem contrato) e seus movimentos
 --   • contratos, faturamentos, execuções, descontos, indicações e aceites
---   • cobranças Pix, bloqueios, notificações de cobrança e disparos
+--   • cobranças Pix (e verificações em voo), bloqueios, confianças,
+--     notificações de cobrança, disparos e fechamentos de mês
+--   • patrimônio (bens e histórico) do negócio
 --   • ordens de serviço (com histórico, materiais e fotos) e comodatos
 --   • movimentações de estoque, instalações, bolsas dos técnicos e
 --     solicitações de reposição — os ITENS ficam cadastrados com quantidade 0
@@ -41,7 +43,8 @@ declare
     'aceites_contrato','cto_portas','cto_historico','pix_cobrancas','bloqueios',
     'tecnico_movimentacoes','tecnico_estoque','reposicao_solicitacoes',
     'pessoas','pessoa_negocio_vinculos','portal_acessos','portal_solicitacoes',
-    'indicacoes','descontos_contrato','disparos','disparo_itens','transacoes_carteira','fatura_itens'
+    'indicacoes','descontos_contrato','disparos','disparo_itens','transacoes_carteira','fatura_itens',
+    'confiancas','patrimonios','patrimonio_historico','fechamentos_mes'
   ];
 begin
   select id, organizacao_id into v_neg, v_org
@@ -69,8 +72,11 @@ begin
 
   -- 1) dependências dos lançamentos e contratos
   delete from public.notificacoes_log where negocio_id = v_neg;
+  delete from public.pix_verificacoes where txid in (select txid from public.pix_cobrancas where negocio_id = v_neg);
   delete from public.pix_cobrancas    where negocio_id = v_neg;
   delete from public.bloqueios        where negocio_id = v_neg;
+  delete from public.confiancas       where negocio_id = v_neg;
+  delete from public.fechamentos_mes  where organizacao_id = v_org;
   delete from public.aceites_contrato where contrato_id in (select id from _contratos);
   update public.indicacoes set desconto_id = null where negocio_id = v_neg;
   delete from public.descontos_contrato where contrato_id in (select id from _contratos);
@@ -91,6 +97,8 @@ begin
   delete from public.tecnico_movimentacoes where os_id in (select id from _os) or tecnico_id in (select id from public.tecnicos where negocio_id = v_neg);
   delete from public.ordens_servico where negocio_id = v_neg;
   delete from public.estoque_movimentacoes where negocio_id = v_neg;
+  delete from public.patrimonio_historico where patrimonio_id in (select id from public.patrimonios where negocio_id = v_neg);
+  delete from public.patrimonios where negocio_id = v_neg;
   update public.estoque_itens set quantidade_atual = 0 where negocio_id = v_neg;
   update public.tecnico_estoque set quantidade = 0 where tecnico_id in (select id from public.tecnicos where negocio_id = v_neg);
   delete from public.reposicao_solicitacoes where tecnico_id in (select id from public.tecnicos where negocio_id = v_neg);
@@ -116,7 +124,7 @@ begin
     delete from public.lancamentos l
      where l.id in (select id from _lanc)
        and not exists (select 1 from public.lancamentos f
-                        where f.lancamento_origem_id = l.id and f.id in (select id from _lanc));
+                        where (f.lancamento_origem_id = l.id or f.estorno_de = l.id) and f.id in (select id from _lanc));
     get diagnostics n = row_count;
     exit when n = 0;
   end loop;

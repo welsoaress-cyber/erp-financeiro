@@ -44,7 +44,7 @@ export function BotaoPix({ fatura }: { fatura: Fatura }) {
   const [copiado, setCopiado] = useState(false)
   const status = usePixStatus(fatura.id, Boolean(pix)) // verifica sozinho a cada 4s
   const pago = status.data?.status === 'pago'
-  const diag = status.data?.edge === false ? 'pix-verificar não publicada' : status.data?.mp_status ? `MP: ${status.data.mp_status}${status.data.diag ? ` · ${status.data.diag}` : ''}` : null
+  const diag = status.error ? `erro: ${status.error.message}` : status.data?.diag && !status.data.edge ? status.data.diag : status.data?.mp_status ? `MP: ${status.data.mp_status}${status.data.diag ? ` · ${status.data.diag}` : ''}` : null
   async function copiar(codigo: string) { try { await navigator.clipboard.writeText(codigo); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { /* sem clipboard */ } }
   if (fatura.situacao === 'paga' || fatura.situacao === 'gratis') return null
   if (pix) {

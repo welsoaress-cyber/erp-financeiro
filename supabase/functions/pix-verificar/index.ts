@@ -43,26 +43,41 @@ Deno.serve(async (req) => {
   if (cob.status === 'pago') return json({ ok: true, status: 'pago' })
   if (cob.status !== 'pendente') return json({ ok: true, status: cob.status })
 
-  // fonte da verdade: consulta o pagamento na API do MP
-  const res = await fetch(`https://api.mercadopago.com/v1/payments/${cob.txid}`, { headers: { Authorization: `Bearer ${MP_TOKEN}` } })
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '')
-    console.log('pix-verificar consulta MP falhou', cob.txid, res.status, txt.slice(0, 200))
-    return json({ ok: true, status: 'pendente', mp_status: `http_${res.status}`, diag: txt.slice(0, 160) })
+  const mpHeaders = { Authorization: `Bearer ${MP_TOKEN}` }
+  let aprovado = false, valorPago = null, mpStatus = 'desconhecido'
+
+  // 1) consulta pelo id que criamos
+  const res = await fetch(`https://api.mercadopago.com/v1/payments/${cob.txid}`, { headers: mpHeaders })
+  if (res.ok) {
+    const p = await res.json()
+    mpStatus = p.status
+    if (p.status === 'approved') { aprovado = true; valorPago = p.transaction_amount }
+    else if (p.status === 'cancelled' || p.status === 'expired' || p.status === 'rejected') {
+      await sb.rpc('pix_marcar_erro', { p_txid: String(cob.txid), p_status: p.status === 'rejected' ? 'erro' : p.status === 'expired' ? 'expirado' : 'cancelado', p_resposta: { status: p.status } })
+      return json({ ok: true, status: p.status, mp_status: p.status })
+    }
+  } else { mpStatus = `http_${res.status}` }
+
+  // 2) o pagamento que criamos costuma ficar "pending"; o dinheiro entra num
+  //    pagamento SEPARADO — procura pela referência da fatura (external_reference)
+  if (!aprovado) {
+    const s = await fetch(`https://api.mercadopago.com/v1/payments/search?external_reference=${encodeURIComponent(lancamento_id)}&sort=date_created&criteria=desc`, { headers: mpHeaders })
+    if (s.ok) {
+      const sj = await s.json()
+      const results = sj.results ?? []
+      const ok = results.find((x) => x.status === 'approved')
+      if (ok) { aprovado = true; valorPago = ok.transaction_amount; mpStatus = 'approved(ref)' }
+      else if (results.length) mpStatus = 'busca:' + results.map((x) => x.status).join(',')
+    } else if (mpStatus === 'desconhecido') mpStatus = `busca_http_${s.status}`
   }
-  const p = await res.json()
-  console.log('pix-verificar', cob.txid, 'mp_status=', p.status)
-  // grava o último status visto no MP no próprio registro (diagnóstico via SQL, sem cache)
-  const diag = { ultimo_mp_status: p.status, checado_em: new Date().toISOString(), qr: (p.point_of_interaction?.transaction_data?.qr_code ?? '').slice(0, 60) }
-  await sb.from('pix_cobrancas').update({ resposta: diag }).eq('txid', cob.txid).eq('status', 'pendente')
-  if (p.status === 'approved') {
-    const { error } = await sb.rpc('pix_confirmar', { p_txid: String(cob.txid), p_valor_pago: p.transaction_amount, p_resposta: { status: p.status, date_approved: p.date_approved, via: 'portal' } })
+
+  console.log('pix-verificar', cob.txid, 'mp=', mpStatus)
+  await sb.from('pix_cobrancas').update({ resposta: { ultimo_mp_status: mpStatus, checado_em: new Date().toISOString() } }).eq('txid', cob.txid).eq('status', 'pendente')
+
+  if (aprovado) {
+    const { error } = await sb.rpc('pix_confirmar', { p_txid: String(cob.txid), p_valor_pago: valorPago, p_resposta: { status: 'approved', via: 'portal', mp: mpStatus } })
     if (error) return json({ ok: true, status: 'pendente', mp_status: 'approved', diag: `confirmar: ${error.message}` })
     return json({ ok: true, status: 'pago', mp_status: 'approved' })
   }
-  if (p.status === 'cancelled' || p.status === 'expired' || p.status === 'rejected') {
-    await sb.rpc('pix_marcar_erro', { p_txid: String(cob.txid), p_status: p.status === 'rejected' ? 'erro' : p.status === 'expired' ? 'expirado' : 'cancelado', p_resposta: { status: p.status } })
-    return json({ ok: true, status: p.status, mp_status: p.status })
-  }
-  return json({ ok: true, status: 'pendente', mp_status: p.status })
+  return json({ ok: true, status: 'pendente', mp_status: mpStatus })
 })

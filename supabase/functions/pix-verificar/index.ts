@@ -52,6 +52,9 @@ Deno.serve(async (req) => {
   }
   const p = await res.json()
   console.log('pix-verificar', cob.txid, 'mp_status=', p.status)
+  // grava o último status visto no MP no próprio registro (diagnóstico via SQL, sem cache)
+  const diag = { ultimo_mp_status: p.status, checado_em: new Date().toISOString(), qr: (p.point_of_interaction?.transaction_data?.qr_code ?? '').slice(0, 60) }
+  await sb.from('pix_cobrancas').update({ resposta: diag }).eq('txid', cob.txid).eq('status', 'pendente')
   if (p.status === 'approved') {
     const { error } = await sb.rpc('pix_confirmar', { p_txid: String(cob.txid), p_valor_pago: p.transaction_amount, p_resposta: { status: p.status, date_approved: p.date_approved, via: 'portal' } })
     if (error) return json({ ok: true, status: 'pendente', mp_status: 'approved', diag: `confirmar: ${error.message}` })

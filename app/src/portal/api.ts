@@ -247,7 +247,8 @@ export function usePagarComPix() {
   })
 }
 
-/** Verifica sozinho, a cada 4s, se a cobrança Pix já foi paga (baixa via webhook). */
+export interface PixStatus { status: string; mp_status?: string; diag?: string; edge?: boolean }
+/** Verifica sozinho, a cada 4s, se a cobrança Pix já foi paga (reconsulta o MP; não depende do webhook). */
 export function usePixStatus(lancamentoId: string | null, ativo: boolean) {
   const { usuario } = useAuth()
   const invalidar = useInvalidarPortal()
@@ -255,18 +256,20 @@ export function usePixStatus(lancamentoId: string | null, ativo: boolean) {
     queryKey: [...chave(usuario?.id), 'pix-status', lancamentoId],
     enabled: Boolean(usuario && lancamentoId && ativo),
     refetchInterval: ativo ? 4000 : false,
-    queryFn: async (): Promise<string> => {
+    queryFn: async (): Promise<PixStatus> => {
       // reconsulta o Mercado Pago e baixa na hora se aprovado (não depende do webhook)
-      const { data: v } = await supabase.functions.invoke('pix-verificar', { body: { lancamento_id: lancamentoId } })
-      let status = (v?.status ?? '') as string
-      if (!status) { // Edge indisponível: cai para a leitura do banco
-        const { data, error } = await supabase.rpc('portal_pix_cobranca', { p_lancamento_id: lancamentoId })
-        if (error) throw error
-        const r = Array.isArray(data) ? data[0] : data
-        status = (r?.status ?? 'pendente') as string
+      const { data: v, error: eEdge } = await supabase.functions.invoke('pix-verificar', { body: { lancamento_id: lancamentoId } })
+      if (!eEdge && v?.status) {
+        if (v.status === 'pago') invalidar()
+        return { status: v.status, mp_status: v.mp_status, diag: v.diag, edge: true }
       }
-      if (status === 'pago') invalidar() // atualiza a lista de faturas na hora
-      return status
+      // Edge indisponível/não publicada: cai para a leitura do banco
+      const { data, error } = await supabase.rpc('portal_pix_cobranca', { p_lancamento_id: lancamentoId })
+      if (error) throw error
+      const r = Array.isArray(data) ? data[0] : data
+      const status = (r?.status ?? 'pendente') as string
+      if (status === 'pago') invalidar()
+      return { status, edge: false }
     },
   })
 }

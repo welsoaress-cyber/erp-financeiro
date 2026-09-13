@@ -6,10 +6,23 @@ export interface Tabela {
 }
 
 export function decodificar(buffer: ArrayBuffer): string {
-  const utf8 = new TextDecoder('utf-8').decode(buffer)
-  // arquivo do Excel/Windows: bytes inválidos em UTF-8 viram U+FFFD → tenta Windows-1252
-  if (utf8.includes('�')) return new TextDecoder('windows-1252').decode(buffer)
-  return utf8
+  // exportações do sistema anterior misturam linhas em UTF-8 e Windows-1252:
+  // decide linha a linha (uma linha inválida em UTF-8 não pode estragar as outras)
+  const bytes = new Uint8Array(buffer)
+  const utf8 = new TextDecoder('utf-8', { fatal: true })
+  const cp1252 = new TextDecoder('windows-1252')
+  const partes: string[] = []
+  let ini = 0
+  for (let i = 0; i <= bytes.length; i++) {
+    if (i === bytes.length || bytes[i] === 10) {
+      const trecho = bytes.subarray(ini, i + 1)
+      let texto: string
+      try { texto = utf8.decode(trecho) } catch { texto = cp1252.decode(trecho) }
+      partes.push(texto)
+      ini = i + 1
+    }
+  }
+  return partes.join('')
 }
 
 export function detectarSeparador(texto: string): string {

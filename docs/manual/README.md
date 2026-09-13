@@ -241,7 +241,10 @@ No celular, o técnico: dá ciência, **agenda a visita** (o cliente recebe no W
 
 ![Configurações](img/25-configuracoes.png)
 
-Dados da conta/organização e **Importar CSV** (traz clientes, planos e contratos de um sistema anterior, com prévia antes de gravar).
+Dados da conta/organização e **Importar CSV** (traz clientes, planos e contratos de um sistema anterior, com prévia antes de gravar). Modelo da planilha: `docs/modelos/importar_clientes.csv` (só o nome é obrigatório). Na importação:
+- **2b. Planos**: para cada plano do arquivo que ainda não existe no negócio, escolha **usar um plano já cadastrado** (vale o valor de tabela dele) ou deixar criar um novo — você decide, nada é criado sem escolher.
+- **Cortesia** (caixa na linha): importa o contrato com valor 0 — não gera cobrança nem aparece no Contas a receber (o faturamento lista "Contrato com valor zero" como pendência informativa).
+- Arquivos com acentos misturados (UTF-8 e Windows) são lidos linha a linha; se um nome ainda vier errado, corrija na tela de Pessoas.
 
 ---
 

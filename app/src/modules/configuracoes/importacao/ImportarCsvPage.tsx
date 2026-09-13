@@ -1,6 +1,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react'
 import { Link } from 'react-router'
 import { useNegocios } from '../../negocios/api'
+import { usePlanos } from '../../contratos/api'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
@@ -71,7 +72,28 @@ export function ImportarCsvPage() {
   const negocioPadrao = negocios.find((n) => n.slug === 'servnet' || /servnet/i.test(n.nome))?.id ?? negocios[0]?.id ?? ''
   const negocioAtual = negocioId || negocioPadrao
 
-  const linhas = useMemo(() => (tabela && mapa ? montarLinhas(tabela, mapa) : []), [tabela, mapa])
+  const planosQ = usePlanos()
+  const [planoEscolhido, setPlanoEscolhido] = useState<Record<string, string>>({}) // nome no CSV → nome do plano existente ('' = criar novo)
+  const [cortesias, setCortesias] = useState<Set<number>>(new Set()) // linhas importadas com valor 0 (sem cobrança)
+
+  const linhasCsv = useMemo(() => (tabela && mapa ? montarLinhas(tabela, mapa) : []), [tabela, mapa])
+  const planosNegocio = useMemo(() => (planosQ.data ?? []).filter((p) => p.negocio_id === negocioAtual && p.ativo), [planosQ.data, negocioAtual])
+  // planos citados no CSV que ainda não existem no negócio: o proprietário decide se cria ou usa um existente
+  const planosNovos = useMemo(() => {
+    const existentes = new Set(planosNegocio.map((p) => p.nome.trim().toLowerCase()))
+    const nomes = new Map<string, number>()
+    for (const l of linhasCsv) { const n = nomePlanoImportado(l.plano); if (n && !existentes.has(n.toLowerCase())) nomes.set(n, (nomes.get(n) ?? 0) + 1) }
+    return [...nomes.entries()]
+  }, [linhasCsv, planosNegocio])
+  const linhas = useMemo(() => linhasCsv.map((l) => {
+    const nome = nomePlanoImportado(l.plano)
+    const escolhido = planoEscolhido[nome]
+    return { ...l, plano: escolhido || l.plano, valor: cortesias.has(l.linha) ? '0' : l.valor }
+  }), [linhasCsv, planoEscolhido, cortesias])
+  function alternarCortesia(linha: number) {
+    setCortesias((c) => { const n = new Set(c); if (n.has(linha)) n.delete(linha); else n.add(linha); return n })
+    setSimulacao(null)
+  }
   const problemas = useMemo(() => linhas.map(problemasLocais), [linhas])
   const faltando = mapa ? CAMPOS.filter((c) => c.obrigatorio && mapa[c.chave] === null).map((c) => c.rotulo) : []
   const prontas = linhas.length > 0 && faltando.length === 0
@@ -169,6 +191,24 @@ export function ImportarCsvPage() {
             </Cartao>
           )}
 
+          {prontas && planosNovos.length > 0 && (
+            <Cartao>
+              <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-ink-muted">2b. Planos</h2>
+              <p className="mb-4 text-sm text-ink-muted">Estes planos do arquivo não existem no negócio. Escolha um plano já cadastrado (o valor de tabela dele vale para as linhas) ou deixe criar um novo.</p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {planosNovos.map(([nome, qtd]) => (
+                  <Selecao
+                    key={nome}
+                    rotulo={`${nome} (${qtd} linha${qtd > 1 ? 's' : ''})`}
+                    opcoes={[{ valor: '', rotulo: `Criar plano novo "${nome}"` }, ...planosNegocio.map((p) => ({ valor: p.nome, rotulo: `Usar ${p.nome} · R$ ${p.valor_tabela.toFixed(2).replace('.', ',')}` }))]}
+                    value={planoEscolhido[nome] ?? ''}
+                    onChange={(e) => { setPlanoEscolhido((m) => ({ ...m, [nome]: e.target.value })); setSimulacao(null) }}
+                  />
+                ))}
+              </div>
+            </Cartao>
+          )}
+
           {prontas && (
             <Cartao>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -191,7 +231,7 @@ export function ImportarCsvPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
-                    <tr><th className="py-2 pr-3">Linha</th><th className="py-2 pr-3">Nome</th><th className="py-2 pr-3">CPF/CNPJ</th><th className="py-2 pr-3">Telefone</th><th className="py-2 pr-3">Plano</th><th className="py-2 pr-3">Valor</th><th className="py-2 pr-3">Venc.</th><th className="py-2 pr-3">Início</th><th className="py-2 pr-3">Cancelamento</th><th className="py-2">Situação</th></tr>
+                    <tr><th className="py-2 pr-3">Linha</th><th className="py-2 pr-3">Nome</th><th className="py-2 pr-3">CPF/CNPJ</th><th className="py-2 pr-3">Telefone</th><th className="py-2 pr-3">Plano</th><th className="py-2 pr-3">Valor</th><th className="py-2 pr-3">Cortesia</th><th className="py-2 pr-3">Venc.</th><th className="py-2 pr-3">Início</th><th className="py-2 pr-3">Cancelamento</th><th className="py-2">Situação</th></tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {linhas.map((l, i) => {
@@ -204,7 +244,8 @@ export function ImportarCsvPage() {
                           <td className="py-2 pr-3 whitespace-nowrap">{l.documento || '—'}</td>
                           <td className="py-2 pr-3 whitespace-nowrap">{l.telefone || '—'}</td>
                           <td className="py-2 pr-3 whitespace-nowrap">{nomePlanoImportado(l.plano) || '—'}</td>
-                          <td className="py-2 pr-3 whitespace-nowrap">{l.valor || 'tabela'}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap">{cortesias.has(l.linha) ? 'cortesia' : l.valor || 'tabela'}</td>
+                          <td className="py-2 pr-3"><input type="checkbox" aria-label={`Cortesia linha ${l.linha}`} checked={cortesias.has(l.linha)} onChange={() => alternarCortesia(l.linha)} /></td>
                           <td className="py-2 pr-3">{l.dia_vencimento || '—'}</td>
                           <td className="py-2 pr-3 whitespace-nowrap">{l.data_inicio || '—'}</td>
                           <td className="py-2 pr-3 whitespace-nowrap">{l.data_fim || '—'}</td>
@@ -227,7 +268,7 @@ export function ImportarCsvPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="mt-3 text-xs text-ink-muted">Organização: {organizacao.nome}. Linhas rejeitadas não impedem as demais: cada linha é gravada ou desfeita por inteiro.</p>
+              <p className="mt-3 text-xs text-ink-muted">Organização: {organizacao.nome}. Linhas rejeitadas não impedem as demais: cada linha é gravada ou desfeita por inteiro. <strong>Cortesia</strong> = contrato com valor 0: não gera cobrança nem aparece no Contas a receber.</p>
             </Cartao>
           )}
         </div>

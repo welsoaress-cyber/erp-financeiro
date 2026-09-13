@@ -44,32 +44,34 @@ Deno.serve(async (req) => {
   if (cob.status !== 'pendente') return json({ ok: true, status: cob.status })
 
   const mpHeaders = { Authorization: `Bearer ${MP_TOKEN}` }
-  let aprovado = false, valorPago = null, mpStatus = 'desconhecido'
+  let aprovado = false, valorPago = null
+  const partes: string[] = [] // diagnóstico visível no portal: "id=pending · ref=pending" / "ref=http_429"
 
   // 1) consulta pelo id que criamos
   const res = await fetch(`https://api.mercadopago.com/v1/payments/${cob.txid}`, { headers: mpHeaders })
   if (res.ok) {
     const p = await res.json()
-    mpStatus = p.status
+    partes.push(`id=${p.status}`)
     if (p.status === 'approved') { aprovado = true; valorPago = p.transaction_amount }
     else if (p.status === 'cancelled' || p.status === 'expired' || p.status === 'rejected') {
       await sb.rpc('pix_marcar_erro', { p_txid: String(cob.txid), p_status: p.status === 'rejected' ? 'erro' : p.status === 'expired' ? 'expirado' : 'cancelado', p_resposta: { status: p.status } })
       return json({ ok: true, status: p.status, mp_status: p.status })
     }
-  } else { mpStatus = `http_${res.status}` }
+  } else { partes.push(`id=http_${res.status}`) }
 
-  // 2) o pagamento que criamos costuma ficar "pending"; o dinheiro entra num
-  //    pagamento SEPARADO — procura pela referência da fatura (external_reference)
+  // 2) a consulta por id pode atrasar em relação à busca (réplica do MP) e o
+  //    dinheiro pode entrar num pagamento SEPARADO — procura pela referência da fatura
   if (!aprovado) {
     const s = await fetch(`https://api.mercadopago.com/v1/payments/search?external_reference=${encodeURIComponent(lancamento_id)}&sort=date_created&criteria=desc`, { headers: mpHeaders })
     if (s.ok) {
       const sj = await s.json()
       const results = sj.results ?? []
       const ok = results.find((x) => x.status === 'approved')
-      if (ok) { aprovado = true; valorPago = ok.transaction_amount; mpStatus = 'approved(ref)' }
-      else if (results.length) mpStatus = 'busca:' + results.map((x) => x.status).join(',')
-    } else if (mpStatus === 'desconhecido') mpStatus = `busca_http_${s.status}`
+      if (ok) { aprovado = true; valorPago = ok.transaction_amount; partes.push(`ref=approved(${ok.id})`) }
+      else partes.push(`ref=${results.length ? results.map((x) => x.status).join(',') : 'vazio'}`)
+    } else partes.push(`ref=http_${s.status}`)
   }
+  const mpStatus = aprovado ? 'approved' : partes.join(' · ')
 
   console.log('pix-verificar', cob.txid, 'mp=', mpStatus)
   await sb.from('pix_cobrancas').update({ resposta: { ultimo_mp_status: mpStatus, checado_em: new Date().toISOString() } }).eq('txid', cob.txid).eq('status', 'pendente')

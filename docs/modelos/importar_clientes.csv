@@ -1,0 +1,3 @@
+﻿nome;cpf;telefone;email;plano;valor;periodicidade;vencimento;inicio;cancelamento
+João da Silva;123.456.789-09;11999998888;joao@email.com;Fibra 100Mb;89,90;mensal;10;01/09/2026;
+Maria Souza;;11988887777;;Fibra 200Mb;109,90;mensal;15;05/09/2026;

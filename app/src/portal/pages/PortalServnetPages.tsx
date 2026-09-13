@@ -15,6 +15,7 @@ import { usePortal } from '../contexto'
 import { useAtualizarContato, useContratosCliente, useFaturas, useFidelidade, useIndicacoesCliente, usePromocoesCliente, useSolicitacoes, useSolicitar, useStatusRede, useAbrirVisita, useAvaliarVisita, useResponderRemarcacaoVisita, useVisitas, type VisitaTecnica } from '../api'
 import { ROTULO_REDE, ROTULO_SITUACAO, ROTULO_STATUS_SOLICITACAO, ROTULO_TIPO_SOLICITACAO, TOM, codigoContrato, linkIndicacao, linkWhatsApp, type EstadoSelo, type Fidelidade, type TipoSolicitacao } from '../tipos'
 import { Indicador, Titulo } from './comum'
+import { BotaoPix } from './PortalPages'
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const mesCurto = (iso: string) => `${MESES[Number(iso.slice(5, 7)) - 1]}/${iso.slice(2, 4)}`
@@ -109,6 +110,7 @@ export function PortalInicioPage() {
               {proxima.observacao && <p className="mt-1 text-xs text-green-700">{proxima.observacao}</p>}
               {proxima.chave_pix && <p className="mt-2 text-sm">Pix: <span className="font-mono">{proxima.chave_pix}</span></p>}
               {abertas.length > 1 && <p className="mt-1 text-xs text-ink-muted">Você tem {abertas.length} faturas em aberto (total {formatarMoeda(r.em_aberto)}).</p>}
+              <BotaoPix fatura={proxima} />
               <p className="mt-2 text-sm"><Link to={`/portal/faturas/${proxima.id}`} className="text-brand-700 hover:underline">Ver fatura / PDF</Link> · <Link to="/portal/faturas" className="text-brand-700 hover:underline">Todas</Link></p>
             </div>
           )}

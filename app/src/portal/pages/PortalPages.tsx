@@ -38,7 +38,7 @@ function Cronometro({ expiraEm }: { expiraEm: string }) {
   return <span>expira em {h > 0 ? `${h}h ` : ''}{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}</span>
 }
 
-function BotaoPix({ fatura }: { fatura: Fatura }) {
+export function BotaoPix({ fatura }: { fatura: Fatura }) {
   const pagar = usePagarComPix()
   const [pix, setPix] = useState<{ copia_cola: string; ticket_url?: string | null; qr_base64?: string | null; expira_em?: string | null } | null>(null)
   const [copiado, setCopiado] = useState(false)

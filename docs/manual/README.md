@@ -77,6 +77,7 @@ A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do pr
    - **🤝 Confiança**: o cliente prometeu pagar? Clique em Confiança, escolha a data ("segurar até") e anote o combinado. O bloqueio fica segurado até lá. Pagou dentro do prazo → confiança **cumprida**; passou devendo → volta na lista destacado como **confiança furada** (você sabe que já confiou uma vez). As confianças ativas aparecem num cartão próprio, com botão Cancelar.
 3. Embaixo, os **Pix recentes**: quem pagou pelo portal e quem está aguardando. O pagamento Pix dá baixa automática na fatura.
 4. Ao abrir esta tela, o sistema **re-verifica no Mercado Pago** os Pix aguardando há mais de 1 hora (caso algum aviso automático tenha se perdido) e dá a baixa na hora — o resultado aparece no topo da lista de Pix.
+5. Além disso, **todo minuto** o próprio banco confere no Mercado Pago cada Pix pendente e dá a baixa sozinho quando o pagamento aparece aprovado — funciona mesmo sem o aviso automático do MP e sem ninguém com a tela aberta (em até ~2 minutos após o dinheiro cair).
 
 ### 3.5 Conciliação bancária
 

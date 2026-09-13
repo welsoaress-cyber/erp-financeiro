@@ -30,6 +30,7 @@ create table public.pix_verificacoes (
   tipo text not null check (tipo in ('get', 'busca')),
   criado_em timestamptz not null default now()
 );
+alter table public.pix_verificacoes enable row level security; -- interna: só a função (definer) e o postgres escrevem
 revoke all on public.pix_verificacoes from public, anon, authenticated;
 
 create or replace function public.pix_reconciliar_agendado()

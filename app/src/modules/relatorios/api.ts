@@ -32,6 +32,7 @@ export function useExecutarRelatorio(rel: Relatorio | undefined, filtros: Filtro
         if (filtros.ate) q = q.lte(campo, filtros.ate)
       }
       if (filtros.negocio) q = filtros.negocio === 'pessoal' ? q.is('negocio_id', null) : q.eq('negocio_id', filtros.negocio)
+      if (filtros.centro) q = filtros.centro === 'geral' ? q.is('centro_custo_id', null) : q.eq('centro_custo_id', filtros.centro)
       if (filtros.pessoa) q = q.eq('pessoa_id', filtros.pessoa)
       if (filtros.categoria) q = q.eq('categoria_id', filtros.categoria)
       if (filtros.conta) q = q.eq('conta_id', filtros.conta)

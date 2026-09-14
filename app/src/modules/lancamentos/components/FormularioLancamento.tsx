@@ -13,6 +13,7 @@ import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
 import { gerarSlug, type Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
 import { codigoContrato, type Contrato } from '../../contratos/tipos'
+import type { CentroCusto } from '../../centros_custo/tipos'
 import { useCriarConta } from '../../contas/api'
 import { useCartoesConfig } from '../../cartoes/api'
 import type { CartaoConfig } from '../../cartoes/tipos'
@@ -115,6 +116,7 @@ interface Props {
   negocios: Negocio[]
   pessoas: Pessoa[]
   contratos: Contrato[]
+  centros?: CentroCusto[]
   negocioInicial?: string | null
   tipoInicial?: TipoLancamento
   salvando: boolean
@@ -140,7 +142,7 @@ function vencimentoFatura(dataISO: string, cfg: CartaoConfig): string {
 
 interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string; recorrencia?: string }
 
-export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoSalvarLote, aoCancelar }: Props) {
+export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, centros = [], negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoSalvarLote, aoCancelar }: Props) {
   const editando = Boolean(lancamento)
   const [tipo, setTipo] = useState<TipoLancamento>(lancamento?.tipo ?? tipoInicial)
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '')
@@ -157,6 +159,8 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   const [pessoaId, setPessoaId] = useState<string>(lancamento?.pessoa_id ?? '')
   const pessoasDisponiveis = pessoas.filter((p) => p.ativo || p.id === lancamento?.pessoa_id)
   const [contratoId, setContratoId] = useState<string>(lancamento?.contrato_id ?? '')
+  const [centroId, setCentroId] = useState<string>(lancamento?.centro_custo_id ?? '')
+  const centrosDoNegocio = centros.filter((c) => c.negocio_id === negocioId && (c.ativo || c.id === lancamento?.centro_custo_id))
   const contratosDisponiveis = contratos.filter((c) => (c.status !== 'encerrado' || c.id === lancamento?.contrato_id) && (!negocioId || c.negocio_id === negocioId))
   const contratoSel = contratos.find((c) => c.id === contratoId)
   function escolherContrato(id: string) {
@@ -227,6 +231,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       negocio_id: negocioId,
       pessoa_id: pessoaId || null,
       contrato_id: contratoId || null,
+      centro_custo_id: tipo === 'despesa' && negocioId ? (centroId || null) : null,
       recorrente,
       periodicidade: recorrente ? periodicidade : null,
       numero_parcelas: recorrente ? nParcelas : null,
@@ -430,6 +435,9 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
           const n = await criarNegocio.mutateAsync({ nome, slug: gerarSlug(nome), ativo: true, conta_padrao_id: null, categoria_receita_id: null, categoria_despesa_id: null, usa_carteira: false })
           setNegocioId(n.id); setContratoId('')
         }} />
+      )}
+      {tipo === 'despesa' && negocioId && centrosDoNegocio.length > 0 && (
+        <Selecao rotulo="Centro de custo (opcional)" opcoes={[{ valor: '', rotulo: 'Geral' }, ...centrosDoNegocio.map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={centroId} onChange={(e) => setCentroId(e.target.value)} ajuda="Departamento, projeto ou ponto de rede que arca com esta despesa. Sem centro = Geral." />
       )}
       {!ehTransferencia && contratosDisponiveis.length > 0 && (
         <Selecao rotulo="Contrato (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...contratosDisponiveis.map((c) => ({ valor: c.id, rotulo: `${codigoContrato(c)} · ${pessoas.find((p) => p.id === c.pessoa_id)?.nome ?? '—'}` }))]} value={contratoId} onChange={(e) => escolherContrato(e.target.value)} ajuda={contratoSel ? 'Negócio e pessoa seguem o contrato.' : 'Vincule ao contrato para medir a rentabilidade por contrato.'} />

@@ -178,10 +178,22 @@ const tabelas = {
     { organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', mes: mesAtual + '-01', tipo: 'despesa', status: 'efetivado', categoria_id: id('e', 5), categoria: 'Compra de Estoque', natureza: 'investimento', valor: 2230, lancamentos: 3 },
     { organizacao_id: ORG, negocio_id: null, negocio: null, mes: mesAtual + '-01', tipo: 'despesa', status: 'efetivado', categoria_id: id('e', 2), categoria: 'Energia', natureza: 'operacional', valor: 310.5, lancamentos: 1 },
   ],
-  vw_rel_lancamentos: lancamentos.map((l) => ({ ...l, conta: 'Sicoob Servnet', categoria: 'Mensalidades', natureza: 'operacional', negocio: 'Servnet', pessoa: pessoas.find((p) => p.id === l.pessoa_id)?.nome ?? null, contrato_codigo: contratos.find((c) => c.id === l.contrato_id)?.codigo ?? null })),
+  vw_rel_lancamentos: lancamentos.map((l) => ({ ...l, conta: 'Sicoob Servnet', categoria: 'Mensalidades', natureza: 'operacional', negocio: 'Servnet', pessoa: pessoas.find((p) => p.id === l.pessoa_id)?.nome ?? null, contrato_codigo: contratos.find((c) => c.id === l.contrato_id)?.codigo ?? null, centro_custo_id: null, centro_custo: 'Geral' })),
   vw_rel_inadimplencia: [
     { id: id('2', 2), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', pessoa_id: id('c', 2), pessoa: 'José Lima', telefone: '92988882222', contrato_id: id('1', 2), contrato_codigo: 2, descricao: 'Fibra 600 Mega · ' + mesAtual.slice(5) + '/' + mesAtual.slice(0, 4) + ' · contrato #002', valor: 129.9, data_vencimento: dia(5), dias_atraso: Math.max(1, hoje.getDate() - 5) },
     { id: id('2', 3), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', pessoa_id: id('c', 3), pessoa: 'Ana Pereira', telefone: '92988883333', contrato_id: id('1', 3), contrato_codigo: 3, descricao: 'Fibra 300 Mega · ' + mesDelta(-1).slice(5) + '/' + mesDelta(-1).slice(0, 4) + ' · contrato #003', valor: 99.9, data_vencimento: mesDelta(-1) + '-20', dias_atraso: hoje.getDate() + 10 },
+  ],
+  centros_custo: [
+    { id: id('g', 1), organizacao_id: ORG, negocio_id: NEG, nome: 'Administrativo', descricao: null, tipo: 'departamento', referencia_id: null, ativo: true, criado_em: dia(1), atualizado_em: dia(1) },
+    { id: id('g', 2), organizacao_id: ORG, negocio_id: NEG, nome: 'Técnico / Rede', descricao: 'Manutenção e materiais de rede', tipo: 'departamento', referencia_id: null, ativo: true, criado_em: dia(1), atualizado_em: dia(1) },
+    { id: id('g', 3), organizacao_id: ORG, negocio_id: NEG, nome: 'POP Centro', descricao: null, tipo: 'ponto_rede', referencia_id: id('7', 1), ativo: true, criado_em: dia(1), atualizado_em: dia(1) },
+  ],
+  vw_rel_gastos_centro_custo: [
+    { organizacao_id: ORG, negocio_id: NEG, centro_custo_id: id('g', 1), centro_custo: 'Administrativo', tipo_centro: 'departamento', mes: mesAtual + '-01', status: 'efetivado', natureza: 'operacional', valor: 640.4, lancamentos: 3 },
+    { organizacao_id: ORG, negocio_id: NEG, centro_custo_id: id('g', 2), centro_custo: 'Técnico / Rede', tipo_centro: 'departamento', mes: mesAtual + '-01', status: 'efetivado', natureza: 'investimento', valor: 2230, lancamentos: 3 },
+    { organizacao_id: ORG, negocio_id: NEG, centro_custo_id: id('g', 3), centro_custo: 'POP Centro', tipo_centro: 'ponto_rede', mes: mesAtual + '-01', status: 'efetivado', natureza: 'operacional', valor: 3450, lancamentos: 2 },
+    { organizacao_id: ORG, negocio_id: NEG, centro_custo_id: id('g', 3), centro_custo: 'POP Centro', tipo_centro: 'ponto_rede', mes: mesAtual + '-01', status: 'previsto', natureza: 'operacional', valor: 890.4, lancamentos: 1 },
+    { organizacao_id: ORG, negocio_id: NEG, centro_custo_id: null, centro_custo: 'Geral', tipo_centro: null, mes: mesAtual + '-01', status: 'efetivado', natureza: 'operacional', valor: 250, lancamentos: 1 },
   ],
   relatorios_favoritos: [{ id: id('r', 1), organizacao_id: ORG, usuario_id: 'u', relatorio: 'centro-custo', nome: 'Fechamento do mês', filtros: { mes: mesAtual + '-01' }, criado_em: dia(1) }],
 }
@@ -318,6 +330,7 @@ async function capturar(page, nome, ms = 1200) {
     ['/notificacoes', '21-notificacoes'],
     ['/disparos', '22-disparos'],
     ['/gerencial', '23-gerencial', 1600],
+    ['/centros-custo', '47-centros-custo'],
     ['/relatorios', '45-relatorios'],
     ['/portal', '24-portal-admin'],
     ['/configuracoes', '25-configuracoes'],

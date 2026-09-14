@@ -105,6 +105,16 @@ Categoria de despesa tem **Natureza**: *Despesa operacional* (dia a dia) ou *Inv
 
 > **Centro de custo**: use um negócio para isso — ex.: crie o negócio "Administrativo" e lance nele as despesas gerais; tudo filtra por negócio.
 
+## 6b. Centros de custo
+
+![Centros de custo](img/47-centros-custo.png)
+
+Departamentos, projetos e pontos de rede **dentro** de cada negócio, para saber quanto cada um custa (ex.: Administrativo, Técnico/Rede, POP Centro). O negócio continua sendo o centro de custo de 1º nível; custo por cliente/contrato/técnico já vem dos vínculos existentes.
+
+1. **Novo centro de custo**: negócio + nome + tipo (departamento, projeto, ponto de rede — este escolhe o POP/CEO/CTO da Rede FTTH). Inativar em vez de excluir.
+2. No **lançamento de despesa** (e no **contrato de fornecedor**) aparece o campo *Centro de custo (opcional)*; sem centro = **Geral**.
+3. A lista mostra o gasto do mês por centro (realizado · previsto) e a linha *Geral* de cada negócio. Relatório completo em Relatórios → **Gastos por centro de custo**; Lançamentos e Contas a pagar filtram por centro.
+
 ## 7. Negócios
 
 ![Negócios](img/10-negocios.png)

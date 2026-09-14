@@ -16,6 +16,7 @@ import { useCategorias } from '../../categorias/api'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
+import { useCentrosCusto } from '../../centros_custo/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, useEstornarLancamento, type ProjecaoContrato } from '../api'
@@ -48,6 +49,7 @@ export function LancamentosPage() {
   const negocios = useNegocios()
   const pessoas = usePessoas()
   const contratos = useContratos()
+  const centros = useCentrosCusto()
   const criar = useCriarLancamento()
   const atualizar = useAtualizarLancamento()
   const efetivar = useEfetivarLancamento()
@@ -294,6 +296,7 @@ export function LancamentosPage() {
               negocios={negocios.data ?? []}
               pessoas={pessoas.data ?? []}
               contratos={contratos.data ?? []}
+              centros={centros.data ?? []}
               negocioInicial={filtroNegocio && filtroNegocio !== 'pessoal' ? filtroNegocio : null}
               tipoInicial={filtroTipo || 'despesa'}
               salvando={criar.isPending || atualizar.isPending || atualizarLote.isPending}

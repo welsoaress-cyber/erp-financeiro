@@ -112,6 +112,14 @@ function paramsDe(d: DadosLancamento) {
   }
 }
 
+/** Centro de custo vai pelo motor (definir_centro_custo_lancamento); undefined = não mexer. */
+async function aplicarCentroCusto(l: Lancamento, centro: string | null | undefined): Promise<Lancamento> {
+  if (centro === undefined || (l.centro_custo_id ?? null) === (centro ?? null)) return l
+  const { data, error } = await supabase.rpc('definir_centro_custo_lancamento', { p_id: l.id, p_centro: centro })
+  if (error) throw error
+  return data as Lancamento
+}
+
 /** Próxima parcela já gerada a partir deste lançamento (bloqueia a edição da recorrência). */
 export function useProximaParcela(lancamentoId: string | null, recorrente: boolean) {
   const { organizacao } = useOrganizacao()
@@ -146,7 +154,8 @@ export function useCriarLancamento() {
     mutationFn: async (d: DadosLancamento) => {
       const { data, error } = await supabase.rpc('criar_lancamento', { p_tipo: d.tipo, ...paramsDe(d) })
       if (error) throw error
-      const lancamento = data as Lancamento
+      let lancamento = data as Lancamento
+      lancamento = await aplicarCentroCusto(lancamento, d.centro_custo_id)
       if (d.recorrente) {
         const { error: erroProjecao } = await supabase.rpc('projetar_lancamento', { p_id: lancamento.id, p_meses: MESES_PROJECAO_AUTOMATICA })
         if (erroProjecao) throw erroProjecao
@@ -163,7 +172,7 @@ export function useAtualizarLancamento() {
     mutationFn: async ({ id, ...d }: DadosLancamento & { id: string }) => {
       const { data, error } = await supabase.rpc('atualizar_lancamento', { p_id: id, ...paramsDe(d) })
       if (error) throw error
-      return data as Lancamento
+      return aplicarCentroCusto(data as Lancamento, d.centro_custo_id)
     },
     onSuccess: invalidar,
   })

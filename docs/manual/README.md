@@ -231,7 +231,7 @@ Central única para tirar relatórios: catálogo por área, **Meus favoritos** n
 
 Na tela do relatório: clique no título da coluna para ordenar; **Agrupar por** cria subtotais; a última linha é o total. **Exportar CSV** abre no Excel; **Imprimir / PDF** usa a impressão do navegador (só o relatório sai). **Salvar como favorito** guarda os filtros com um nome — aparece na página inicial de Relatórios e abre já gerado.
 
-Relatórios disponíveis: Financeiro — resultado por negócio, gastos por centro de custo, DRE simplificado, despesas por categoria, lançamentos, contas a receber e a pagar (previsto × realizado), inadimplência; Clientes e contratos — custo por cliente (contrato). Os demais entram junto com as próximas etapas.
+Relatórios disponíveis: Financeiro — resultado por negócio, gastos por centro de custo, DRE simplificado, despesas por categoria, lançamentos, contas a receber e a pagar (previsto × realizado), inadimplência; Clientes e contratos — custo por cliente (contrato); Operação — materiais em estoque e materiais alocados em clientes (comodato e instalação). Os demais entram junto com as próximas etapas.
 
 ## 14. Apps / Notificações / Disparos
 

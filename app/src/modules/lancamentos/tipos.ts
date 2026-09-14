@@ -81,4 +81,6 @@ export interface DadosLancamento {
   data_fim_recorrencia: string | null
   /** centro de custo (etapa 54A): só despesa; undefined = não mexer, null = Geral */
   centro_custo_id?: string | null
+  /** compra que entra no estoque (item físico): só despesa nova; grava entrada_estoque ligada ao lançamento */
+  estoque?: { item_id: string; quantidade: number } | null
 }

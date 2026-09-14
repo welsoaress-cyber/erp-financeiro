@@ -49,6 +49,7 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 - **Previsto** = ainda não aconteceu (conta a pagar/receber). **Efetivado** = dinheiro entrou/saiu de verdade.
 - Para dar baixa: abra o lançamento → **Efetivar** → confirme a data e a conta (pode trocar a conta na hora da baixa; pagamento em atraso pode ter encargos).
 - Lançamento pode ser **recorrente** (fixo ou parcelado): ao efetivar uma parcela, a próxima nasce sozinha.
+- Despesa de **item físico** (roteador, ONU, cabo): marque **Entrada no estoque**, escolha o item (ou *+ Criar item no estoque*) e a quantidade — o item entra no estoque com esse custo, ligado ao lançamento, sem precisar ir ao Estoque. Comprou para um cliente específico? Vincule também ao **Contrato** dele (entra no custo/payback do cliente). Depois, na instalação, use Estoque → Instalação ou Comodato.
 - Parcelamento que já estava em andamento fora do sistema: informe o total contratado e **"Iniciar a partir da parcela"** (ex.: 24× começando na 2) — a numeração continua 2/24…24/24 e o resumo mostra o que foi pago fora e o que resta.
 - Mensalidades de contrato entram sozinhas (faturamento automático); meses futuros aparecem como **projeção** (não são gravados).
 - **Estornar**: efetivado errado (pago em duplicidade, valor errado) → abra o lançamento → **Estornar** (motivo obrigatório). Nasce um contra-lançamento de hoje devolvendo o valor; o original não muda — funciona até com o mês dele fechado. **Cancelar** é para quando o mês ainda está aberto e o lançamento nunca deveria ter existido.

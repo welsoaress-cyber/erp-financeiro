@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInvalidarEstoque } from '../estoque/api'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
 import { fimDoMes } from '../../core/formatos'
@@ -150,12 +151,19 @@ const MESES_PROJECAO_AUTOMATICA = 60
 
 export function useCriarLancamento() {
   const invalidar = useInvalidarFinanceiro()
+  const invalidarEstoque = useInvalidarEstoque()
   return useMutation({
     mutationFn: async (d: DadosLancamento) => {
       const { data, error } = await supabase.rpc('criar_lancamento', { p_tipo: d.tipo, ...paramsDe(d) })
       if (error) throw error
       let lancamento = data as Lancamento
       lancamento = await aplicarCentroCusto(lancamento, d.centro_custo_id)
+      if (d.estoque) {
+        // item físico comprado: entra no estoque pelo motor, ligado a este lançamento (custo médio, saldo)
+        const { error: eEst } = await supabase.rpc('entrada_estoque', { p_item_id: d.estoque.item_id, p_quantidade: d.estoque.quantidade, p_valor_total: d.valor, p_data: d.data_competencia, p_origem: 'compra', p_lancamento_id: lancamento.id, p_observacao: d.descricao })
+        if (eEst) throw new Error(`Lançamento salvo, mas a entrada no estoque falhou: ${eEst.message}`)
+        invalidarEstoque()
+      }
       if (d.recorrente) {
         const { error: erroProjecao } = await supabase.rpc('projetar_lancamento', { p_id: lancamento.id, p_meses: MESES_PROJECAO_AUTOMATICA })
         if (erroProjecao) throw erroProjecao

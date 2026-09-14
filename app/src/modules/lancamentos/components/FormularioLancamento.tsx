@@ -14,6 +14,7 @@ import { gerarSlug, type Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
 import { codigoContrato, type Contrato } from '../../contratos/tipos'
 import type { CentroCusto } from '../../centros_custo/tipos'
+import { EntradaEstoqueCampo, type EntradaEstoque } from './EntradaEstoqueCampo'
 import { useCriarConta } from '../../contas/api'
 import { useCartoesConfig } from '../../cartoes/api'
 import type { CartaoConfig } from '../../cartoes/tipos'
@@ -140,7 +141,7 @@ function vencimentoFatura(dataISO: string, cfg: CartaoConfig): string {
   return `${fAno}-${String(fMes).padStart(2, '0')}-${String(cfg.dia_vencimento).padStart(2, '0')}`
 }
 
-interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string; recorrencia?: string }
+interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string; recorrencia?: string; estoque?: string }
 
 export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, centros = [], negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoSalvarLote, aoCancelar }: Props) {
   const editando = Boolean(lancamento)
@@ -160,6 +161,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   const pessoasDisponiveis = pessoas.filter((p) => p.ativo || p.id === lancamento?.pessoa_id)
   const [contratoId, setContratoId] = useState<string>(lancamento?.contrato_id ?? '')
   const [centroId, setCentroId] = useState<string>(lancamento?.centro_custo_id ?? '')
+  const [estoque, setEstoque] = useState<EntradaEstoque | null>(null)
   const centrosDoNegocio = centros.filter((c) => c.negocio_id === negocioId && (c.ativo || c.id === lancamento?.centro_custo_id))
   const contratosDisponiveis = contratos.filter((c) => (c.status !== 'encerrado' || c.id === lancamento?.contrato_id) && (!negocioId || c.negocio_id === negocioId))
   const contratoSel = contratos.find((c) => c.id === contratoId)
@@ -203,6 +205,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
     const v = Number(valor.replace(',', '.'))
     if (descricao.trim().length === 0) novos.descricao = 'Informe a descrição.'
     if (valor.trim() === '' || Number.isNaN(v) || v <= 0) novos.valor = 'Informe um valor maior que zero.'
+    if (!editando && tipo === 'despesa' && estoque && (!estoque.item_id || !(estoque.quantidade > 0))) novos.estoque = 'Escolha o item do estoque e a quantidade (ou desmarque a entrada no estoque).'
     if (!data) novos.data = 'Informe a data.'
     if (!contaId) novos.conta = ehTransferencia ? 'Informe a conta de origem.' : 'Informe a conta.'
     if (ehTransferencia && !destinoId) novos.destino = 'Informe a conta de destino.'
@@ -232,6 +235,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       pessoa_id: pessoaId || null,
       contrato_id: contratoId || null,
       centro_custo_id: tipo === 'despesa' && negocioId ? (centroId || null) : null,
+      estoque: !editando && tipo === 'despesa' && estoque && estoque.item_id && estoque.quantidade > 0 ? estoque : null,
       recorrente,
       periodicidade: recorrente ? periodicidade : null,
       numero_parcelas: recorrente ? nParcelas : null,
@@ -435,6 +439,12 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
           const n = await criarNegocio.mutateAsync({ nome, slug: gerarSlug(nome), ativo: true, conta_padrao_id: null, categoria_receita_id: null, categoria_despesa_id: null, usa_carteira: false })
           setNegocioId(n.id); setContratoId('')
         }} />
+      )}
+      {!editando && tipo === 'despesa' && !ehTransferencia && negocioId && (
+        <>
+          <EntradaEstoqueCampo negocioId={negocioId} valor={valor} atual={estoque} aoMudar={(e) => { setEstoque(e); setErros((x) => ({ ...x, estoque: undefined })) }} />
+          {erros.estoque && <p className="text-xs text-red-600">{erros.estoque}</p>}
+        </>
       )}
       {tipo === 'despesa' && negocioId && centrosDoNegocio.length > 0 && (
         <Selecao rotulo="Centro de custo (opcional)" opcoes={[{ valor: '', rotulo: 'Geral' }, ...centrosDoNegocio.map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={centroId} onChange={(e) => setCentroId(e.target.value)} ajuda="Departamento, projeto ou ponto de rede que arca com esta despesa. Sem centro = Geral." />

@@ -54,6 +54,7 @@ export interface Contrato {
   conta_id: string | null
   tipo_financeiro: TipoFinanceiroContrato
   cortesia: boolean
+  centro_custo_id: string | null
 }
 
 export interface DadosNovoContrato {
@@ -69,6 +70,7 @@ export interface DadosNovoContrato {
   conta_id: string | null
   tipo_financeiro: TipoFinanceiroContrato
   cortesia: boolean
+  centro_custo_id: string | null
 }
 
 export interface ResultadoContrato {

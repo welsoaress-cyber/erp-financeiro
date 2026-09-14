@@ -5,7 +5,7 @@
  * Regra do projeto: toda etapa que cria dados registra aqui o relatório dela.
  */
 export type TipoColuna = 'texto' | 'moeda' | 'data' | 'numero' | 'mes'
-export type Filtro = 'mes' | 'periodo' | 'negocio' | 'pessoa' | 'categoria' | 'conta' | 'status' | 'tipo'
+export type Filtro = 'mes' | 'periodo' | 'negocio' | 'centro' | 'pessoa' | 'categoria' | 'conta' | 'status' | 'tipo'
 export type Area = 'Financeiro' | 'Clientes e contratos' | 'Operação' | 'Comercial'
 
 export interface Coluna { chave: string; rotulo: string; tipo?: TipoColuna; totalizar?: boolean }
@@ -145,7 +145,7 @@ export const RELATORIOS: Relatorio[] = [
     area: 'Financeiro',
     descricao: 'Listagem detalhada por período, com todos os filtros. Exporta para conferência ou contador.',
     view: 'vw_rel_lancamentos',
-    filtros: ['periodo', 'tipo', 'status', 'negocio', 'pessoa', 'categoria', 'conta'],
+    filtros: ['periodo', 'tipo', 'status', 'negocio', 'centro', 'pessoa', 'categoria', 'conta'],
     campoData: 'data_competencia',
     colunas: [
       { chave: 'data_competencia', rotulo: 'Competência', tipo: 'data' },
@@ -157,11 +157,12 @@ export const RELATORIOS: Relatorio[] = [
       { chave: 'valor', rotulo: 'Valor', tipo: 'moeda', totalizar: true },
       { chave: 'conta', rotulo: 'Conta' },
       { chave: 'categoria', rotulo: 'Categoria' },
-      { chave: 'negocio', rotulo: 'Centro de custo' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+      { chave: 'centro_custo', rotulo: 'Centro de custo' },
       { chave: 'pessoa', rotulo: 'Pessoa' },
       { chave: 'contrato_codigo', rotulo: 'Contrato', tipo: 'numero' },
     ],
-    agrupavel: ['negocio', 'categoria', 'pessoa', 'conta', 'tipo', 'status'],
+    agrupavel: ['negocio', 'centro_custo', 'categoria', 'pessoa', 'conta', 'tipo', 'status'],
     ordem: { chave: 'data_competencia' },
   },
   {
@@ -187,16 +188,42 @@ export const RELATORIOS: Relatorio[] = [
     area: 'Financeiro',
     descricao: 'Por fornecedor/categoria no mês: previsto, pago e total.',
     view: 'vw_rel_lancamentos',
-    filtros: ['mes', 'negocio', 'pessoa', 'categoria'],
+    filtros: ['mes', 'negocio', 'centro', 'pessoa', 'categoria'],
     fixo: { tipo: 'despesa' },
     campoData: 'data_competencia',
-    colunas: [{ chave: 'pessoa', rotulo: 'Fornecedor' }, { chave: 'categoria', rotulo: 'Categoria' }, { chave: 'negocio', rotulo: 'Centro de custo' }, { chave: 'itens', rotulo: 'Itens', tipo: 'numero' }, ...COLS_PREV_REAL],
-    agrupavel: ['negocio', 'categoria'],
+    colunas: [{ chave: 'pessoa', rotulo: 'Fornecedor' }, { chave: 'categoria', rotulo: 'Categoria' }, { chave: 'negocio', rotulo: 'Negócio' }, { chave: 'centro_custo', rotulo: 'Centro de custo' }, { chave: 'itens', rotulo: 'Itens', tipo: 'numero' }, ...COLS_PREV_REAL],
+    agrupavel: ['negocio', 'centro_custo', 'categoria'],
     ordem: { chave: 'total', desc: true },
     preparar: (linhas) => somar(linhas.filter((l) => l.status !== 'cancelado'),
-      (l) => `${l.pessoa_id}|${l.categoria_id}|${l.negocio_id}`,
-      (l) => ({ pessoa: l.pessoa ?? '(sem fornecedor)', categoria: l.categoria ?? '(sem categoria)', negocio: l.negocio, itens: 0, previsto: 0, realizado: 0, total: 0 }),
+      (l) => `${l.pessoa_id}|${l.categoria_id}|${l.negocio_id}|${l.centro_custo_id}`,
+      (l) => ({ pessoa: l.pessoa ?? '(sem fornecedor)', categoria: l.categoria ?? '(sem categoria)', negocio: l.negocio, centro_custo: l.centro_custo ?? 'Geral', itens: 0, previsto: 0, realizado: 0, total: 0 }),
       (acc, l) => { acc.itens = num(acc.itens) + 1; porStatus(acc, l) }),
+  },
+  {
+    id: 'gastos-centro-custo',
+    titulo: 'Gastos por centro de custo',
+    area: 'Financeiro',
+    descricao: 'Quanto cada departamento, projeto ou ponto de rede gastou no mês (previsto × realizado). Sem centro = Geral.',
+    view: 'vw_rel_gastos_centro_custo',
+    filtros: ['mes', 'negocio', 'centro'],
+    campoData: 'mes',
+    colunas: [
+      { chave: 'centro_custo', rotulo: 'Centro de custo' },
+      { chave: 'tipo_centro', rotulo: 'Tipo' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+      { chave: 'operacional', rotulo: 'Operacional', tipo: 'moeda', totalizar: true },
+      { chave: 'investimento', rotulo: 'Investimento', tipo: 'moeda', totalizar: true },
+      ...COLS_PREV_REAL,
+    ],
+    agrupavel: ['negocio', 'tipo_centro'],
+    ordem: { chave: 'total', desc: true },
+    preparar: (linhas) => somar(linhas,
+      (l) => `${l.centro_custo_id ?? 'geral'}|${l.negocio_id}`,
+      (l) => ({ centro_custo_id: l.centro_custo_id, centro_custo: l.centro_custo, tipo_centro: l.tipo_centro ?? '—', negocio_id: l.negocio_id, negocio: l.negocio, operacional: 0, investimento: 0, previsto: 0, realizado: 0, total: 0 }),
+      (acc, l) => {
+        porStatus(acc, l)
+        if (l.status === 'efetivado') { if (l.natureza === 'investimento') acc.investimento = num(acc.investimento) + num(l.valor); else acc.operacional = num(acc.operacional) + num(l.valor) }
+      }),
   },
   {
     id: 'inadimplencia',

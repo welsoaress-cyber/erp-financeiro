@@ -13,6 +13,7 @@ import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos, useCriarContrato, useGerarFaturamento, usePlanos, useReceitaRecorrente, useResultadoContratos, useUltimaExecucao } from '../api'
 import { useContas } from '../../contas/api'
+import { useCentrosCusto } from '../../centros_custo/api'
 import { formatarData } from '../../../core/formatos'
 import { FormularioContrato } from '../components/FormularioContrato'
 import { DetalheContrato } from '../components/DetalheContrato'
@@ -30,6 +31,7 @@ export function ContratosPage() {
   const mrr = useReceitaRecorrente()
   const criar = useCriarContrato()
   const contas = useContas()
+  const centros = useCentrosCusto()
   const execucao = useUltimaExecucao()
   const gerar = useGerarFaturamento()
   const [edicao, setEdicao] = useState<Edicao>(null)
@@ -158,7 +160,7 @@ export function ContratosPage() {
 
       <Modal aberto={edicao !== null} aoFechar={fechar} titulo={edicao?.modo === 'novo' ? 'Novo contrato' : contratoVisto ? `Contrato ${codigoContrato(contratoVisto)}` : 'Contrato'}>
         {edicao?.modo === 'novo' && (
-          <FormularioContrato negocios={negocios.data ?? []} pessoas={pessoas.data ?? []} planos={planos.data ?? []} contas={contas.data ?? []} salvando={criar.isPending} erro={criar.error ? mensagemDeErro(criar.error) : null} aoSalvar={(d) => criar.mutate(d, { onSuccess: fechar })} aoCancelar={fechar} />
+          <FormularioContrato negocios={negocios.data ?? []} pessoas={pessoas.data ?? []} planos={planos.data ?? []} contas={contas.data ?? []} centros={centros.data ?? []} salvando={criar.isPending} erro={criar.error ? mensagemDeErro(criar.error) : null} aoSalvar={(d) => criar.mutate(d, { onSuccess: fechar })} aoCancelar={fechar} />
         )}
         {contratoVisto && (
           <DetalheContrato key={contratoVisto.id + contratoVisto.status} contrato={contratoVisto} nomes={{ negocio: nome.negocio.get(contratoVisto.negocio_id) ?? '—', pessoa: nome.pessoa.get(contratoVisto.pessoa_id) ?? '—', plano: nome.plano.get(contratoVisto.plano_id) ?? '—' }} resultado={resultadoDe.get(contratoVisto.id)} contas={contas.data ?? []} aoFechar={fechar} />

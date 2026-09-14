@@ -5,6 +5,7 @@ import { moduloContas } from '../modules/contas'
 import { moduloCartoes } from '../modules/cartoes'
 import { moduloCategorias } from '../modules/categorias'
 import { moduloNegocios } from '../modules/negocios'
+import { moduloCentrosCusto } from '../modules/centros_custo'
 import { moduloPessoas } from '../modules/pessoas'
 import { moduloContratos } from '../modules/contratos'
 import { moduloApps } from '../modules/apps'
@@ -27,6 +28,7 @@ export const MODULOS: DefinicaoModulo[] = [
   moduloCartoes,
   moduloCategorias,
   moduloNegocios,
+  moduloCentrosCusto,
   moduloPessoas,
   moduloContratos,
   moduloIndicacoes,

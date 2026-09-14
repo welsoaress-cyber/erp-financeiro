@@ -8,6 +8,7 @@ import { formatarMoeda, hojeISO } from '../../../core/formatos'
 import type { Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
 import type { Conta } from '../../contas/tipos'
+import type { CentroCusto } from '../../centros_custo/tipos'
 import { PERIODICIDADES, ROTULO_PESSOA_CONTRATO, ROTULO_TIPO_FINANCEIRO, type DadosNovoContrato, type Periodicidade, type Plano, type TipoFinanceiroContrato } from '../tipos'
 
 interface Props {
@@ -15,13 +16,14 @@ interface Props {
   pessoas: Pessoa[]
   planos: Plano[]
   contas: Conta[]
+  centros?: CentroCusto[]
   salvando: boolean
   erro: string | null
   aoSalvar: (d: DadosNovoContrato) => void
   aoCancelar: () => void
 }
 
-export function FormularioContrato({ negocios, pessoas, planos, contas, salvando, erro, aoSalvar, aoCancelar }: Props) {
+export function FormularioContrato({ negocios, pessoas, planos, contas, centros = [], salvando, erro, aoSalvar, aoCancelar }: Props) {
   const negociosAtivos = negocios.filter((n) => n.ativo)
   const [negocioId, setNegocioId] = useState(negociosAtivos.length === 1 ? negociosAtivos[0].id : '')
   const [tipoFinanceiro, setTipoFinanceiro] = useState<TipoFinanceiroContrato>('receita')
@@ -33,7 +35,9 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, salvando
   const [dia, setDia] = useState('10')
   const [observacao, setObservacao] = useState('')
   const [contaId, setContaId] = useState('')
-  const [cortesia, setCortesia] = useState(false) // sem cobrança: valor 0, faturamento pula
+  const [cortesia, setCortesia] = useState(false)
+  const [centroId, setCentroId] = useState('')
+  const centrosDoNegocio = centros.filter((c) => c.negocio_id === negocioId && c.ativo) // sem cobrança: valor 0, faturamento pula
   const [erros, setErros] = useState<Record<string, string>>({})
 
   const planosDoNegocio = planos.filter((p) => p.negocio_id === negocioId && p.ativo)
@@ -58,7 +62,7 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, salvando
     if (!dataInicio) novos.data = 'Informe a data de início.'
     setErros(novos)
     if (Object.keys(novos).length) return
-    aoSalvar({ negocio_id: negocioId, pessoa_id: pessoaId, plano_id: planoId, valor: cortesia ? 0 : Math.round(v * 100) / 100, periodicidade, data_inicio: dataInicio, dia_vencimento: d, observacao: observacao.trim() || null, faturar_desde: dataInicio, conta_id: contaId || null, tipo_financeiro: tipoFinanceiro, cortesia })
+    aoSalvar({ negocio_id: negocioId, pessoa_id: pessoaId, plano_id: planoId, valor: cortesia ? 0 : Math.round(v * 100) / 100, periodicidade, data_inicio: dataInicio, dia_vencimento: d, observacao: observacao.trim() || null, faturar_desde: dataInicio, conta_id: contaId || null, tipo_financeiro: tipoFinanceiro, cortesia, centro_custo_id: tipoFinanceiro === 'despesa' ? (centroId || null) : null })
   }
 
   const erroCampo = (k: string) => erros[k] ? <p className="-mt-3 text-xs text-red-600">{erros[k]}</p> : null
@@ -91,6 +95,9 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, salvando
           <input type="checkbox" checked={cortesia} onChange={(e) => setCortesia(e.target.checked)} />
           <span>Cortesia (sem cobrança) — valor 0, o faturamento pula este contrato sem pendência.</span>
         </label>
+      )}
+      {tipoFinanceiro === 'despesa' && centrosDoNegocio.length > 0 && (
+        <Selecao rotulo="Centro de custo (opcional)" opcoes={[{ valor: '', rotulo: 'Geral' }, ...centrosDoNegocio.map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={centroId} onChange={(e) => setCentroId(e.target.value)} ajuda="A despesa mensal deste fornecedor já nasce classificada neste centro." />
       )}
       <Selecao rotulo={tipoFinanceiro === 'despesa' ? 'Conta de pagamento' : 'Conta de recebimento'} opcoes={[{ valor: '', rotulo: 'Padrão do negócio' }, ...contas.filter((c) => c.ativo).map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={contaId} onChange={(e) => setContaId(e.target.value)} ajuda={`Ao salvar, o primeiro lançamento ${tipoFinanceiro === 'despesa' ? 'de despesa (Contas a Pagar)' : 'de receita (Contas a Receber)'} já é gerado sozinho, sem precisar clicar em "Gerar faturamento agora" depois.`} />
       <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />

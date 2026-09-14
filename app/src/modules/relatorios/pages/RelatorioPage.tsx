@@ -10,6 +10,8 @@ import { Carregando } from '../../../core/ui/Carregando'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMes, formatarMoeda, hojeISO, inicioDoMes, mesAtualISO } from '../../../core/formatos'
 import { useNegocios } from '../../negocios/api'
+import { useCentrosCusto } from '../../centros_custo/api'
+import { ROTULO_TIPO_CENTRO } from '../../centros_custo/tipos'
 import { usePessoas } from '../../pessoas/api'
 import { useCategorias } from '../../categorias/api'
 import { useContas } from '../../contas/api'
@@ -17,7 +19,7 @@ import { ROTULO_STATUS, ROTULO_TIPO } from '../../lancamentos/tipos'
 import { relatorioPorId, type Coluna, type Linha, type Relatorio } from '../catalogo'
 import { useExecutarRelatorio, useFavoritos, useSalvarFavorito, type Favorito, type Filtros } from '../api'
 
-const ROTULOS: Record<string, string> = { ...ROTULO_STATUS, ...ROTULO_TIPO, operacional: 'Operacional', investimento: 'Investimento' }
+const ROTULOS: Record<string, string> = { ...ROTULO_STATUS, ...ROTULO_TIPO, ...ROTULO_TIPO_CENTRO, operacional: 'Operacional', investimento: 'Investimento' }
 
 function formatar(v: unknown, c: Coluna): string {
   if (v == null || v === '') return '—'
@@ -58,6 +60,7 @@ export function RelatorioPage() {
 
 function RelatorioConteudo({ rel, favorito }: { rel: Relatorio; favorito?: Favorito }) {
   const negocios = useNegocios()
+  const centros = useCentrosCusto()
   const pessoas = usePessoas()
   const categorias = useCategorias()
   const contas = useContas()
@@ -129,6 +132,7 @@ function RelatorioConteudo({ rel, favorito }: { rel: Relatorio; favorito?: Favor
               <Campo rotulo="Até" type="date" value={filtros.ate ?? ''} onChange={(e) => def('ate', e.target.value)} />
             </>}
             {rel.filtros.includes('negocio') && <Selecao rotulo="Centro de custo (negócio)" opcoes={[{ valor: '', rotulo: 'Todos' }, { valor: 'pessoal', rotulo: 'Pessoal' }, ...(negocios.data ?? []).map((n) => ({ valor: n.id, rotulo: n.nome }))]} value={filtros.negocio ?? ''} onChange={(e) => def('negocio', e.target.value)} />}
+            {rel.filtros.includes('centro') && <Selecao rotulo="Centro de custo" opcoes={[{ valor: '', rotulo: 'Todos' }, { valor: 'geral', rotulo: 'Geral (sem centro)' }, ...(centros.data ?? []).filter((c) => !filtros.negocio || filtros.negocio === 'pessoal' ? true : c.negocio_id === filtros.negocio).map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={filtros.centro ?? ''} onChange={(e) => def('centro', e.target.value)} />}
             {rel.filtros.includes('tipo') && <Selecao rotulo="Tipo" opcoes={[{ valor: '', rotulo: 'Receitas e despesas' }, { valor: 'receita', rotulo: 'Receitas' }, { valor: 'despesa', rotulo: 'Despesas' }]} value={filtros.tipo ?? ''} onChange={(e) => def('tipo', e.target.value)} />}
             {rel.filtros.includes('status') && <Selecao rotulo="Status" opcoes={[{ valor: '', rotulo: 'Previstos e efetivados' }, { valor: 'previsto', rotulo: 'Previstos' }, { valor: 'efetivado', rotulo: 'Efetivados' }, { valor: 'cancelado', rotulo: 'Cancelados' }]} value={filtros.status ?? ''} onChange={(e) => def('status', e.target.value)} />}
             {rel.filtros.includes('pessoa') && <Selecao rotulo="Pessoa" opcoes={opcoes(pessoas.data, 'Todas')} value={filtros.pessoa ?? ''} onChange={(e) => def('pessoa', e.target.value)} />}

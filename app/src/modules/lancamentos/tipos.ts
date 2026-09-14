@@ -52,6 +52,7 @@ export interface Lancamento {
   parcela_atual: number | null
   data_fim_recorrencia: string | null
   lancamento_origem_id: string | null
+  centro_custo_id: string | null
   cancelado_em: string | null
   motivo_cancelamento: string | null
   criado_em: string
@@ -78,4 +79,6 @@ export interface DadosLancamento {
   numero_parcelas: number | null
   parcela_inicial?: number | null
   data_fim_recorrencia: string | null
+  /** centro de custo (etapa 54A): só despesa; undefined = não mexer, null = Geral */
+  centro_custo_id?: string | null
 }

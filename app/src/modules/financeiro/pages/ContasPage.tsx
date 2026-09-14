@@ -92,7 +92,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     <>
       <CabecalhoPagina titulo={receber ? 'Contas a receber' : 'Contas a pagar'} descricao={receber ? 'Faturas e receitas do mês: previsto × realizado' : 'Compromissos com fornecedores: previsto × realizado'} />
       <div className="mb-4"><PendenciasAnteriores tipo={tipo} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-start gap-3">
         <SeletorMes mes={mes} aoMudar={setMes} />
         <select aria-label={receber ? 'Filtrar por cliente' : 'Filtrar por fornecedor'} value={filtroPessoa} onChange={(e) => setFiltroPessoa(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
           <option value="">{receber ? 'Todos os clientes' : 'Todos os fornecedores'}</option>

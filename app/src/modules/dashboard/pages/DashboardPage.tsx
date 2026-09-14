@@ -81,7 +81,7 @@ export function DashboardPage() {
         titulo="Dashboard"
         descricao={`Visão geral de ${organizacao.nome}`}
         acoes={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-start gap-2">
             {temNegocios && (
               <select aria-label="Filtrar por negócio" value={filtro} onChange={(e) => setFiltro(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
                 <option value="">Todos os negócios</option>

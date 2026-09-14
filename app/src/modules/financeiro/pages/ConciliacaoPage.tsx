@@ -75,7 +75,7 @@ export function ConciliacaoPage() {
   return (
     <>
       <CabecalhoPagina titulo="Conciliação bancária" descricao="Confira os movimentos de cada conta contra o extrato do banco" />
-      <div className="mb-3 flex flex-wrap items-center gap-3">
+      <div className="mb-3 flex flex-wrap items-start gap-3">
         <SeletorMes mes={mes} aoMudar={setMes} />
         <select aria-label="Conta" value={conta?.id ?? ''} onChange={(e) => setContaId(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
           {contasAtivas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}

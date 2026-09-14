@@ -164,7 +164,7 @@ export function LancamentosPage() {
         <div className="mb-4"><Alerta tipo="info" titulo="Cadastre uma conta antes">Lançamentos precisam de uma conta. Crie sua primeira conta no menu Contas.</Alerta></div>
       )}
 
-      <div className="mb-3 flex flex-wrap items-center gap-3">
+      <div className="mb-3 flex flex-wrap items-start gap-3">
         <SeletorMes mes={mes} aoMudar={setMes} />
         {mesFechado ? (
           <span className="flex items-center gap-2 text-sm">

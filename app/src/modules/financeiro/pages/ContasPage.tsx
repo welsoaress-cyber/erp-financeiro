@@ -61,17 +61,19 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState(''); const [encargos, setEncargos] = useState(''); const [contaBaixa, setContaBaixa] = useState('')
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const contratoPorId = useMemo(() => new Map((contratos.data ?? []).map((c) => [c.id, c])), [contratos.data])
-  const base = (lancamentos.data ?? []).filter((l) => l.tipo === tipo && l.status !== 'cancelado')
+  // cortesia (0080): fatura cancelada com motivo 'Cortesia' aparece na lista, mas fica fora dos totais
+  const ehCortesia = (l: Lancamento) => l.status === 'cancelado' && l.motivo_cancelamento === 'Cortesia'
+  const base = (lancamentos.data ?? []).filter((l) => l.tipo === tipo && (l.status !== 'cancelado' || ehCortesia(l)))
   const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const termo = normalizar(busca.trim())
   const lista = base
-    .filter((l) => (!filtroPessoa || l.pessoa_id === filtroPessoa) && (!filtroSituacao || situacaoDe(l) === filtroSituacao))
+    .filter((l) => (!filtroPessoa || l.pessoa_id === filtroPessoa) && (!filtroSituacao || (!ehCortesia(l) && situacaoDe(l) === filtroSituacao)))
     .filter((l) => !termo || normalizar([l.descricao, l.pessoa_id ? nomePessoa.get(l.pessoa_id) : null, l.observacao].filter(Boolean).join(' ')).includes(termo))
     .sort((a, b) => a.data_vencimento.localeCompare(b.data_vencimento))
   const previsto = base.filter((l) => l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
   const realizado = base.filter((l) => l.status === 'efetivado').reduce((s, l) => s + l.valor, 0)
   const saldo = realizado - previsto
-  const vencidos = base.filter((l) => situacaoDe(l) === 'vencido')
+  const vencidos = base.filter((l) => !ehCortesia(l) && situacaoDe(l) === 'vencido')
   const pessoasComLanc = (pessoas.data ?? []).filter((p) => base.some((l) => l.pessoa_id === p.id))
   const erro = efetivar.error ?? parcial.error ?? cancelar.error
   const ocupado = efetivar.isPending || parcial.isPending || cancelar.isPending
@@ -128,8 +130,8 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
                   <td className="whitespace-nowrap px-4 py-3 tabular-nums">{formatarData(l.data_vencimento)}</td>
                   <td className="px-4 py-3"><span className="font-medium">{l.descricao}</span>{c && <span className="ml-2 font-mono text-xs text-ink-muted">{codigoContrato(c)}</span>}{l.recorrente && <span className="ml-2 text-xs text-ink-muted">🔄 {rotuloParcela(l)}</span>}{l.observacao && <p className="text-xs text-ink-muted">{l.observacao}</p>}</td>
                   <td className="whitespace-nowrap px-4 py-3">{l.pessoa_id ? nomePessoa.get(l.pessoa_id) ?? '—' : '—'}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{formatarMoeda(l.valor)}</td>
-                  <td className="whitespace-nowrap px-4 py-3"><Distintivo tom={TOM[st]}>{st === 'pago' ? (receber ? 'Recebido' : 'Pago') : ROTULO[st]}</Distintivo>{l.data_efetivacao && <span className="ml-1 text-xs text-ink-muted">{formatarData(l.data_efetivacao)}</span>}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{ehCortesia(l) ? <span className="text-ink-muted line-through">{formatarMoeda(l.valor)}</span> : formatarMoeda(l.valor)}</td>
+                  <td className="whitespace-nowrap px-4 py-3">{ehCortesia(l) ? <Distintivo tom="info">Cortesia</Distintivo> : <Distintivo tom={TOM[st]}>{st === 'pago' ? (receber ? 'Recebido' : 'Pago') : ROTULO[st]}</Distintivo>}{l.data_efetivacao && <span className="ml-1 text-xs text-ink-muted">{formatarData(l.data_efetivacao)}</span>}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">{l.status === 'previsto' && <><button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'baixa', l })}>{receber ? 'Receber' : 'Pagar'}</button><button type="button" className="ml-3 text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'parcial', l })}>Baixa parcial</button><button type="button" className="ml-3 text-ink-muted hover:underline" onClick={() => setAcao({ tipo: 'cancelar', l })}>Cancelar</button></>}</td>
                 </tr>) })}</tbody>
             </table></div>

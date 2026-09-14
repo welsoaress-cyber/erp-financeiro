@@ -48,3 +48,6 @@ Abas com seletor de negócio (padrão Servnet):
 
 `supabase/tests/estoque_test.sql`: item nasce zerado, custo médio ponderado (0,80 + 1,20 → 1,00), saída pelo custo médio, bloqueio acima do estoque, imutabilidade das movimentações, ajuste com delta, devolução e vínculo com cliente.
 `supabase/tests/estoque_instalacoes_test.sql`: instalação baixa itens pelo custo médio e vincula a porta ao contrato; imutabilidade; bloqueios (estoque insuficiente desfaz tudo, contrato de outro cliente, porta ocupada); payback estimado (350/100 → 4 meses) e real (data e meses); views de consumo. `verificar_tudo.sql`: 42 de 42.
+
+## Entrada pelo lançamento (etapa 54, complemento)
+No formulário de despesa (`FormularioLancamento` → `EntradaEstoqueCampo`), a caixa **Entrada no estoque** escolhe um item do negócio (ou cria um na hora: código gerado do nome, categoria = primeira do negócio ou "Equipamentos", unidade) e a quantidade. Ao salvar, o app chama `criar_lancamento` e em seguida `entrada_estoque(item, qtd, valor_total = valor do lançamento, data, 'compra', lancamento_id)` — a movimentação fica ligada ao lançamento; custo médio e saldo atualizam. Só para lançamento novo de despesa; a edição não mexe no estoque (movimentação é imutável).

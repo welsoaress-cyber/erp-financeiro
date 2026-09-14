@@ -5,7 +5,7 @@ import type { Comodato, ConsumoItem, ConsumoMensal, DadosItem, EstoqueCategoria,
 
 const chave = (org: string) => ['estoque', org] as const
 
-function useInvalidarEstoque() {
+export function useInvalidarEstoque() {
   const { organizacao } = useOrganizacao()
   const qc = useQueryClient()
   return () => {

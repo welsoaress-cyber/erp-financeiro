@@ -14,6 +14,7 @@ import { moduloFtth } from '../modules/ftth'
 import { moduloEstoque } from '../modules/estoque'
 import { moduloOs } from '../modules/os'
 import { moduloGerencial } from '../modules/gerencial'
+import { moduloRelatorios } from '../modules/relatorios'
 import { moduloPortal } from '../modules/portal'
 import { moduloIndicacoes } from '../modules/indicacoes'
 import { moduloConfiguracoes } from '../modules/configuracoes'
@@ -33,6 +34,7 @@ export const MODULOS: DefinicaoModulo[] = [
   moduloEstoque,
   moduloOs,
   moduloGerencial,
+  moduloRelatorios,
   moduloApps,
   moduloNotificacoes,
   moduloDisparos,

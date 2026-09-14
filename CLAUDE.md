@@ -10,6 +10,7 @@ Leia `docs/01-arquitetura.md` antes de propor mudanças de estrutura. Cada etapa
 - **Uma etapa por vez.** Entregar migration + testes SQL + app + e2e + doc, commitar, enviar, mergear na `main` (para o deploy do Cloudflare sair sozinho) e então pedir para o proprietário testar — não deixar em branch/PR parado esperando ação dele. Não antecipar funcionalidades. MVP simples.
 - **Avisar antes** de implementar algo que prejudique a arquitetura (regra 9), com o motivo em uma ou duas frases, e então entregar sob premissas explícitas.
 - **Crítica de dono proativa.** A cada entrega, apontar espontaneamente incoerências, riscos e melhorias adjacentes que o proprietário ainda não viu (como consumível × patrimônio, alerta de item nunca movimentado) — como SUGESTÃO numerada para ele aprovar; implementar só depois do sim. Isso não revoga o "não antecipar funcionalidades": sugerir é obrigatório, implementar sem pedido não.
+- **Relatório junto com o dado.** Toda etapa que criar dados entrega, na MESMA entrega, o(s) relatório(s) correspondente(s) na Central de Relatórios (`docs/54-relatorios.md`): view versionada `security_invoker` + entrada em `app/src/modules/relatorios/catalogo.ts` + teste. Nunca SQL dinâmico nem query gravada em tabela.
 - **Manual sempre atualizado.** Toda etapa nova que mudar telas ou fluxos inclui, na MESMA entrega, a atualização de `docs/manual/README.md` (texto e, quando a tela mudou, prints regerados com `cd app && npm run build && node scripts/prints-manual.mjs` — acrescentando os dados novos ao fixture do script).
 
 ## Stack e convenções
@@ -62,6 +63,7 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 48: `docs/51-regua-cobranca.md` (régua de cobrança configurável por negócio — listas regua_antes/regua_apos, padrão enxuto 2·dia·3; dias_antes/apos derivados).
 - Etapa 49: `docs/52-vitrine-premios.md` (vitrine de prêmios do Indique e Ganhe: faixas e prêmios com foto configuráveis, escolha visual no portal com trava, aviso WhatsApp na conversão, vitrine pública /portal/premios/:slug).
 - Etapa 51: `docs/49-pix-reconciliacao.md` §0077 (reconciliação Pix DENTRO do banco a cada minuto: pg_cron+pg_net+Vault `mp_access_token`, GET por txid + busca por external_reference, grava status em pix_cobrancas.resposta, baixa via pix_confirmar; migration *agendado* = pulada nos testes locais, validada com stubs).
+- Etapa 53 (A): `docs/54-relatorios.md` (Central de Relatórios: menu Relatórios, catálogo em código, uma view por relatório, tela genérica com filtros/ordenação/agrupamento/CSV/impressão/favoritos; 7 relatórios financeiros; 53B clientes, 53C operação, 53D comercial pendentes).
 - Etapa 52: `docs/53-cortesia.md` (contrato cortesia: flag + check valor 0, faturamento pula sem pendência, importação CSV com cortesia e escolha de plano existente).
 - Etapa 50: menu próprio Indicações (módulo app/src/modules/indicacoes — métricas, converter/escolher/entregar e vitrine; Portal do cliente ficou só com aparência/promoções/acessos).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).

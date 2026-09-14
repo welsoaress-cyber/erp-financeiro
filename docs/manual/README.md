@@ -209,6 +209,18 @@ Cadastre o técnico (**Novo técnico**), depois **Criar login** (usuário e senh
 
 Indicadores em tempo real, por negócio: clientes ativos, **MRR**, ticket médio, **churn**, **inadimplência**, payback médio; tabela dos últimos 13 meses; desempenho por técnico (tempo, nota, retornos) e **Exportar CSV** (abre no Excel).
 
+## 13b. Relatórios
+
+![Relatórios](img/45-relatorios.png)
+
+Central única para tirar relatórios: catálogo por área, **Meus favoritos** no topo. Clique no relatório → ajuste os filtros (mês ou período, centro de custo, pessoa, categoria, conta, status) → **Gerar**.
+
+![Relatório por centro de custo](img/46-relatorio-centro-custo.png)
+
+Na tela do relatório: clique no título da coluna para ordenar; **Agrupar por** cria subtotais; a última linha é o total. **Exportar CSV** abre no Excel; **Imprimir / PDF** usa a impressão do navegador (só o relatório sai). **Salvar como favorito** guarda os filtros com um nome — aparece na página inicial de Relatórios e abre já gerado.
+
+Relatórios disponíveis (Financeiro): resultado por centro de custo, DRE simplificado, despesas por categoria, lançamentos, contas a receber e a pagar (previsto × realizado) e inadimplência. Os relatórios das demais áreas entram junto com as próximas etapas.
+
 ## 14. Apps / Notificações / Disparos
 
 ![Notificações](img/21-notificacoes.png)

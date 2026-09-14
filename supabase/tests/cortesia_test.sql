@@ -1,4 +1,4 @@
--- Testes da migration 0078 (contrato cortesia). Saída "OK".
+-- Testes das migrations 0078/0080 (contrato cortesia). Saída "OK".
 \set ON_ERROR_STOP on
 begin;
 set local role authenticated;
@@ -20,12 +20,18 @@ do $$ declare v_org uuid; v_neg uuid; v_p uuid; v_plano uuid; v_conta uuid; v_ca
     raise exception 'T1 aceitou cortesia com valor > 0';
   exception when check_violation then null; end;
 
-  -- T2: cortesia fatura sem pendência e sem lançamento
+  -- T2: cortesia fatura sem pendência; a fatura APARECE (cancelada, motivo Cortesia, valor de tabela) e não conta
   insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento, cortesia)
   values (v_org, v_neg, v_p, v_plano, 0, 'mensal', current_date - 40, 10, true) returning id into v_ct;
   select * into e from public.gerar_faturamento_agora(current_date);
   if exists (select 1 from jsonb_array_elements(e.pendencias) x where (x->>'contrato_id')::uuid = v_ct) then raise exception 'T2 cortesia virou pendência'; end if;
-  if exists (select 1 from public.lancamentos where contrato_id = v_ct) then raise exception 'T2 gerou lançamento'; end if;
+  if (select count(*) from public.lancamentos where contrato_id = v_ct) < 1 then raise exception 'T2 não gerou a fatura cortesia'; end if;
+  if exists (select 1 from public.lancamentos where contrato_id = v_ct and (status <> 'cancelado' or motivo_cancelamento <> 'Cortesia' or valor <> 100)) then raise exception 'T2 fatura cortesia errada'; end if;
+  if exists (select 1 from public.movimentos m join public.lancamentos l on l.id = m.lancamento_id where l.contrato_id = v_ct) then raise exception 'T2 cortesia gerou movimento'; end if;
+  if (select coalesce(sum(receitas), 0) from public.vw_resultado_mensal_negocio where negocio_id = v_neg) <> 0 then raise exception 'T2 cortesia contabilizou'; end if;
+  -- idempotente: rodar de novo não duplica
+  select * into e from public.gerar_faturamento_agora(current_date);
+  if (select count(*) from public.lancamentos where contrato_id = v_ct) <> (select count(*) from public.faturamentos where contrato_id = v_ct) then raise exception 'T2 duplicou'; end if;
 
   -- T3: valor 0 SEM cortesia continua pendência (erro de cadastro)
   insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento)

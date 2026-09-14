@@ -40,6 +40,7 @@ with checks as (
   union all select '0050 endereço em pessoas', exists (select 1 from information_schema.columns where table_name='pessoas' and column_name='endereco')
   union all select '0051 lacre numerado por porta', exists (select 1 from information_schema.columns where table_name='cto_portas' and column_name='lacre') and exists (select 1 from pg_proc where proname='lacre_porta_cto')
   union all select '0052 identificação (lacre) da própria CTO', exists (select 1 from information_schema.columns where table_name='ctos' and column_name='lacre')
+  union all select '0079 relatório por centro de custo (view)', exists (select 1 from pg_views where schemaname='public' and viewname='vw_centro_custo_mensal')
   union all select '0078 contrato cortesia (flag, check, faturamento pula)', exists (select 1 from information_schema.columns where table_name='contratos' and column_name='cortesia') and exists (select 1 from pg_constraint where conname='contratos_cortesia_valor_chk') and (select prosrc like '%c.cortesia%' from pg_proc where proname='faturar_contrato')
   union all select '0076 vitrine no portal do cliente logado', exists (select 1 from pg_proc where proname='portal_vitrine' and prosecdef)
   union all select '0075 vitrine sem trava de saldo (compra sob demanda)', exists (select 1 from pg_proc pr where pr.proname='portal_presentes_indicacao' and pg_get_functiondef(pr.oid) not like '%quantidade_atual >= 1%')

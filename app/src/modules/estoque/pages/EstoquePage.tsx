@@ -16,6 +16,8 @@ import { usePessoas } from '../../pessoas/api'
 import { useCategorias } from '../../categorias/api'
 import { useContas } from '../../contas/api'
 import { useCriarLancamento } from '../../lancamentos/api'
+import { useContratos } from '../../contratos/api'
+import { codigoContrato } from '../../contratos/tipos'
 import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useInstalacoes, useItensComEntrada, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
 import { NovaInstalacao } from '../components/NovaInstalacao'
 import { fmtQtd, ROTULO_ORIGEM, statusItem, UNIDADES, type EstoqueItem, type Unidade } from '../tipos'
@@ -90,7 +92,7 @@ function FormularioItem({ item, negocioId, salvando, erro, aoSalvar, aoCancelar 
 }
 
 interface LinhaCompra { itemId: string; quantidade: string; valorTotal: string }
-interface LinhaPagto { contaId: string; valor: string; pago: boolean }
+interface LinhaPagto { contaId: string; valor: string; pago: boolean; parcelas: string } // parcelas: só cartão de crédito (1 = à vista na fatura)
 
 /** Criação rápida de item dentro da Nova compra, sem sair da tela. */
 function NovoItemRapido({ negocioId, aoCriar, aoFechar }: { negocioId: string; aoCriar: (item: EstoqueItem) => void; aoFechar: () => void }) {
@@ -147,13 +149,18 @@ function NovoItemRapido({ negocioId, aoCriar, aoFechar }: { negocioId: string; a
 function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: EstoqueItem[]; aoFechar: () => void }) {
   const contas = useContas()
   const categorias = useCategorias()
+  const contratos = useContratos()
+  const pessoasQ = usePessoas()
   const criarLancamento = useCriarLancamento()
   const entrada = useEntradaEstoque()
   const [data, setData] = useState(hojeISO())
+  const [contratoId, setContratoId] = useState('') // compra feita para um cliente específico → custo/payback dele
+  const contratosDoNegocio = (contratos.data ?? []).filter((c) => c.negocio_id === negocioId && c.status !== 'encerrado' && c.tipo_financeiro === 'receita')
+  const contratoSel = contratosDoNegocio.find((c) => c.id === contratoId)
   const [descricao, setDescricao] = useState('Compra de estoque')
   const [categoriaId, setCategoriaId] = useState('')
   const [linhas, setLinhas] = useState<LinhaCompra[]>([{ itemId: '', quantidade: '', valorTotal: '' }])
-  const [pagtos, setPagtos] = useState<LinhaPagto[]>([{ contaId: '', valor: '', pago: true }])
+  const [pagtos, setPagtos] = useState<LinhaPagto[]>([{ contaId: '', valor: '', pago: true, parcelas: '1' }])
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [importando, setImportando] = useState(false)
@@ -180,14 +187,16 @@ function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: 
       for (const p of pagtosOk) {
         const conta = contaDe(p.contaId)
         const ehCartao = conta?.tipo === 'credito'
+        const nParcelas = ehCartao ? Math.max(1, Math.floor(Number(p.parcelas) || 1)) : 1
         const l = await criarLancamento.mutateAsync({
           tipo: 'despesa', descricao: `${descricao.trim() || 'Compra de estoque'}${pagtosOk.length > 1 ? ` (${conta?.nome})` : ''}`,
           valor: Math.round(Number(p.valor.replace(',', '.')) * 100) / 100,
           data_competencia: data, data_vencimento: data,
           data_efetivacao: !ehCartao && p.pago ? data : null,
           conta_id: p.contaId, conta_destino_id: null, categoria_id: categoriaId,
-          observacao: 'Entrada de estoque', negocio_id: negocioId, pessoa_id: null, contrato_id: null,
-          recorrente: false, periodicidade: null, numero_parcelas: null, data_fim_recorrencia: null,
+          observacao: 'Entrada de estoque', negocio_id: negocioId, pessoa_id: contratoSel?.pessoa_id ?? null, contrato_id: contratoSel?.id ?? null,
+          // cartão parcelado: valor total dividido em N parcelas mensais (mesma regra do lançamento)
+          recorrente: nParcelas > 1, periodicidade: nParcelas > 1 ? 'mensal' : null, numero_parcelas: nParcelas > 1 ? nParcelas : null, parcela_inicial: 1, data_fim_recorrencia: null,
         })
         primeiroLancamento ??= (l as { id: string }).id
       }
@@ -228,6 +237,9 @@ function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: 
         <Selecao rotulo="Categoria da despesa" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...catsDespesa.map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} />
       </div>
       <Campo rotulo="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={140} />
+      {contratosDoNegocio.length > 0 && (
+        <Selecao rotulo="Comprado para um cliente? (opcional)" opcoes={[{ valor: '', rotulo: 'Não — estoque geral' }, ...contratosDoNegocio.map((c) => ({ valor: c.id, rotulo: `${codigoContrato(c)} · ${(pessoasQ.data ?? []).find((x) => x.id === c.pessoa_id)?.nome ?? '—'}` }))]} value={contratoId} onChange={(e) => setContratoId(e.target.value)} ajuda="A despesa fica vinculada ao contrato: entra no custo e no payback do cliente. Depois registre o Comodato/Instalação para alocar o item." />
+      )}
       <div>
         <p className="mb-1 text-sm font-medium">Itens comprados (valor = total pago naquele item; o custo unitário é rateado)</p>
         {linhas.map((l, i) => (
@@ -266,13 +278,15 @@ function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: 
           <div key={i} className="mb-2 flex items-end gap-2">
             <div className="flex-1"><Selecao rotulo={i === 0 ? 'Conta' : ''} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(contas.data ?? []).filter((c) => c.ativo).map((c) => ({ valor: c.id, rotulo: `${c.nome}${c.tipo === 'credito' ? ' (cartão)' : ''}` }))]} value={p.contaId} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, contaId: e.target.value } : x)))} /></div>
             <input type="number" step="0.01" min="0.01" placeholder="Valor R$" value={p.valor} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, valor: e.target.value } : x)))} className="h-10 w-32 rounded-md border border-line bg-white px-2 text-sm" />
-            {contaDe(p.contaId)?.tipo !== 'credito' && (
+            {contaDe(p.contaId)?.tipo !== 'credito' ? (
               <label className="flex items-center gap-1 pb-2.5 text-sm"><input type="checkbox" checked={p.pago} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, pago: e.target.checked } : x)))} className="size-4 accent-brand-600" />Pago</label>
+            ) : (
+              <label className="flex items-center gap-1 text-sm"><input type="number" min="1" max="48" step="1" aria-label="Parcelas" value={p.parcelas} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, parcelas: e.target.value } : x)))} className="h-10 w-16 rounded-md border border-line bg-white px-2 text-sm" />×</label>
             )}
             <button type="button" aria-label="Remover pagamento" className="pb-2 text-ink-muted hover:text-red-700" onClick={() => setPagtos((xs) => xs.filter((_, j) => j !== i))}>×</button>
           </div>
         ))}
-        <Botao variante="secundario" onClick={() => setPagtos((xs) => [...xs, { contaId: '', valor: '', pago: true }])}>+ Forma de pagamento</Botao>
+        <Botao variante="secundario" onClick={() => setPagtos((xs) => [...xs, { contaId: '', valor: '', pago: true, parcelas: '1' }])}>+ Forma de pagamento</Botao>
         <p className="mt-1 text-xs text-ink-muted">Itens: {formatarMoeda(totalItens)} · Pagamentos: {formatarMoeda(totalPagto)}{Math.abs(totalPagto - totalItens) > 0.01 && <span className="text-red-600"> — precisam bater</span>}</p>
       </div>
       <div className="flex justify-end gap-2">

@@ -169,6 +169,21 @@ const tabelas = {
   portal_config: [{ id: id('p', 1), organizacao_id: ORG, negocio_id: NEG, ativo: true, logo_url: null, cor_primaria: '#1e3a8a', texto_promocional: 'Indique um amigo e ganhe 1 mês grátis!', chave_pix: 'pix@servnet.net.br', instrucoes_pagamento: null, beneficio_indicacao: 0, tema: 'escuro', whatsapp_suporte: '5592999998888', beneficio_tipo: 'mes_gratis', fidelidade_ativa: true, site_url: null, pix_automatico: true, conta_pix_id: id('d', 2), contrato_modelo: 'TERMO…' }],
   vw_resultado_por_contrato: contratos.map((c) => ({ contrato_id: c.id, organizacao_id: ORG, receitas: 599.4, despesas: 350.5, resultado: 248.9, lancamentos: 6, primeiro_lancamento: c.data_inicio, ultimo_lancamento: dia(9) })),
   vw_receita_recorrente: [{ negocio_id: NEG, organizacao_id: ORG, negocio: 'Servnet', contratos_ativos: 2, contratos_suspensos: 1, mrr: 229.8 }],
+  // Central de Relatórios (etapa 53A)
+  vw_centro_custo_mensal: [
+    { organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', mes: mesAtual + '-01', tipo: 'receita', status: 'efetivado', categoria_id: id('e', 1), categoria: 'Mensalidades', natureza: 'operacional', valor: 12480.9, lancamentos: 118 },
+    { organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', mes: mesAtual + '-01', tipo: 'receita', status: 'previsto', categoria_id: id('e', 1), categoria: 'Mensalidades', natureza: 'operacional', valor: 2140, lancamentos: 21 },
+    { organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', mes: mesAtual + '-01', tipo: 'despesa', status: 'efetivado', categoria_id: id('e', 2), categoria: 'Energia', natureza: 'operacional', valor: 890.4, lancamentos: 2 },
+    { organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', mes: mesAtual + '-01', tipo: 'despesa', status: 'efetivado', categoria_id: id('e', 3), categoria: 'Link dedicado', natureza: 'operacional', valor: 3200, lancamentos: 1 },
+    { organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', mes: mesAtual + '-01', tipo: 'despesa', status: 'efetivado', categoria_id: id('e', 5), categoria: 'Compra de Estoque', natureza: 'investimento', valor: 2230, lancamentos: 3 },
+    { organizacao_id: ORG, negocio_id: null, negocio: null, mes: mesAtual + '-01', tipo: 'despesa', status: 'efetivado', categoria_id: id('e', 2), categoria: 'Energia', natureza: 'operacional', valor: 310.5, lancamentos: 1 },
+  ],
+  vw_rel_lancamentos: lancamentos.map((l) => ({ ...l, conta: 'Sicoob Servnet', categoria: 'Mensalidades', natureza: 'operacional', negocio: 'Servnet', pessoa: pessoas.find((p) => p.id === l.pessoa_id)?.nome ?? null, contrato_codigo: contratos.find((c) => c.id === l.contrato_id)?.codigo ?? null })),
+  vw_rel_inadimplencia: [
+    { id: id('2', 2), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', pessoa_id: id('c', 2), pessoa: 'José Lima', telefone: '92988882222', contrato_id: id('1', 2), contrato_codigo: 2, descricao: 'Fibra 600 Mega · ' + mesAtual.slice(5) + '/' + mesAtual.slice(0, 4) + ' · contrato #002', valor: 129.9, data_vencimento: dia(5), dias_atraso: Math.max(1, hoje.getDate() - 5) },
+    { id: id('2', 3), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', pessoa_id: id('c', 3), pessoa: 'Ana Pereira', telefone: '92988883333', contrato_id: id('1', 3), contrato_codigo: 3, descricao: 'Fibra 300 Mega · ' + mesDelta(-1).slice(5) + '/' + mesDelta(-1).slice(0, 4) + ' · contrato #003', valor: 99.9, data_vencimento: mesDelta(-1) + '-20', dias_atraso: hoje.getDate() + 10 },
+  ],
+  relatorios_favoritos: [{ id: id('r', 1), organizacao_id: ORG, usuario_id: 'u', relatorio: 'centro-custo', nome: 'Fechamento do mês', filtros: { mes: mesAtual + '-01' }, criado_em: dia(1) }],
 }
 
 const rpcs = {
@@ -303,6 +318,7 @@ async function capturar(page, nome, ms = 1200) {
     ['/notificacoes', '21-notificacoes'],
     ['/disparos', '22-disparos'],
     ['/gerencial', '23-gerencial', 1600],
+    ['/relatorios', '45-relatorios'],
     ['/portal', '24-portal-admin'],
     ['/configuracoes', '25-configuracoes'],
   ]
@@ -310,6 +326,10 @@ async function capturar(page, nome, ms = 1200) {
     await page.goto(BASE + rota)
     await capturar(page, nome, ms ?? 1200)
   }
+  // relatório gerado (centro de custo)
+  await page.goto(BASE + '/relatorios/centro-custo'); await espera(900)
+  await page.getByRole('button', { name: 'Gerar' }).click().catch(() => undefined)
+  await capturar(page, '46-relatorio-centro-custo')
   // abas específicas
   await page.goto(BASE + '/estoque'); await espera(900)
   await page.getByRole('tab', { name: 'Comodato' }).click().catch(() => undefined)

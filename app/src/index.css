@@ -26,3 +26,10 @@ body { background: var(--color-surface); color: var(--color-ink); }
   color: var(--color-ink); background: var(--color-surface); color-scheme: dark;
 }
 .portal-escuro input, .portal-escuro select, .portal-escuro textarea { background: #061520; color: var(--color-ink); }
+
+/* Impressão de relatórios: só o conteúdo, sem menu e barra */
+@media print {
+  aside, header, nav { display: none !important; }
+  main { overflow: visible !important; padding: 0 !important; }
+  body { background: white; }
+}

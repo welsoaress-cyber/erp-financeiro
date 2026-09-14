@@ -24,7 +24,7 @@ const ROTULOS: Record<string, string> = { ...ROTULO_STATUS, ...ROTULO_TIPO, ...R
 function formatar(v: unknown, c: Coluna): string {
   if (v == null || v === '') return '—'
   switch (c.tipo) {
-    case 'moeda': return formatarMoeda(Number(v))
+    case 'moeda': return Number(v) < 0 ? `− ${formatarMoeda(Math.abs(Number(v)))}` : formatarMoeda(Number(v))
     case 'custo': return Number(v) ? `− ${formatarMoeda(Math.abs(Number(v)))}` : formatarMoeda(0)
     case 'data': return formatarData(String(v).slice(0, 10))
     case 'mes': return formatarMes(String(v).slice(0, 7))
@@ -113,12 +113,12 @@ function RelatorioConteudo({ rel, favorito }: { rel: Relatorio; favorito?: Favor
 
   const linhaTabela = (l: Linha, k: string) => (
     <tr key={k} className={`border-b border-line last:border-0 ${l.destaque ? 'font-semibold bg-surface' : ''}`}>
-      {rel.colunas.map((c) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'custo' || c.tipo === 'numero' ? 'text-right tabular-nums' : ''} ${c.tipo === 'custo' && Number(l[c.chave]) ? 'text-red-700' : ''}`}>{formatar(l[c.chave], c)}</td>)}
+      {rel.colunas.map((c) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'custo' || c.tipo === 'numero' ? 'text-right tabular-nums' : ''} ${(c.tipo === 'custo' && Number(l[c.chave])) || (c.tipo === 'moeda' && Number(l[c.chave]) < 0) ? 'text-red-700' : ''}`}>{formatar(l[c.chave], c)}</td>)}
     </tr>
   )
   const linhaTotal = (ls: Linha[], rotulo: string, k: string) => (
     <tr key={k} className="border-t border-line bg-surface font-semibold">
-      {rel.colunas.map((c, i) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'custo' ? 'text-right tabular-nums' : ''} ${c.tipo === 'custo' && soma(ls, c) ? 'text-red-700' : ''}`}>{i === 0 ? rotulo : c.totalizar ? formatar(soma(ls, c), c) : ''}</td>)}
+      {rel.colunas.map((c, i) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'custo' ? 'text-right tabular-nums' : ''} ${(c.tipo === 'custo' && soma(ls, c)) || (c.tipo === 'moeda' && soma(ls, c) < 0) ? 'text-red-700' : ''}`}>{i === 0 ? rotulo : c.totalizar ? formatar(soma(ls, c), c) : ''}</td>)}
     </tr>
   )
 

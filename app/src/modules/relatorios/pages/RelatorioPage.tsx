@@ -111,12 +111,12 @@ function RelatorioConteudo({ rel, favorito }: { rel: Relatorio; favorito?: Favor
 
   const linhaTabela = (l: Linha, k: string) => (
     <tr key={k} className={`border-b border-line last:border-0 ${l.destaque ? 'font-semibold bg-surface' : ''}`}>
-      {rel.colunas.map((c) => <td key={c.chave} className={`px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'numero' ? 'text-right tabular-nums' : ''}`}>{formatar(l[c.chave], c)}</td>)}
+      {rel.colunas.map((c) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'numero' ? 'text-right tabular-nums' : ''}`}>{formatar(l[c.chave], c)}</td>)}
     </tr>
   )
   const linhaTotal = (ls: Linha[], rotulo: string, k: string) => (
     <tr key={k} className="border-t border-line bg-surface font-semibold">
-      {rel.colunas.map((c, i) => <td key={c.chave} className={`px-3 py-2 ${c.tipo === 'moeda' ? 'text-right tabular-nums' : ''}`}>{i === 0 ? rotulo : c.totalizar ? formatarMoeda(soma(ls, c)) : ''}</td>)}
+      {rel.colunas.map((c, i) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' ? 'text-right tabular-nums' : ''}`}>{i === 0 ? rotulo : c.totalizar ? formatarMoeda(soma(ls, c)) : ''}</td>)}
     </tr>
   )
 
@@ -169,7 +169,7 @@ function RelatorioConteudo({ rel, favorito }: { rel: Relatorio; favorito?: Favor
                 <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
                   <tr className="border-b border-line">
                     {rel.colunas.map((c) => (
-                      <th key={c.chave} className={`px-3 py-2 font-medium ${c.tipo === 'moeda' || c.tipo === 'numero' ? 'text-right' : ''}`}>
+                      <th key={c.chave} className={`whitespace-nowrap px-3 py-2 font-medium ${c.tipo === 'moeda' || c.tipo === 'numero' ? 'text-right' : ''}`}>
                         <button type="button" className="hover:text-ink" onClick={() => setOrdem((o) => ({ chave: c.chave, desc: o?.chave === c.chave ? !o.desc : false }))}>
                           {c.rotulo}{ordem?.chave === c.chave ? (ordem.desc ? ' ↓' : ' ↑') : ''}
                         </button>

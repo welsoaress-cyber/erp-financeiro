@@ -4,7 +4,7 @@
  * dinâmico: a tela genérica só aplica filtros conhecidos e formata colunas.
  * Regra do projeto: toda etapa que cria dados registra aqui o relatório dela.
  */
-export type TipoColuna = 'texto' | 'moeda' | 'data' | 'numero' | 'mes'
+export type TipoColuna = 'texto' | 'moeda' | 'custo' | 'data' | 'numero' | 'mes' // custo = moeda exibida como saída (− e vermelho)
 export type Filtro = 'mes' | 'periodo' | 'negocio' | 'centro' | 'pessoa' | 'categoria' | 'conta' | 'status' | 'tipo'
 export type Area = 'Financeiro' | 'Clientes e contratos' | 'Operação' | 'Comercial'
 
@@ -70,9 +70,9 @@ export const RELATORIOS: Relatorio[] = [
     colunas: [
       { chave: 'negocio', rotulo: 'Negócio' },
       { chave: 'receitas', rotulo: 'Receitas', tipo: 'moeda', totalizar: true },
-      { chave: 'operacional', rotulo: 'Desp. operacionais', tipo: 'moeda', totalizar: true },
+      { chave: 'operacional', rotulo: 'Desp. operacionais', tipo: 'custo', totalizar: true },
       { chave: 'resultado_operacional', rotulo: 'Resultado operacional', tipo: 'moeda', totalizar: true },
-      { chave: 'investimento', rotulo: 'Investimentos', tipo: 'moeda', totalizar: true },
+      { chave: 'investimento', rotulo: 'Investimentos', tipo: 'custo', totalizar: true },
       { chave: 'resultado', rotulo: 'Resultado', tipo: 'moeda', totalizar: true },
       { chave: 'previsto', rotulo: 'Ainda previsto (líq.)', tipo: 'moeda', totalizar: true },
     ],
@@ -211,8 +211,8 @@ export const RELATORIOS: Relatorio[] = [
       { chave: 'centro_custo', rotulo: 'Centro de custo' },
       { chave: 'tipo_centro', rotulo: 'Tipo' },
       { chave: 'negocio', rotulo: 'Negócio' },
-      { chave: 'operacional', rotulo: 'Operacional', tipo: 'moeda', totalizar: true },
-      { chave: 'investimento', rotulo: 'Investimento', tipo: 'moeda', totalizar: true },
+      { chave: 'operacional', rotulo: 'Operacional', tipo: 'custo', totalizar: true },
+      { chave: 'investimento', rotulo: 'Investimento', tipo: 'custo', totalizar: true },
       ...COLS_PREV_REAL,
     ],
     agrupavel: ['negocio', 'tipo_centro'],
@@ -239,9 +239,9 @@ export const RELATORIOS: Relatorio[] = [
       { chave: 'status', rotulo: 'Status' },
       { chave: 'data_inicio', rotulo: 'Início', tipo: 'data' },
       { chave: 'receitas', rotulo: 'Recebido', tipo: 'moeda', totalizar: true },
-      { chave: 'custo_instalacao', rotulo: 'Instalação + comissão', tipo: 'moeda', totalizar: true },
-      { chave: 'despesas_contrato', rotulo: 'Despesas do contrato', tipo: 'moeda', totalizar: true },
-      { chave: 'custo_total', rotulo: 'Custo total', tipo: 'moeda', totalizar: true },
+      { chave: 'custo_instalacao', rotulo: 'Instalação + comissão', tipo: 'custo', totalizar: true },
+      { chave: 'despesas_contrato', rotulo: 'Despesas do contrato', tipo: 'custo', totalizar: true },
+      { chave: 'custo_total', rotulo: 'Custo total', tipo: 'custo', totalizar: true },
       { chave: 'resultado', rotulo: 'Resultado', tipo: 'moeda', totalizar: true },
       { chave: 'payback_estimado_meses', rotulo: 'Payback est. (meses)', tipo: 'numero' },
       { chave: 'payback_real_meses', rotulo: 'Payback real (meses)', tipo: 'numero' },

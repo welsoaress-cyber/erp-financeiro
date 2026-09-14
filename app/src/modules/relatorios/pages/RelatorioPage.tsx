@@ -19,7 +19,7 @@ import { ROTULO_STATUS, ROTULO_TIPO } from '../../lancamentos/tipos'
 import { relatorioPorId, type Coluna, type Linha, type Relatorio } from '../catalogo'
 import { useExecutarRelatorio, useFavoritos, useSalvarFavorito, type Favorito, type Filtros } from '../api'
 
-const ROTULOS: Record<string, string> = { ...ROTULO_STATUS, ...ROTULO_TIPO, ...ROTULO_TIPO_CENTRO, operacional: 'Operacional', investimento: 'Investimento' }
+const ROTULOS: Record<string, string> = { ...ROTULO_STATUS, ...ROTULO_TIPO, ...ROTULO_TIPO_CENTRO, operacional: 'Operacional', investimento: 'Investimento', ativo: 'Ativo', suspenso: 'Suspenso', encerrado: 'Encerrado' }
 
 function formatar(v: unknown, c: Coluna): string {
   if (v == null || v === '') return '—'

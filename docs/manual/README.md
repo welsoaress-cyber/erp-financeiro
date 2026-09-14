@@ -141,8 +141,9 @@ O coração da receita recorrente. Use a **busca** para achar um contrato por no
 
 1. **Novo contrato**: cliente + plano + valor + dia de vencimento (+ conta de recebimento). Marque **Cortesia (sem cobrança)** para cliente que não paga (valor 0): a fatura do mês aparece no Contas a receber com o distintivo *Cortesia* (valor riscado, fora dos totais) e no portal como Grátis; a lista de contratos mostra *Cortesia*; dá para ligar/desligar no detalhe.
 2. Com **faturamento automático**, a mensalidade entra sozinha todo mês em Contas a receber.
-3. Clique no contrato para abrir o **detalhe**: rentabilidade, payback da instalação, custo de manutenção, equipamentos em comodato, aceite digital, alterar valor/vencimento, suspender ou encerrar.
-4. Encerrar um contrato com equipamento na casa do cliente **gera sozinho uma OS de recolhimento**.
+3. Comprou algo para um cliente específico (roteador, ONU)? Lance a despesa com **Contrato** = o dele: entra na rentabilidade, no payback e no relatório *Custo por cliente*.
+4. Clique no contrato para abrir o **detalhe**: rentabilidade, payback do cliente (instalação + comissão + despesas do contrato), custo de manutenção, equipamentos em comodato, aceite digital, alterar valor/vencimento, suspender ou encerrar.
+5. Encerrar um contrato com equipamento na casa do cliente **gera sozinho uma OS de recolhimento**.
 
 ## 10. Rede FTTH (mapa)
 
@@ -229,7 +230,7 @@ Central única para tirar relatórios: catálogo por área, **Meus favoritos** n
 
 Na tela do relatório: clique no título da coluna para ordenar; **Agrupar por** cria subtotais; a última linha é o total. **Exportar CSV** abre no Excel; **Imprimir / PDF** usa a impressão do navegador (só o relatório sai). **Salvar como favorito** guarda os filtros com um nome — aparece na página inicial de Relatórios e abre já gerado.
 
-Relatórios disponíveis (Financeiro): resultado por negócio, gastos por centro de custo, DRE simplificado, despesas por categoria, lançamentos, contas a receber e a pagar (previsto × realizado) e inadimplência. Os relatórios das demais áreas entram junto com as próximas etapas.
+Relatórios disponíveis: Financeiro — resultado por negócio, gastos por centro de custo, DRE simplificado, despesas por categoria, lançamentos, contas a receber e a pagar (previsto × realizado), inadimplência; Clientes e contratos — custo por cliente (contrato). Os demais entram junto com as próximas etapas.
 
 ## 14. Apps / Notificações / Disparos
 

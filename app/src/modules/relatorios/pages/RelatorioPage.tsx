@@ -25,6 +25,7 @@ function formatar(v: unknown, c: Coluna): string {
   if (v == null || v === '') return '—'
   switch (c.tipo) {
     case 'moeda': return formatarMoeda(Number(v))
+    case 'custo': return Number(v) ? `− ${formatarMoeda(Math.abs(Number(v)))}` : formatarMoeda(0)
     case 'data': return formatarData(String(v).slice(0, 10))
     case 'mes': return formatarMes(String(v).slice(0, 7))
     case 'numero': return String(v)
@@ -38,6 +39,7 @@ function csvDe(colunas: Coluna[], linhas: Linha[]): string {
     const v = l[c.chave]
     if (v == null) return ''
     if (c.tipo === 'moeda') return Number(v).toFixed(2).replace('.', ',')
+    if (c.tipo === 'custo') return (-Math.abs(Number(v))).toFixed(2).replace('.', ',')
     if (c.tipo === 'data') return formatarData(String(v).slice(0, 10))
     return esc(ROTULOS[String(v)] ?? String(v))
   }
@@ -79,7 +81,7 @@ function RelatorioConteudo({ rel, favorito }: { rel: Relatorio; favorito?: Favor
     const base = [...(exec.data ?? [])]
     if (!ordem) return base
     const c = rel.colunas.find((x) => x.chave === ordem.chave)
-    const numerico = c?.tipo === 'moeda' || c?.tipo === 'numero'
+    const numerico = c?.tipo === 'moeda' || c?.tipo === 'custo' || c?.tipo === 'numero'
     base.sort((a, b) => {
       const x = a[ordem.chave], y = b[ordem.chave]
       const r = numerico ? Number(x ?? 0) - Number(y ?? 0) : String(x ?? '').localeCompare(String(y ?? ''), 'pt-BR')
@@ -111,12 +113,12 @@ function RelatorioConteudo({ rel, favorito }: { rel: Relatorio; favorito?: Favor
 
   const linhaTabela = (l: Linha, k: string) => (
     <tr key={k} className={`border-b border-line last:border-0 ${l.destaque ? 'font-semibold bg-surface' : ''}`}>
-      {rel.colunas.map((c) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'numero' ? 'text-right tabular-nums' : ''}`}>{formatar(l[c.chave], c)}</td>)}
+      {rel.colunas.map((c) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'custo' || c.tipo === 'numero' ? 'text-right tabular-nums' : ''} ${c.tipo === 'custo' && Number(l[c.chave]) ? 'text-red-700' : ''}`}>{formatar(l[c.chave], c)}</td>)}
     </tr>
   )
   const linhaTotal = (ls: Linha[], rotulo: string, k: string) => (
     <tr key={k} className="border-t border-line bg-surface font-semibold">
-      {rel.colunas.map((c, i) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' ? 'text-right tabular-nums' : ''}`}>{i === 0 ? rotulo : c.totalizar ? formatarMoeda(soma(ls, c)) : ''}</td>)}
+      {rel.colunas.map((c, i) => <td key={c.chave} className={`whitespace-nowrap px-3 py-2 ${c.tipo === 'moeda' || c.tipo === 'custo' ? 'text-right tabular-nums' : ''} ${c.tipo === 'custo' && soma(ls, c) ? 'text-red-700' : ''}`}>{i === 0 ? rotulo : c.totalizar ? formatar(soma(ls, c), c) : ''}</td>)}
     </tr>
   )
 
@@ -169,7 +171,7 @@ function RelatorioConteudo({ rel, favorito }: { rel: Relatorio; favorito?: Favor
                 <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
                   <tr className="border-b border-line">
                     {rel.colunas.map((c) => (
-                      <th key={c.chave} className={`whitespace-nowrap px-3 py-2 font-medium ${c.tipo === 'moeda' || c.tipo === 'numero' ? 'text-right' : ''}`}>
+                      <th key={c.chave} className={`whitespace-nowrap px-3 py-2 font-medium ${c.tipo === 'moeda' || c.tipo === 'custo' || c.tipo === 'numero' ? 'text-right' : ''}`}>
                         <button type="button" className="hover:text-ink" onClick={() => setOrdem((o) => ({ chave: c.chave, desc: o?.chave === c.chave ? !o.desc : false }))}>
                           {c.rotulo}{ordem?.chave === c.chave ? (ordem.desc ? ' ↓' : ' ↑') : ''}
                         </button>

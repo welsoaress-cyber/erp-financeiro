@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
 import { fimDoMes } from '../../core/formatos'
+import { useNegocios } from '../negocios/api'
 import type { Linha, Relatorio } from './catalogo'
 
 /** Filtros da tela (chave → valor); vazio = não aplicar. */
@@ -12,9 +13,10 @@ export const chaveFavoritos = (org: string) => ['relatorios', org, 'favoritos'] 
 /** Executa o relatório: aplica os filtros conhecidos na view e devolve as linhas já preparadas. */
 export function useExecutarRelatorio(rel: Relatorio | undefined, filtros: Filtros, ativo: boolean) {
   const { organizacao } = useOrganizacao()
+  const negocios = useNegocios()
   return useQuery({
     queryKey: ['relatorios', organizacao.id, rel?.id, filtros],
-    enabled: Boolean(rel) && ativo,
+    enabled: Boolean(rel) && ativo && negocios.isSuccess,
     queryFn: async (): Promise<Linha[]> => {
       if (!rel) return []
       let q = supabase.from(rel.view).select('*').eq('organizacao_id', organizacao.id)
@@ -38,7 +40,9 @@ export function useExecutarRelatorio(rel: Relatorio | undefined, filtros: Filtro
       if (filtros.tipo) q = q.eq('tipo', filtros.tipo)
       const { data, error } = await q.limit(5000)
       if (error) throw error
-      const linhas = (data ?? []) as Linha[]
+      // nome do centro de custo resolvido aqui (views agregadas trazem só negocio_id; nulo = Pessoal)
+      const nome = new Map((negocios.data ?? []).map((n) => [n.id, n.nome]))
+      const linhas = ((data ?? []) as Linha[]).map((l) => ('negocio_id' in l && l.negocio == null ? { ...l, negocio: l.negocio_id ? nome.get(String(l.negocio_id)) ?? '—' : 'Pessoal' } : l))
       return rel.preparar ? rel.preparar(linhas) : linhas
     },
   })

@@ -17,3 +17,9 @@ Migration `20260902000081_centros_custo.sql`. Teste `supabase/tests/centro_custo
 
 ## Fora desta etapa (54B, sob pedido)
 Centro no detalhe do contrato existente; compra de estoque herdando centro; custo acumulado do ponto na tela FTTH; "centros sem movimento"; top 10 e evolução mensal; veículo (não há frota).
+
+## 0082 · Custo por cliente (complemento)
+Regra do proprietário: **comprou algo para um cliente específico → vincule ao contrato**; esse vínculo é o "centro de custo" do cliente e tudo decorre dele:
+- `vw_payback_contrato` passa a somar as **despesas lançadas para o contrato** (não canceladas, previstas ou pagas — o custo existe desde a compra) além de instalação pelo Estoque e comissão de OS; coluna `despesas_contrato`. Detalhe do contrato: "Payback do cliente".
+- `vw_rel_custo_cliente` + relatório **Custo por cliente (contrato)** na Central (área Clientes e contratos): recebido, instalação+comissão, despesas do contrato, custo total, resultado, payback estimado/real.
+- Rentabilidade (`vw_resultado_por_contrato`) continua só com efetivados.

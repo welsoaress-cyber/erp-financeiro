@@ -84,9 +84,9 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
 
       {payback && (
         <div className="rounded-md border border-line bg-surface/60 p-3 text-sm">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">Payback da instalação</p>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">Payback do cliente</p>
           <p>
-            Custo: <b className="tabular-nums">{formatarMoeda(payback.custo_instalacao)}</b> ({payback.instalacoes} instalação(ões))
+            Custo: <b className="tabular-nums">{formatarMoeda(payback.custo_instalacao)}</b> ({payback.instalacoes} instalação(ões){payback.despesas_contrato > 0 && <> · {formatarMoeda(payback.despesas_contrato)} em despesas lançadas para este contrato</>})
             {payback.payback_estimado_meses != null && <> · estimado: <b>{payback.payback_estimado_meses} {payback.payback_estimado_meses === 1 ? 'mês' : 'meses'}</b> ({formatarMoeda(payback.mensalidade)}/mês)</>}
           </p>
           <p className="mt-0.5 text-xs text-ink-muted">

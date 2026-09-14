@@ -186,9 +186,9 @@ export function usePaybackContratos() {
   return useQuery({
     queryKey: [...chave(organizacao.id), 'payback'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vw_payback_contrato').select('*').eq('organizacao_id', organizacao.id).gt('instalacoes', 0)
+      const { data, error } = await supabase.from('vw_payback_contrato').select('*').eq('organizacao_id', organizacao.id).gt('custo_instalacao', 0)
       if (error) throw error
-      return (data ?? []).map((p) => ({ ...p, custo_instalacao: Number(p.custo_instalacao), mensalidade: Number(p.mensalidade), recebido: Number(p.recebido), instalacoes: Number(p.instalacoes) })) as PaybackContrato[]
+      return (data ?? []).map((p) => ({ ...p, custo_instalacao: Number(p.custo_instalacao), mensalidade: Number(p.mensalidade), recebido: Number(p.recebido), instalacoes: Number(p.instalacoes), despesas_contrato: Number(p.despesas_contrato ?? 0) })) as PaybackContrato[]
     },
   })
 }
@@ -206,6 +206,8 @@ export interface PaybackContrato {
   recebido: number
   data_payback_real: string | null
   payback_real_meses: number | null
+  /** 0082: despesas lançadas para o contrato (roteador, ONU…) — já incluídas em custo_instalacao */
+  despesas_contrato: number
 }
 
 export function useConsumoMensal() {

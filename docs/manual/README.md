@@ -129,7 +129,7 @@ Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pess
 
 O coração da receita recorrente. Use a **busca** para achar um contrato por nome do cliente, número (#012), CPF/CNPJ, login do servidor ou telefone.
 
-1. **Novo contrato**: cliente + plano + valor + dia de vencimento (+ conta de recebimento).
+1. **Novo contrato**: cliente + plano + valor + dia de vencimento (+ conta de recebimento). Marque **Cortesia (sem cobrança)** para cliente que não paga (valor 0): o faturamento pula sem pendência e a lista mostra o distintivo *Cortesia*; dá para ligar/desligar no detalhe.
 2. Com **faturamento automático**, a mensalidade entra sozinha todo mês em Contas a receber.
 3. Clique no contrato para abrir o **detalhe**: rentabilidade, payback da instalação, custo de manutenção, equipamentos em comodato, aceite digital, alterar valor/vencimento, suspender ou encerrar.
 4. Encerrar um contrato com equipamento na casa do cliente **gera sozinho uma OS de recolhimento**.

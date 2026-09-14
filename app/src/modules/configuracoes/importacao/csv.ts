@@ -106,6 +106,7 @@ export interface LinhaImportacao {
   dia_vencimento: string
   data_inicio: string
   data_fim: string
+  cortesia: boolean
 }
 
 /** Aceita o dia (10) ou uma data completa (10/09/2026, 2026-09-10) e devolve só o dia. */
@@ -130,6 +131,7 @@ export function montarLinhas(tabela: Tabela, m: Mapeamento): LinhaImportacao[] {
     dia_vencimento: diaDeVencimento(pega(l, m.dia_vencimento)),
     data_inicio: pega(l, m.data_inicio),
     data_fim: pega(l, m.data_fim),
+    cortesia: false,
   }))
 }
 

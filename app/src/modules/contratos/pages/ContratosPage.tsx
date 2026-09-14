@@ -142,7 +142,7 @@ export function ContratosPage() {
                           <td className="px-6 py-3"><div className="font-medium tabular-nums">{codigoContrato(c)}</div><div className="text-xs text-ink-muted">{nome.negocio.get(c.negocio_id) ?? '—'}</div></td>
                           <td className="px-6 py-3 font-medium">{nome.pessoa.get(c.pessoa_id) ?? '—'}<div className="text-xs font-normal capitalize text-ink-muted">{ROTULO_PESSOA_CONTRATO[c.tipo_financeiro]}</div></td>
                           <td className="px-6 py-3 text-ink-muted">{nome.plano.get(c.plano_id) ?? '—'}<div className="text-xs">venc. dia {c.dia_vencimento}</div></td>
-                          <td className="px-6 py-3 text-right tabular-nums">{formatarMoeda(c.valor)}<div className="text-xs text-ink-muted">{ROTULO_PERIODICIDADE[c.periodicidade]}</div></td>
+                          <td className="px-6 py-3 text-right tabular-nums">{c.cortesia ? <Distintivo tom="info">Cortesia</Distintivo> : formatarMoeda(c.valor)}<div className="text-xs text-ink-muted">{ROTULO_PERIODICIDADE[c.periodicidade]}</div></td>
                           <td className={`px-6 py-3 text-right font-medium tabular-nums ${(r?.resultado ?? 0) < 0 ? 'text-red-700' : (r?.resultado ?? 0) > 0 ? 'text-green-700' : 'text-ink-muted'}`}>{formatarMoeda(r?.resultado ?? 0)}</td>
                           <td className="px-6 py-3"><Distintivo tom={TOM[c.status]}>{ROTULO_STATUS_CONTRATO[c.status]}</Distintivo></td>
                         </tr>

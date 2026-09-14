@@ -49,6 +49,7 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   const nomeEquip = (id: string) => { const i = (itensEstoque.data ?? []).find((x) => x.id === id); return i ? i.nome : 'Equipamento' }
   const encerrado = contrato.status === 'encerrado'
   const [valor, setValor] = useState(String(contrato.valor))
+  const [cortesia, setCortesia] = useState(contrato.cortesia)
   const [dia, setDia] = useState(String(contrato.dia_vencimento))
   const [periodicidade, setPeriodicidade] = useState<Periodicidade>(contrato.periodicidade)
   const [observacao, setObservacao] = useState(contrato.observacao ?? '')
@@ -58,9 +59,9 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   const [dataFim, setDataFim] = useState(dataFimMinima)
 
   function salvar() {
-    const v = Number(valor.replace(',', '.')); const d = Number(dia)
+    const v = cortesia ? 0 : Number(valor.replace(',', '.')); const d = Number(dia)
     if (Number.isNaN(v) || v < 0 || !Number.isInteger(d) || d < 1 || d > 31) return
-    atualizar.mutate({ id: contrato.id, valor: Math.round(v * 100) / 100, dia_vencimento: d, periodicidade, observacao: observacao.trim() || null }, { onSuccess: aoFechar })
+    atualizar.mutate({ id: contrato.id, valor: Math.round(v * 100) / 100, dia_vencimento: d, periodicidade, observacao: observacao.trim() || null, cortesia }, { onSuccess: aoFechar })
   }
 
   return (
@@ -108,11 +109,17 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
       ) : (
         <>
           <div className="grid grid-cols-3 gap-4">
-            <Campo rotulo="Valor negociado (R$)" type="number" inputMode="decimal" step="0.01" min="0" value={valor} onChange={(e) => setValor(e.target.value)} />
+            <Campo rotulo="Valor negociado (R$)" type="number" inputMode="decimal" step="0.01" min="0" value={cortesia ? '0' : valor} onChange={(e) => setValor(e.target.value)} disabled={cortesia} />
             <Campo rotulo="Dia de vencimento" type="number" min={1} max={31} value={dia} onChange={(e) => setDia(e.target.value)} />
             <Selecao rotulo="Periodicidade" opcoes={PERIODICIDADES} value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value as Periodicidade)} />
           </div>
           <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
+          {contrato.tipo_financeiro === 'receita' && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={cortesia} onChange={(e) => setCortesia(e.target.checked)} />
+              <span>Cortesia (sem cobrança) — valor 0, o faturamento pula este contrato sem pendência.</span>
+            </label>
+          )}
           <div className="flex flex-wrap justify-between gap-2 border-t border-line pt-3">
             <div className="flex gap-2">
               {contrato.status === 'ativo' && <Botao type="button" variante="secundario" onClick={() => atualizar.mutate({ id: contrato.id, status: 'suspenso' }, { onSuccess: aoFechar })} carregando={atualizar.isPending}>Suspender</Botao>}

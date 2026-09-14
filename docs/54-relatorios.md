@@ -15,7 +15,7 @@ Migration `20260902000079_relatorios.sql`. Teste `supabase/tests/relatorios_test
 - `vw_rel_inadimplencia`: receitas previstas vencidas com dias de atraso e telefone.
 
 ## Relatórios entregues (área Financeiro)
-1. **Resultado por centro de custo** — negócio a negócio: receitas, despesas operacionais, resultado operacional, investimentos, resultado, líquido ainda previsto.
+1. **Resultado por negócio** — negócio a negócio: receitas, despesas operacionais, resultado operacional, investimentos, resultado, líquido ainda previsto.
 2. **DRE simplificado** — previsto × realizado × total.
 3. **Despesas por categoria** — com natureza; agrupável por centro de custo/natureza.
 4. **Lançamentos** — listagem por período com todos os filtros; agrupável.

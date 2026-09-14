@@ -88,7 +88,7 @@ export function ImportarCsvPage() {
   const linhas = useMemo(() => linhasCsv.map((l) => {
     const nome = nomePlanoImportado(l.plano)
     const escolhido = planoEscolhido[nome]
-    return { ...l, plano: escolhido || l.plano, valor: cortesias.has(l.linha) ? '0' : l.valor }
+    return { ...l, plano: escolhido || l.plano, cortesia: cortesias.has(l.linha), valor: cortesias.has(l.linha) ? '0' : l.valor }
   }), [linhasCsv, planoEscolhido, cortesias])
   function alternarCortesia(linha: number) {
     setCortesias((c) => { const n = new Set(c); if (n.has(linha)) n.delete(linha); else n.add(linha); return n })

@@ -143,7 +143,7 @@ export function useCriarContrato() {
 export function useAtualizarContrato() {
   const invalidar = useInvalidarContratos()
   return useMutation({
-    mutationFn: async ({ id, ...d }: { id: string; valor?: number; dia_vencimento?: number; periodicidade?: Periodicidade; observacao?: string | null; status?: StatusContrato; data_fim?: string | null; faturamento_automatico?: boolean; faturar_desde?: string | null; conta_id?: string | null }) => {
+    mutationFn: async ({ id, ...d }: { id: string; valor?: number; dia_vencimento?: number; periodicidade?: Periodicidade; observacao?: string | null; status?: StatusContrato; data_fim?: string | null; faturamento_automatico?: boolean; faturar_desde?: string | null; conta_id?: string | null; cortesia?: boolean }) => {
       const { data, error } = await supabase.from('contratos').update(d).eq('id', id).select().single()
       if (error) throw error
       return data as Contrato

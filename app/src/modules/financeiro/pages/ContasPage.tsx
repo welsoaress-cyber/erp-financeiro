@@ -205,7 +205,86 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
       {lancamentos.isSuccess && (
         <Cartao className="p-0">
           {lista.length === 0 ? <p className="px-6 py-14 text-center text-sm text-ink-muted">Nada {receber ? 'a receber' : 'a pagar'} com esses filtros neste mês.</p> : (
-            <div className="overflow-x-auto"><table className="w-full text-sm">
+            <>
+            {/* Mobile: cartão por linha (a tabela de 6 colunas não cabe em tela de celular) */}
+            <ul className="divide-y divide-line sm:hidden">
+              {linhasExibidas.map((x) => {
+                if ('fatura' in x) {
+                  const chave = `${x.contaId}|${x.vencimento}`
+                  const aberta = faturasAbertas.has(chave)
+                  const totalFatura = x.itens.reduce((s, i) => s + i.valor, 0)
+                  const todasPagas = x.itens.every((i) => i.status === 'efetivado')
+                  return (
+                    <li key={chave} className="bg-canvas/60 px-4 py-3">
+                      <button type="button" className="flex w-full items-start justify-between gap-3 text-left"
+                        onClick={() => setFaturasAbertas((s) => { const n = new Set(s); if (n.has(chave)) n.delete(chave); else n.add(chave); return n })}>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs tabular-nums text-ink-muted">{formatarData(x.vencimento)}</span>
+                          <span className="mt-0.5 block font-medium">{aberta ? '▾' : '▸'} Fatura {contaPorId.get(x.contaId)?.nome ?? 'Cartão'}</span>
+                          <span className="text-xs text-ink-muted">{x.itens.length} item(ns)</span>
+                        </span>
+                        <span className="shrink-0 text-right font-medium tabular-nums">{formatarMoeda(totalFatura)}</span>
+                      </button>
+                      <p className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <Distintivo tom={todasPagas ? 'ok' : 'info'}>{todasPagas ? 'Pago' : 'Em aberto'}</Distintivo>
+                        <button type="button" className="text-xs text-brand-700 hover:underline"
+                          onClick={() => { setAjusteDescricao(''); setAjusteValor(''); setAjusteCategoriaId(''); criarAjuste.reset(); setFaturaAjuste({ contaId: x.contaId, vencimento: x.vencimento, negocioId: x.itens[0]?.negocio_id ?? null }) }}>+ Ajuste</button>
+                      </p>
+                      {aberta && (
+                        <ul className="mt-2 space-y-2 border-l-2 border-line pl-3">
+                          {x.itens.map((l) => {
+                            const st = situacaoDe(l)
+                            return (
+                              <li key={l.id} className="text-xs">
+                                <span className="flex items-start justify-between gap-2">
+                                  <span className="min-w-0 flex-1 font-medium">{l.descricao}</span>
+                                  <span className="shrink-0 tabular-nums">{formatarMoeda(l.valor)}</span>
+                                </span>
+                                <span className="mt-0.5 block text-ink-muted">{formatarData(l.data_competencia)}{l.categoria_id ? ` · ${nomeCategoria.get(l.categoria_id) ?? ''}` : ''}{l.recorrente ? ` · 🔄 ${rotuloParcela(l)}` : ''}</span>
+                                <span className="mt-1 flex flex-wrap items-center gap-2">
+                                  <Distintivo tom={TOM[st]}>{st === 'pago' ? 'Pago' : ROTULO[st]}</Distintivo>
+                                  <Link to={`/financeiro/lancamentos?editar=${l.id}`} className="text-brand-700 hover:underline">Editar</Link>
+                                  {l.status === 'previsto' && <>
+                                    <button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'baixa', l })}>Pagar</button>
+                                    <button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'parcial', l })}>Parcial</button>
+                                    <button type="button" className="text-ink-muted hover:underline" onClick={() => setAcao({ tipo: 'cancelar', l })}>Cancelar</button>
+                                  </>}
+                                </span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  )
+                }
+                const l = x; const st = situacaoDe(l); const c = l.contrato_id ? contratoPorId.get(l.contrato_id) : undefined
+                return (
+                  <li key={l.id} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs tabular-nums text-ink-muted">{formatarData(l.data_vencimento)}{l.pessoa_id ? ` · ${nomePessoa.get(l.pessoa_id) ?? '—'}` : ''}</span>
+                        <span className="mt-0.5 block font-medium">{l.descricao}</span>
+                        {(c || l.recorrente) && <span className="text-xs text-ink-muted">{c ? codigoContrato(c) : ''}{c && l.recorrente ? ' · ' : ''}{l.recorrente ? `🔄 ${rotuloParcela(l)}` : ''}</span>}
+                        {l.observacao && <span className="block text-xs text-ink-muted">{l.observacao}</span>}
+                      </span>
+                      <span className="shrink-0 text-right font-medium tabular-nums">{ehCortesia(l) ? <span className="text-ink-muted line-through">{formatarMoeda(l.valor)}</span> : formatarMoeda(l.valor)}</span>
+                    </div>
+                    <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                      {ehCortesia(l) ? <Distintivo tom="info">Cortesia</Distintivo> : <Distintivo tom={TOM[st]}>{st === 'pago' ? (receber ? 'Recebido' : 'Pago') : ROTULO[st]}</Distintivo>}
+                      {l.data_efetivacao && <span className="text-ink-muted">{formatarData(l.data_efetivacao)}</span>}
+                      {l.status === 'previsto' && <>
+                        <button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'baixa', l })}>{receber ? 'Receber' : 'Pagar'}</button>
+                        <button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'parcial', l })}>Baixa parcial</button>
+                        <button type="button" className="text-ink-muted hover:underline" onClick={() => setAcao({ tipo: 'cancelar', l })}>Cancelar</button>
+                      </>}
+                    </p>
+                  </li>
+                )
+              })}
+            </ul>
+            {/* Desktop: tabela completa */}
+            <div className="hidden overflow-x-auto sm:block"><table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="whitespace-nowrap px-4 py-3 font-medium">Vencimento</th><th className="px-4 py-3 font-medium">Descrição</th><th className="whitespace-nowrap px-4 py-3 font-medium">{receber ? 'Cliente' : 'Fornecedor'}</th><th className="whitespace-nowrap px-4 py-3 text-right font-medium">Valor</th><th className="whitespace-nowrap px-4 py-3 font-medium">Situação</th><th className="px-4 py-3"></th></tr></thead>
               <tbody>{linhasExibidas.map((x) => {
                 if ('fatura' in x) {
@@ -234,6 +313,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
                   <td className="whitespace-nowrap px-4 py-3 text-right">{l.status === 'previsto' && <><button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'baixa', l })}>{receber ? 'Receber' : 'Pagar'}</button><button type="button" className="ml-3 text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'parcial', l })}>Baixa parcial</button><button type="button" className="ml-3 text-ink-muted hover:underline" onClick={() => setAcao({ tipo: 'cancelar', l })}>Cancelar</button></>}</td>
                 </tr>) })}</tbody>
             </table></div>
+            </>
           )}
         </Cartao>
       )}

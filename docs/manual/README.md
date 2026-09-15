@@ -2,6 +2,8 @@
 
 Guia completo para um novo administrador operar o sistema, tela a tela. As imagens são de um ambiente de demonstração (os dados são fictícios). Endereço do sistema: o mesmo usado hoje no navegador (deploy do Cloudflare); funciona no computador e no celular.
 
+> **No celular** as listas grandes (Lançamentos, Contas a pagar e a receber) viram **cartões** — um por linha, com data, descrição, valor e situação — em vez da tabela larga que exigiria rolar para o lado. As mesmas ações continuam ali (pagar, baixa parcial, cancelar, editar). As imagens deste manual são da versão de computador.
+
 > Existem **três portas de entrada** diferentes:
 > - **Administrador**: `/entrar` (e-mail e senha) — vê tudo.
 > - **Técnico**: `/tecnico/entrar` (usuário e senha, sem e-mail) — vê só os chamados e a bolsa dele.

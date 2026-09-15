@@ -164,6 +164,48 @@ export function LancamentosPage() {
     return 'text-brand-700'
   }
 
+  // Modelo único das linhas: a tabela (desktop) e os cartões (mobile) leem daqui — nada duplicado.
+  const linhasView = linhas.map((linha) => {
+    const l = linha.real
+    if (l) {
+      return {
+        chave: linha.chave,
+        data: l.data_competencia,
+        titulo: l.descricao,
+        marca: l.origem === 'faturamento' ? { tom: 'info' as const, texto: 'Automático', titulo: undefined as string | undefined } : null,
+        recorrencia: l.recorrente
+          ? { texto: `🔄 ${rotuloParcela(l)}`, titulo: l.numero_parcelas ? `Parcelamento · ${ROTULO_PERIODICIDADE[l.periodicidade!]}` : `${l.tipo === 'receita' ? 'Receita' : 'Despesa'} fixa · ${ROTULO_PERIODICIDADE[l.periodicidade!]}` }
+          : null,
+        secundaria: descricaoSecundaria(l),
+        tipoRotulo: ROTULO_TIPO[l.tipo],
+        sinal: l.tipo === 'despesa' ? '− ' : l.tipo === 'receita' ? '+ ' : '',
+        valor: l.valor,
+        classeValor: classeValor(l),
+        statusTom: TOM_STATUS[l.status],
+        statusRotulo: ROTULO_STATUS[l.status],
+        aoClicar: () => setEdicao({ modo: 'editar', lancamento: l }),
+        ajuda: undefined as string | undefined,
+      }
+    }
+    const p = linha.proj!
+    return {
+      chave: linha.chave,
+      data: p.data_competencia,
+      titulo: p.descricao,
+      marca: { tom: 'neutro' as const, texto: 'Contrato · projetado', titulo: undefined as string | undefined },
+      recorrencia: null,
+      secundaria: descricaoSecundaria(p),
+      tipoRotulo: ROTULO_TIPO[p.tipo],
+      sinal: p.tipo === 'despesa' ? '− ' : '+ ',
+      valor: p.valor,
+      classeValor: p.tipo === 'receita' ? 'text-green-700' : 'text-red-700',
+      statusTom: 'alerta' as const,
+      statusRotulo: 'Previsto',
+      aoClicar: undefined as (() => void) | undefined,
+      ajuda: 'Projeção do contrato: o lançamento real é gerado automaticamente quando o mês chegar, com descontos e fidelidade aplicados.' as string | undefined,
+    }
+  })
+
   return (
     <>
       <CabecalhoPagina
@@ -218,7 +260,7 @@ export function LancamentosPage() {
           onChange={(e) => setBusca(e.target.value)}
           className="h-10 min-w-48 flex-1 rounded-md border border-line bg-white px-3 text-sm"
         />
-        <span className="ml-auto text-right text-sm text-ink-muted tabular-nums">
+        <span className="w-full text-sm text-ink-muted tabular-nums sm:ml-auto sm:w-auto sm:text-right">
           <span className="block">Realizado: <span className="font-medium text-green-700">{formatarMoeda(totais.receitasReal)}</span> · <span className="font-medium text-red-700">{formatarMoeda(totais.despesasReal)}</span></span>
           <span className="block text-xs">Pendente: <span className="font-medium text-green-700">{formatarMoeda(totais.receitasPend)}</span> · <span className="font-medium text-red-700">{formatarMoeda(totais.despesasPend)}</span></span>
         </span>
@@ -235,55 +277,60 @@ export function LancamentosPage() {
               <p className="text-sm text-ink-muted">Use "Novo lançamento" para registrar uma receita, despesa ou transferência.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
-                  <tr className="border-b border-line">
-                    <th className="px-6 py-3 font-medium">Data</th>
-                    <th className="px-6 py-3 font-medium">Descrição</th>
-                    <th className="px-6 py-3 font-medium">Tipo</th>
-                    <th className="px-6 py-3 text-right font-medium">Valor</th>
-                    <th className="px-6 py-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {linhas.map((linha) => linha.real ? ((l) => (
-                    <tr key={l.id} onClick={() => setEdicao({ modo: 'editar', lancamento: l })} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
-                      <td className="whitespace-nowrap px-6 py-3 tabular-nums text-ink-muted">{formatarData(l.data_competencia)}</td>
-                      <td className="px-6 py-3">
-                        <div className="font-medium">
-                          {l.descricao}
-                          {l.origem === 'faturamento' && <span className="ml-2 align-middle"><Distintivo tom="info">Automático</Distintivo></span>}
-                          {l.recorrente && <span className="ml-2 align-middle" title={l.numero_parcelas ? `Parcelamento · ${ROTULO_PERIODICIDADE[l.periodicidade!]}` : `${l.tipo === 'receita' ? 'Receita' : 'Despesa'} fixa · ${ROTULO_PERIODICIDADE[l.periodicidade!]}`}><Distintivo tom="info">{`🔄 ${rotuloParcela(l)}`}</Distintivo></span>}
-                        </div>
-                        <div className="text-xs text-ink-muted">{descricaoSecundaria(l)}</div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-3 text-ink-muted">{ROTULO_TIPO[l.tipo]}</td>
-                      <td className={`whitespace-nowrap px-6 py-3 text-right font-medium tabular-nums ${classeValor(l)}`}>
-                        {l.tipo === 'despesa' ? '− ' : l.tipo === 'receita' ? '+ ' : ''}{formatarMoeda(l.valor)}
-                      </td>
-                      <td className="px-6 py-3"><Distintivo tom={TOM_STATUS[l.status]}>{ROTULO_STATUS[l.status]}</Distintivo></td>
+            <>
+              {/* Mobile: cartão por lançamento (tabela de 5 colunas não cabe em tela de celular) */}
+              <ul className="divide-y divide-line sm:hidden">
+                {linhasView.map((v) => (
+                  <li key={v.chave} title={v.ajuda} onClick={v.aoClicar} className={`px-4 py-3 ${v.aoClicar ? 'cursor-pointer active:bg-surface' : ''}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs tabular-nums text-ink-muted">{formatarData(v.data)} · {v.tipoRotulo}</span>
+                        <span className="mt-0.5 block font-medium">{v.titulo}</span>
+                      </span>
+                      <span className={`shrink-0 text-right font-medium tabular-nums ${v.classeValor}`}>{v.sinal}{formatarMoeda(v.valor)}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-ink-muted">{v.secundaria}</p>
+                    <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <Distintivo tom={v.statusTom}>{v.statusRotulo}</Distintivo>
+                      {v.marca && <Distintivo tom={v.marca.tom}>{v.marca.texto}</Distintivo>}
+                      {v.recorrencia && <span title={v.recorrencia.titulo}><Distintivo tom="info">{v.recorrencia.texto}</Distintivo></span>}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              {/* Desktop: tabela completa */}
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
+                    <tr className="border-b border-line">
+                      <th className="px-6 py-3 font-medium">Data</th>
+                      <th className="px-6 py-3 font-medium">Descrição</th>
+                      <th className="px-6 py-3 font-medium">Tipo</th>
+                      <th className="px-6 py-3 text-right font-medium">Valor</th>
+                      <th className="px-6 py-3 font-medium">Status</th>
                     </tr>
-                  ))(linha.real) : ((p: ProjecaoContrato) => (
-                    <tr key={`proj-${p.contrato_id}-${p.data_competencia}`} className="border-b border-line last:border-0" title="Projeção do contrato: o lançamento real é gerado automaticamente quando o mês chegar, com descontos e fidelidade aplicados.">
-                      <td className="whitespace-nowrap px-6 py-3 tabular-nums text-ink-muted">{formatarData(p.data_competencia)}</td>
-                      <td className="px-6 py-3">
-                        <div className="font-medium">
-                          {p.descricao}
-                          <span className="ml-2 align-middle"><Distintivo tom="neutro">Contrato · projetado</Distintivo></span>
-                        </div>
-                        <div className="text-xs text-ink-muted">{descricaoSecundaria(p)}</div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-3 text-ink-muted">{ROTULO_TIPO[p.tipo]}</td>
-                      <td className={`whitespace-nowrap px-6 py-3 text-right font-medium tabular-nums ${p.tipo === 'receita' ? 'text-green-700' : 'text-red-700'}`}>
-                        {p.tipo === 'despesa' ? '− ' : '+ '}{formatarMoeda(p.valor)}
-                      </td>
-                      <td className="px-6 py-3"><Distintivo tom="alerta">Previsto</Distintivo></td>
-                    </tr>
-                  ))(linha.proj!))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {linhasView.map((v) => (
+                      <tr key={v.chave} title={v.ajuda} onClick={v.aoClicar} className={`border-b border-line last:border-0 ${v.aoClicar ? 'cursor-pointer hover:bg-surface' : ''}`}>
+                        <td className="whitespace-nowrap px-6 py-3 tabular-nums text-ink-muted">{formatarData(v.data)}</td>
+                        <td className="px-6 py-3">
+                          <div className="font-medium">
+                            {v.titulo}
+                            {v.marca && <span className="ml-2 align-middle"><Distintivo tom={v.marca.tom}>{v.marca.texto}</Distintivo></span>}
+                            {v.recorrencia && <span className="ml-2 align-middle" title={v.recorrencia.titulo}><Distintivo tom="info">{v.recorrencia.texto}</Distintivo></span>}
+                          </div>
+                          <div className="text-xs text-ink-muted">{v.secundaria}</div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-3 text-ink-muted">{v.tipoRotulo}</td>
+                        <td className={`whitespace-nowrap px-6 py-3 text-right font-medium tabular-nums ${v.classeValor}`}>{v.sinal}{formatarMoeda(v.valor)}</td>
+                        <td className="px-6 py-3"><Distintivo tom={v.statusTom}>{v.statusRotulo}</Distintivo></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </Cartao>
       )}

@@ -51,3 +51,6 @@ Abas com seletor de negócio (padrão Servnet):
 
 ## Entrada pelo lançamento (etapa 54, complemento)
 No formulário de despesa (`FormularioLancamento` → `EntradaEstoqueCampo`), a caixa **Entrada no estoque** escolhe um item do negócio (ou cria um na hora: código gerado do nome, categoria = primeira do negócio ou "Equipamentos", unidade) e a quantidade. Ao salvar, o app chama `criar_lancamento` e em seguida `entrada_estoque(item, qtd, valor_total = valor do lançamento, data, 'compra', lancamento_id)` — a movimentação fica ligada ao lançamento; custo médio e saldo atualizam. Só para lançamento novo de despesa; a edição não mexe no estoque (movimentação é imutável).
+
+## Atalho de compra no alerta (0084)
+Cada item em alerta no dashboard geral (zerado/abaixo do mínimo) tem o link **Comprar**, que abre o Estoque com a **Nova compra** já aberta e o item pré-selecionado (`/estoque?comprar=<item>`).

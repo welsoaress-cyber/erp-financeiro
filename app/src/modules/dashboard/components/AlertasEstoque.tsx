@@ -32,7 +32,10 @@ export function AlertasEstoque({ bate, nomeNegocio }: Props) {
               <span className="font-medium">{item.codigo} · {item.nome}</span>
               <span className="ml-2 text-xs text-ink-muted">{nomeNegocio.get(item.negocio_id) ?? ''} · {fmtQtd(item.quantidade_atual)} {item.unidade_medida}{item.quantidade_minima > 0 ? ` (mín. ${fmtQtd(item.quantidade_minima)})` : ''}</span>
             </span>
-            <Distintivo tom="alerta">{st.rotulo}</Distintivo>
+            <span className="flex shrink-0 items-center gap-2">
+              <Distintivo tom="alerta">{st.rotulo}</Distintivo>
+              <Link to={`/estoque?comprar=${item.id}`} className="text-xs font-medium text-brand-600 hover:underline">Comprar</Link>
+            </span>
           </li>
         ))}
         {alertas.length > 6 && <li className="px-6 py-2 text-xs text-ink-muted">+ {alertas.length - 6} item(ns) — veja no módulo Estoque.</li>}

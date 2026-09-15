@@ -29,6 +29,6 @@ Limite de 5.000 linhas por consulta (aviso na tela) — refinar o período.
 Toda etapa que criar dados entrega, na mesma entrega, o(s) relatório(s) correspondente(s) no catálogo (view + entrada + teste). Áreas previstas: 53B Clientes e contratos, 53C Operação (OS, estoque, FTTH, comodato), 53D Comercial (Indique e Ganhe, portal).
 
 ## 53C (parcial) · Materiais — migration `20260902000083_relatorios_materiais.sql`
-- **Materiais em estoque** (`vw_rel_estoque_itens`): saldo, custo médio, valor em estoque, mínimo, situação (ok/zerado/abaixo do mínimo), em comodato, local. Itens inativos ficam fora.
+- **Materiais em estoque** (`vw_rel_estoque_itens`): saldo, custo médio, valor em estoque, mínimo, situação (ok/zerado/abaixo do mínimo), em comodato (quantidade e valor — 0084: unidades instaladas × custo médio, capital em prateleira × capital na rua), local. Itens inativos ficam fora.
 - **Materiais alocados em clientes** (`vw_rel_materiais_cliente`): comodatos (série, situação instalado/recolhido/trocado/perdido) + saídas por instalação com cliente/contrato. Comodato não baixa o saldo do estoque (o bem continua da empresa); instalação baixa.
 Teste `supabase/tests/relatorios_materiais_test.sql`.

@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
@@ -146,7 +147,7 @@ function NovoItemRapido({ negocioId, aoCriar, aoFechar }: { negocioId: string; a
   )
 }
 
-function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: EstoqueItem[]; aoFechar: () => void }) {
+function NovaCompra({ negocioId, itens, itemInicial, aoFechar }: { negocioId: string; itens: EstoqueItem[]; itemInicial?: string; aoFechar: () => void }) {
   const contas = useContas()
   const categorias = useCategorias()
   const contratos = useContratos()
@@ -159,7 +160,7 @@ function NovaCompra({ negocioId, itens, aoFechar }: { negocioId: string; itens: 
   const contratoSel = contratosDoNegocio.find((c) => c.id === contratoId)
   const [descricao, setDescricao] = useState('Compra de estoque')
   const [categoriaId, setCategoriaId] = useState('')
-  const [linhas, setLinhas] = useState<LinhaCompra[]>([{ itemId: '', quantidade: '', valorTotal: '' }])
+  const [linhas, setLinhas] = useState<LinhaCompra[]>([{ itemId: itemInicial ?? '', quantidade: '', valorTotal: '' }])
   const [pagtos, setPagtos] = useState<LinhaPagto[]>([{ contaId: '', valor: '', pago: true, parcelas: '1' }])
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -349,6 +350,16 @@ export function EstoquePage() {
   const [itemEdicao, setItemEdicao] = useState<EstoqueItem | null>(null)
   const [itemMov, setItemMov] = useState<EstoqueItem | null>(null)
   const [novaCategoria, setNovaCategoria] = useState('')
+  const [buscaParams, setBuscaParams] = useSearchParams()
+  const [compraItemInicial, setCompraItemInicial] = useState<string | undefined>(undefined)
+  const comprarParam = buscaParams.get('comprar')
+  // oxlint-disable-next-line react/set-state-in-effect -- sincroniza com a URL (?comprar=), sistema externo
+  useEffect(() => { // alerta do dashboard → Nova compra com o item pré-selecionado
+    if (!comprarParam || !itens.isSuccess) return
+    const alvo = (itens.data ?? []).find((i) => i.id === comprarParam)
+    if (alvo) { setNegocioId(alvo.negocio_id); setCompraItemInicial(alvo.id); setModal('compra') }
+    setBuscaParams({}, { replace: true })
+  }, [comprarParam, itens.isSuccess, itens.data, setBuscaParams])
 
   const servnet = (negocios.data ?? []).find((n) => n.nome.toLowerCase().includes('servnet')) ?? (negocios.data ?? [])[0]
   const negocioAtual = negocioId || servnet?.id || ''
@@ -560,7 +571,7 @@ export function EstoquePage() {
       </Modal>
 
       <Modal aberto={modal === 'compra'} aoFechar={() => setModal(null)} largura="xl" titulo="Nova compra (entrada de estoque)">
-        {modal === 'compra' && negocioAtual && <NovaCompra negocioId={negocioAtual} itens={lista} aoFechar={() => setModal(null)} />}
+        {modal === 'compra' && negocioAtual && <NovaCompra negocioId={negocioAtual} itens={lista} itemInicial={compraItemInicial} aoFechar={() => { setModal(null); setCompraItemInicial(undefined) }} />}
       </Modal>
 
       <Modal aberto={modal === 'instalacao'} aoFechar={() => setModal(null)} largura="xl" titulo="Nova instalação (materiais + mão de obra)">

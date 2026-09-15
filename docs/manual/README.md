@@ -26,7 +26,7 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 - **Cartões do topo**: saldo total das contas, receitas/despesas do mês (realizado e previsto) e resultado. O "previsto" inclui a **projeção dos contratos** do mês exibido (mensalidades ainda não faturadas) — por isso um mês futuro já mostra a receita esperada.
 - **Cobrança do período**: três anéis — Confirmadas (recebidas), A receber (no prazo) e Inadimplentes (vencidas, acumulado) — com filtro Dia · Semana · Mês e atalho para Contas a receber.
 - **Avisos no WhatsApp**: se a régua de cobrança de cada negócio está em dia, com erro ou sem configuração.
-- **Estoque**: itens zerados ou abaixo do mínimo.
+- **Estoque**: itens zerados ou abaixo do mínimo; o link **Comprar** de cada item abre a Nova compra já com ele selecionado.
 - **Resumo financeiro do período**: saldo inicial, previsto × realizado e resultado.
 - **Saldo por conta** e **últimas movimentações**.
 
@@ -231,7 +231,7 @@ Central única para tirar relatórios: catálogo por área, **Meus favoritos** n
 
 Na tela do relatório: clique no título da coluna para ordenar; **Agrupar por** cria subtotais; a última linha é o total. **Exportar CSV** abre no Excel; **Imprimir / PDF** usa a impressão do navegador (só o relatório sai). **Salvar como favorito** guarda os filtros com um nome — aparece na página inicial de Relatórios e abre já gerado.
 
-Relatórios disponíveis: Financeiro — resultado por negócio, gastos por centro de custo, DRE simplificado, despesas por categoria, lançamentos, contas a receber e a pagar (previsto × realizado), inadimplência; Clientes e contratos — custo por cliente (contrato); Operação — materiais em estoque e materiais alocados em clientes (comodato e instalação). Os demais entram junto com as próximas etapas.
+Relatórios disponíveis: Financeiro — resultado por negócio, gastos por centro de custo, DRE simplificado, despesas por categoria, lançamentos, contas a receber e a pagar (previsto × realizado), inadimplência; Clientes e contratos — custo por cliente (contrato); Operação — materiais em estoque (com valor em estoque e valor em comodato por item) e materiais alocados em clientes (comodato e instalação). Os demais entram junto com as próximas etapas.
 
 ## 14. Apps / Notificações / Disparos
 

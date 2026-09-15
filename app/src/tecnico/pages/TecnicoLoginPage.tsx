@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { useAuth } from '../../core/auth/useAuth'
 import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
+import { CartaoAuth, FundoAuth, MENTA } from '../../pages/auth/FundoAuth'
 
 /** Login do técnico: usuário e senha (sem e-mail). Internamente vira login@tecnico.local. */
 export function TecnicoLoginPage() {
@@ -29,24 +30,36 @@ export function TecnicoLoginPage() {
     }
   }
 
+  // campos grandes de propósito: o técnico entra no celular, muitas vezes com uma mão só
+  const campo = 'mt-1 h-12 w-full rounded-xl border border-white/15 bg-black/20 px-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-white/40'
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
-      <form onSubmit={(e) => void aoEnviar(e)} className="w-full max-w-sm space-y-4 rounded-xl border border-line bg-white p-6">
-        <div>
-          <h1 className="text-lg font-semibold">Área do técnico</h1>
-          <p className="text-sm text-ink-muted">Entre com o usuário e a senha que o administrador criou.</p>
-        </div>
-        {erro && <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">{erro}</p>}
-        <label className="block text-sm font-medium">Usuário
-          <input value={login} onChange={(e) => setLogin(e.target.value)} autoCapitalize="none" autoComplete="username" className="mt-1 h-12 w-full rounded-md border border-line px-3 text-sm" placeholder="ex.: joao" />
-        </label>
-        <label className="block text-sm font-medium">Senha
-          <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="current-password" className="mt-1 h-12 w-full rounded-md border border-line px-3 text-sm" />
-        </label>
-        <button type="submit" disabled={enviando || !login.trim() || !senha} className="h-12 w-full rounded-md bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60">
-          {enviando ? 'Entrando…' : 'Entrar'}
-        </button>
-      </form>
-    </div>
+    <FundoAuth>
+      <CartaoAuth>
+        <form onSubmit={(e) => void aoEnviar(e)} className="space-y-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-full border-2" style={{ borderColor: MENTA }}>
+              <span className="size-2.5 rounded-full" style={{ backgroundColor: MENTA }} />
+            </span>
+            <span className="text-xs font-semibold tracking-[0.3em] text-white/70">ÁREA DO TÉCNICO</span>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Bem-vindo, <span style={{ color: MENTA }}>técnico</span></h1>
+            <p className="mt-1 text-sm text-white/45">Entre com o usuário e a senha que o administrador criou.</p>
+          </div>
+          {erro && <p className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-300">{erro}</p>}
+          <label className="block text-sm font-medium text-white/80">Usuário
+            <input value={login} onChange={(e) => setLogin(e.target.value)} autoCapitalize="none" autoComplete="username" className={campo} placeholder="ex.: joao" />
+          </label>
+          <label className="block text-sm font-medium text-white/80">Senha
+            <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="current-password" className={campo} />
+          </label>
+          <button type="submit" disabled={enviando || !login.trim() || !senha}
+            className="mt-2 h-12 w-full rounded-full text-base font-semibold transition hover:brightness-110 disabled:opacity-50"
+            style={{ background: `linear-gradient(90deg, ${MENTA}, #7ef0cd)`, color: '#08110d', boxShadow: `0 10px 34px ${MENTA}55` }}>
+            {enviando ? 'Entrando…' : 'Entrar'}
+          </button>
+        </form>
+      </CartaoAuth>
+    </FundoAuth>
   )
 }

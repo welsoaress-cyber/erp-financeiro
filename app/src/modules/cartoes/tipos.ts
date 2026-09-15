@@ -25,6 +25,7 @@ export interface Fatura {
 /** Sábado/domingo antecipa para a sexta anterior (mesma regra do banco, ajustar_dia_util). Sem feriados: não há fonte gratuita confiável. */
 export function ajustarDiaUtil(dataISO: string): string {
   const d = new Date(`${dataISO}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return dataISO // data impossível: devolve como veio em vez de estourar
   const dow = d.getUTCDay() // 0=domingo, 6=sábado
   if (dow === 0) d.setUTCDate(d.getUTCDate() - 2)
   else if (dow === 6) d.setUTCDate(d.getUTCDate() - 1)

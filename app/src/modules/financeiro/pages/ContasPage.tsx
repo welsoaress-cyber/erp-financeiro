@@ -21,7 +21,9 @@ import { useNegocios } from '../../negocios/api'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { codigoContrato } from '../../contratos/tipos'
 import { useBaixaParcial, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useLancamentos, useLancamentosVencidosAntes } from '../../lancamentos/api'
-import { rotuloParcela, type Lancamento } from '../../lancamentos/tipos'
+import { ROTULO_PERIODICIDADE, rotuloParcela, type Lancamento } from '../../lancamentos/tipos'
+import { useCartoesConfig } from '../../cartoes/api'
+import { vencimentoFaturaReal } from '../../cartoes/tipos'
 import { useCancelarConfianca, useConfiancasAtivas, useDarConfianca, type Confianca } from '../confiancas'
 
 const diasAtraso = (vencimento: string) => Math.max(0, Math.round((Date.parse(hojeISO()) - Date.parse(vencimento)) / 86400000))
@@ -133,6 +135,20 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const contratoPorId = useMemo(() => new Map((contratos.data ?? []).map((c) => [c.id, c])), [contratos.data])
   const contaPorId = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
+  const cartoesConfig = useCartoesConfig()
+  /** Contexto do lançamento no modal de baixa: parcela, recorrência, fatura do cartão e rastro de baixa parcial. */
+  function contextoLancamento(l: Lancamento) {
+    const conta = contaPorId.get(l.conta_id)
+    const cfg = conta?.tipo === 'credito' ? (cartoesConfig.data ?? []).find((k) => k.conta_id === conta.id) : undefined
+    const partes: string[] = []
+    const parcela = rotuloParcela(l)
+    if (parcela === 'Fixo') partes.push(`🔄 Recorrente ${l.periodicidade ? ROTULO_PERIODICIDADE[l.periodicidade].toLowerCase() : ''}`.trim())
+    else if (parcela) partes.push(`🔄 ${parcela}${l.periodicidade ? ` · ${ROTULO_PERIODICIDADE[l.periodicidade].toLowerCase()}` : ''}`)
+    else partes.push('Pagamento único (não parcelado)')
+    if (conta) partes.push(conta.tipo === 'credito' ? `💳 ${conta.nome}${cfg ? ` · fatura vence ${formatarData(vencimentoFaturaReal(l.data_competencia, cfg))}` : ''}` : conta.nome)
+    if (l.categoria_id) partes.push(nomeCategoria.get(l.categoria_id) ?? '')
+    return partes.filter(Boolean)
+  }
   const [faturasAbertas, setFaturasAbertas] = useState<Set<string>>(new Set())
   const [faturaAjuste, setFaturaAjuste] = useState<{ contaId: string; vencimento: string; negocioId: string | null } | null>(null)
   const [ajusteDescricao, setAjusteDescricao] = useState(''); const [ajusteValor, setAjusteValor] = useState(''); const [ajusteCategoriaId, setAjusteCategoriaId] = useState('')
@@ -383,7 +399,14 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
         {acao && (
           <div className="space-y-4">
             {erro && <Alerta tipo="erro">{mensagemDeErro(erro)}</Alerta>}
-            <p className="text-sm"><span className="font-medium">{acao.l.descricao}</span> · {formatarMoeda(acao.l.valor)} · vence {formatarData(acao.l.data_vencimento)}</p>
+            <div className="rounded-md border border-line bg-surface/60 p-3">
+              <p className="text-sm"><span className="font-medium">{acao.l.descricao}</span> · {formatarMoeda(acao.l.valor)} · vence {formatarData(acao.l.data_vencimento)}</p>
+              <p className="mt-1 text-xs text-ink-muted">{contextoLancamento(acao.l).join(' · ')}</p>
+              {acao.l.observacao && <p className="mt-1 text-xs text-ink-muted">📝 {acao.l.observacao}</p>}
+              {contaPorId.get(acao.l.conta_id)?.tipo === 'credito' && acao.tipo === 'baixa' && (
+                <p className="mt-1 text-xs text-amber-800">Compra no cartão: o normal é ela ser baixada sozinha no fechamento da fatura, e você pagar a fatura em Cartões. Só marque como paga aqui se tiver pago essa compra por fora.</p>
+              )}
+            </div>
             {acao.tipo !== 'cancelar' && <Campo rotulo={receber ? 'Data do recebimento' : 'Data do pagamento'} type="date" value={dataBaixa} onChange={(e) => setDataBaixa(e.target.value)} />}
             {acao.tipo === 'baixa' && acao.l.tipo !== 'transferencia' && (
               <div className="space-y-1">

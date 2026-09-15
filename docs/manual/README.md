@@ -71,7 +71,7 @@ Mesma ideia para as despesas (energia, link, comissões dos técnicos etc.).
 
 ![Cobrança](img/06-cobranca-bloqueios.png)
 
-A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do prazo da régua) e **quem desbloquear** (suspenso que quitou):
+A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do prazo da régua) e **quem desbloquear** (suspenso que quitou). Com a lista grande, o campo **Buscar cliente ou nº do contrato…** filtra na hora (aparece só quando há itens na lista):
 
 1. Faça o bloqueio/desbloqueio no seu sistema de rede (OLT/ReceitaNet).
 2. Clique **"Bloqueei na rede" / "Desbloqueei na rede"** — o contrato muda de status sozinho (ativo ↔ suspenso). "Ignorar" descarta a sugestão.

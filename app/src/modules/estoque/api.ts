@@ -91,6 +91,16 @@ export function useSalvarEstoqueItem() {
     onSuccess: invalidar,
   })
 }
+export function useExcluirEstoqueItem() {
+  const invalidar = useInvalidarEstoque()
+  return useMutation({
+    mutationFn: async (p_item_id: string) => {
+      const { error } = await supabase.rpc('excluir_estoque_item', { p_item_id })
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
 
 export function useEstoqueMovs(itemId?: string | null) {
   const { organizacao } = useOrganizacao()

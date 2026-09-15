@@ -17,6 +17,8 @@ import { usePessoas } from '../../pessoas/api'
 import { useContas } from '../../contas/api'
 import { useContratos } from '../../contratos/api'
 import { useCategorias } from '../../categorias/api'
+import { useNegocios } from '../../negocios/api'
+import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { codigoContrato } from '../../contratos/tipos'
 import { useBaixaParcial, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useLancamentos, useLancamentosVencidosAntes } from '../../lancamentos/api'
 import { rotuloParcela, type Lancamento } from '../../lancamentos/tipos'
@@ -106,7 +108,9 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const { mes, setMes } = usePeriodo()
   const lancamentos = useLancamentos(mes); const pessoas = usePessoas(); const contratos = useContratos(); const contas = useContas()
   const efetivar = useEfetivarLancamento(); const parcial = useBaixaParcial(); const cancelar = useCancelarLancamento()
+  const negocios = useNegocios()
   const [filtroPessoa, setFiltroPessoa] = useState(''); const [filtroSituacao, setFiltroSituacao] = useState<Situacao | ''>(''); const [busca, setBusca] = useState('')
+  const [filtroNegocio, setFiltroNegocio] = useState('') // '' = todos, 'pessoal' = sem negócio, ou o id
   const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState(''); const [encargos, setEncargos] = useState(''); const [contaBaixa, setContaBaixa] = useState('')
   const categorias = useCategorias()
   const criarAjuste = useCriarLancamento()
@@ -133,7 +137,11 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const [ajusteDescricao, setAjusteDescricao] = useState(''); const [ajusteValor, setAjusteValor] = useState(''); const [ajusteCategoriaId, setAjusteCategoriaId] = useState('')
   // cortesia (0080): fatura cancelada com motivo 'Cortesia' aparece na lista, mas fica fora dos totais
   const ehCortesia = (l: Lancamento) => l.status === 'cancelado' && l.motivo_cancelamento === 'Cortesia'
-  const base = (lancamentos.data ?? []).filter((l) => l.tipo === tipo && (l.status !== 'cancelado' || ehCortesia(l)))
+  // o filtro de negócio entra já na base: os indicadores do topo (previsto, realizado, vencidos)
+  // passam a valer para o negócio escolhido, não só a lista
+  const base = (lancamentos.data ?? [])
+    .filter((l) => l.tipo === tipo && (l.status !== 'cancelado' || ehCortesia(l)))
+    .filter((l) => !filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio))
   const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const termo = normalizar(busca.trim())
   const lista = base
@@ -193,6 +201,13 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
       <div className="mb-4"><PendenciasAnteriores tipo={tipo} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
       <div className="mb-4 flex flex-wrap items-start gap-3">
         <SeletorMes mes={mes} aoMudar={setMes} />
+        {(negocios.data ?? []).length > 0 && (
+          <select aria-label="Filtrar por negócio" value={filtroNegocio} onChange={(e) => setFiltroNegocio(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+            <option value="">Todos os negócios</option>
+            <option value="pessoal">{ROTULO_PESSOAL}</option>
+            {(negocios.data ?? []).filter((n) => n.ativo).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
+          </select>
+        )}
         <select aria-label={receber ? 'Filtrar por cliente' : 'Filtrar por fornecedor'} value={filtroPessoa} onChange={(e) => setFiltroPessoa(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
           <option value="">{receber ? 'Todos os clientes' : 'Todos os fornecedores'}</option>
           {pessoasComLanc.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}

@@ -4,7 +4,7 @@ import { useAuth } from '../../core/auth/useAuth'
 import { useLimiteTentativas } from '../../core/auth/useLimiteTentativas'
 import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { CHAVE_SESSAO_EXPIRADA } from '../../core/auth/useInatividade'
-import { FundoAuth, MENTA } from './FundoAuth'
+import { CartaoAuth, FundoAuth, MENTA } from './FundoAuth'
 
 const emailValido = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim())
 const CHAVE_EMAIL_LEMBRADO = 'erp.login.email'
@@ -83,12 +83,8 @@ export function LoginPage() {
 
   return (
     <FundoAuth>
-      <div className="relative w-full max-w-md">
-        {/* cantos em L: o "recorte" do cartão, que dá a moldura sem pesar o fundo */}
-        <span className="pointer-events-none absolute -left-2 -top-2 size-16 rounded-tl-3xl border-l-2 border-t-2" style={{ borderColor: `${MENTA}66` }} />
-        <span className="pointer-events-none absolute -bottom-2 -right-2 size-16 rounded-br-3xl border-b-2 border-r-2" style={{ borderColor: `${MENTA}66` }} />
-
-        <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-8 shadow-[0_30px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+      <CartaoAuth>
+        <div>
           <div className="mb-7 flex items-center gap-2">
             <span className="flex size-8 items-center justify-center rounded-full border-2" style={{ borderColor: MENTA }}>
               <span className="size-2.5 rounded-full" style={{ backgroundColor: MENTA }} />
@@ -166,7 +162,7 @@ export function LoginPage() {
             </p>
           </form>
         </div>
-      </div>
+      </CartaoAuth>
 
       {sessaoExpirada && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" role="dialog" aria-modal="true">

@@ -7,19 +7,35 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { Alerta } from '../../core/ui/Alerta'
 import { Botao } from '../../core/ui/Botao'
 import { Campo } from '../../core/ui/Campo'
-import { Cartao } from '../../core/ui/Cartao'
+import { CIANO, FundoAuth } from '../../pages/auth/FundoAuth'
 import { Carregando } from '../../core/ui/Carregando'
 import { documentoValido, somenteDigitos } from '../../modules/pessoas/tipos'
 import { useLoginSemSenha, useVincularPortal } from '../api'
 
+/**
+ * Telas de acesso do portal: mesmo desenho do login do ERP (vidro escuro com faixas de luz),
+ * mas no ciano do portal. A classe portal-escuro já vira o tema inteiro — Campo, Botao e Alerta
+ * herdam as cores escuras sem precisar mexer em nenhum formulário.
+ */
 function Layout({ titulo, subtitulo, children }: { titulo: string; subtitulo: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 text-center"><p className="text-xs font-semibold uppercase tracking-widest text-brand-600">Portal do cliente</p><h1 className="mt-2 text-2xl font-semibold">{titulo}</h1><p className="mt-1 text-sm text-ink-muted">{subtitulo}</p></div>
-        <Cartao>{children}</Cartao>
+    <FundoAuth cor={CIANO} base="#06283a" className="portal-escuro">
+      <div className="relative w-full max-w-md">
+        <span className="pointer-events-none absolute -left-2 -top-2 size-16 rounded-tl-3xl border-l-2 border-t-2" style={{ borderColor: `${CIANO}66` }} />
+        <span className="pointer-events-none absolute -bottom-2 -right-2 size-16 rounded-br-3xl border-b-2 border-r-2" style={{ borderColor: `${CIANO}66` }} />
+        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 shadow-[0_30px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+          <div className="mb-6 flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-full border-2" style={{ borderColor: CIANO }}>
+              <span className="size-2.5 rounded-full" style={{ backgroundColor: CIANO }} />
+            </span>
+            <span className="text-xs font-semibold tracking-[0.3em] text-ink-muted">PORTAL DO CLIENTE</span>
+          </div>
+          <h1 className="text-3xl font-bold text-ink">{titulo}</h1>
+          <p className="mb-6 mt-1 text-sm text-ink-muted">{subtitulo}</p>
+          {children}
+        </div>
       </div>
-    </div>
+    </FundoAuth>
   )
 }
 

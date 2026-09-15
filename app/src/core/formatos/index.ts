@@ -5,9 +5,13 @@ export function formatarMoeda(valor: number | string): string {
   return moedaBRL.format(typeof valor === 'string' ? Number(valor) : valor)
 }
 
-/** Recebe 'AAAA-MM-DD' (date do Postgres) e devolve 'DD/MM/AAAA' sem deslocamento de fuso. */
-export function formatarData(iso: string): string {
-  return dataBR.format(new Date(`${iso}T00:00:00Z`))
+/** Recebe 'AAAA-MM-DD' (date do Postgres) e devolve 'DD/MM/AAAA' sem deslocamento de fuso.
+ *  Data vazia/ausente/inválida vira '—': um campo nulo no banco não pode derrubar a tela inteira
+ *  (era o "Invalid time value" que quebrava Lançamentos com o ErrorBoundary). */
+export function formatarData(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(`${String(iso).slice(0, 10)}T00:00:00Z`)
+  return Number.isNaN(d.getTime()) ? '—' : dataBR.format(d)
 }
 
 export function hojeISO(): string {
@@ -42,7 +46,10 @@ export function fimDoMes(mesISO: string): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
 }
 
-export function formatarMes(mesISO: string): string {
-  const texto = mesBR.format(new Date(`${mesISO}T00:00:00Z`))
+export function formatarMes(mesISO: string | null | undefined): string {
+  if (!mesISO) return '—'
+  const d = new Date(`${String(mesISO).slice(0, 10)}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return '—'
+  const texto = mesBR.format(d)
   return texto.charAt(0).toUpperCase() + texto.slice(1)
 }

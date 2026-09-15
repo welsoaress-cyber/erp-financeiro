@@ -28,7 +28,7 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
 
   if (lancamento.status === 'cancelado') {
     return (
-      <Alerta tipo="info" titulo={`Cancelado em ${formatarData(lancamento.cancelado_em!.slice(0, 10))}`}>
+      <Alerta tipo="info" titulo={lancamento.cancelado_em ? `Cancelado em ${formatarData(lancamento.cancelado_em)}` : 'Lançamento cancelado'}>
         {lancamento.motivo_cancelamento ?? 'Sem motivo informado.'} Lançamentos cancelados não podem ser alterados.
       </Alerta>
     )

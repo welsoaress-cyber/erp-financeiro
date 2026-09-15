@@ -18,6 +18,8 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 ![Login](img/01-login.png)
 
 1. Abra o endereço do sistema e informe **e-mail e senha** do administrador.
+> As três portas de entrada (administrador, técnico e cliente) têm o mesmo desenho: fundo escuro com faixas de luz e cartão de vidro — verde no ERP e na área do técnico, ciano no portal do cliente.
+
 2. **Lembrar meu e-mail** guarda só o e-mail neste aparelho (a senha nunca é salva) — no próximo acesso você só digita a senha.
 3. Esqueceu a senha? Digite o e-mail e clique em **Esqueci a senha**: chega um link para definir a senha nova. Abra o link **no mesmo navegador**.
 4. **Sou técnico** e **Sou cliente** levam às outras duas portas de entrada sem precisar decorar endereço.
@@ -67,6 +69,8 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 ![Contas a receber](img/04-contas-a-receber.png)
 
 Só as receitas previstas do mês, com atrasadas destacadas. Pesquise pelo cliente e dê baixa direto no botão da linha. O filtro **Todos os negócios** separa por empresa (Servnet, Pessoal…) — ele vale também para os quatro cartões do topo, então dá para ver *previsto, realizado, saldo e vencidos de um negócio só*. O mesmo filtro está em Contas a pagar.
+
+Ao clicar em **Pagar/Receber**, a janela mostra o contexto da cobrança antes de você confirmar: se é **parcela X de Y** (ou recorrente fixa, ou pagamento único), a **conta** — e, quando é cartão, **de que fatura ela é e quando essa fatura vence** —, a categoria e a observação (é ali que fica o rastro de uma **baixa parcial** anterior). Compra no cartão traz ainda o aviso de que o normal é ela baixar sozinha no fechamento da fatura: marcar como paga ali só se você pagou aquela compra por fora.
 
 Filtros da tela: negócio, cliente/fornecedor, situação (aberto/vencido/pago), **categoria**, **conta** e **dias de atraso** (até 30, 31–60, 61–90, mais de 90) — o aging responde "quanto está vencido há mais de 60 dias" sem sair da tela.
 

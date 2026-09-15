@@ -15,6 +15,7 @@ import { useCtos } from '../../ftth/api'
 import { useAtualizarCentroCusto, useCentrosCusto, useCriarCentroCusto, useGastosCentros } from '../api'
 import { FormularioCentroCusto } from '../components/FormularioCentroCusto'
 import { ROTULO_TIPO_CENTRO, type CentroCusto, type DadosCentroCusto } from '../tipos'
+import { CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 
 type Edicao = { modo: 'novo' } | { modo: 'editar'; centro: CentroCusto } | null
 
@@ -29,6 +30,7 @@ export function CentrosCustoPage() {
   const gastos = useGastosCentros(mes)
   const [negocioId, setNegocioId] = useState('')
   const [mostrarInativos, setMostrarInativos] = useState(false)
+  const [busca, setBusca] = useState(''); const [filtroTipo, setFiltroTipo] = useState('')
   const [edicao, setEdicao] = useState<Edicao>(null)
 
   const nomeNegocio = useMemo(() => new Map((negocios.data ?? []).map((n) => [n.id, n.nome])), [negocios.data])
@@ -36,7 +38,9 @@ export function CentrosCustoPage() {
     const ls = (gastos.data ?? []).filter((g) => g.centro_custo_id === centroId && (centroId !== null || g.negocio_id === negocio))
     return { realizado: ls.filter((g) => g.status === 'efetivado').reduce((s, g) => s + g.valor, 0), previsto: ls.filter((g) => g.status === 'previsto').reduce((s, g) => s + g.valor, 0) }
   }
-  const lista = (centros.data ?? []).filter((c) => (mostrarInativos || c.ativo) && (!negocioId || c.negocio_id === negocioId))
+  const base = (centros.data ?? []).filter((c) => (mostrarInativos || c.ativo) && (!negocioId || c.negocio_id === negocioId))
+  const termo = busca.trim().toLowerCase()
+  const lista = base.filter((c) => (!filtroTipo || c.tipo === filtroTipo) && (!termo || c.nome.toLowerCase().includes(termo)))
   const totalInativos = (centros.data ?? []).filter((c) => !c.ativo).length
   const negociosVisiveis = (negocios.data ?? []).filter((n) => n.ativo && (!negocioId || n.id === negocioId))
 
@@ -64,8 +68,16 @@ export function CentrosCustoPage() {
       {centros.error != null && <Alerta tipo="erro">{mensagemDeErro(centros.error)}</Alerta>}
       {centros.isSuccess && (
         <Cartao className="p-0">
-          <div className="flex items-center justify-between border-b border-line px-6 py-3 text-sm">
-            <span className="text-ink-muted">{lista.length} centro(s) · gasto do mês (realizado · previsto)</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-3 text-sm">
+            <span className="flex flex-wrap items-center gap-2">
+              <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar centro de custo" />
+              <SelectFiltro valor={filtroTipo} aoMudar={setFiltroTipo} rotulo="Filtrar por tipo">
+                <option value="">Todos os tipos</option>
+                {(Object.keys(ROTULO_TIPO_CENTRO) as (keyof typeof ROTULO_TIPO_CENTRO)[]).map((t) => <option key={t} value={t}>{ROTULO_TIPO_CENTRO[t]}</option>)}
+              </SelectFiltro>
+              <ContagemFiltro visiveis={lista.length} total={base.length} singular="centro" plural="centros" />
+              <span className="text-ink-muted">· gasto do mês (realizado · previsto)</span>
+            </span>
             {totalInativos > 0 && <label className="flex items-center gap-2"><input type="checkbox" checked={mostrarInativos} onChange={(e) => setMostrarInativos(e.target.checked)} className="size-4 accent-brand-600" />Mostrar inativos ({totalInativos})</label>}
           </div>
           <div className="overflow-x-auto"><table className="w-full text-sm">

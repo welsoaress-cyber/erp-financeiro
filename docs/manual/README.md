@@ -4,6 +4,8 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 
 > **No celular** as listas grandes (Lançamentos, Contas a pagar e a receber) viram **cartões** — um por linha, com data, descrição, valor e situação — em vez da tabela larga que exigiria rolar para o lado. As mesmas ações continuam ali (pagar, baixa parcial, cancelar, editar). As imagens deste manual são da versão de computador.
 
+> **Filtros nas listas.** Toda lista grande tem a mesma barra no topo: **busca** por texto à esquerda, **filtros** (selects) ao lado e o **contador** ("12 de 240 itens") mostrando quanto sobrou. Os filtros se combinam e valem também para os indicadores e o CSV daquela tela — filtrou, o total e o arquivo exportado seguem o filtro. Onde a lista é por mês (Lançamentos, Contas, Conciliação, Centros de custo), o seletor de mês manda em tudo.
+>
 > Existem **três portas de entrada** diferentes:
 > - **Administrador**: `/entrar` (e-mail e senha) — vê tudo.
 > - **Técnico**: `/tecnico/entrar` (usuário e senha, sem e-mail) — vê só os chamados e a bolsa dele.
@@ -55,6 +57,7 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 - Parcelamento que já estava em andamento fora do sistema: informe o total contratado e **"Iniciar a partir da parcela"** (ex.: 24× começando na 2) — a numeração continua 2/24…24/24 e o resumo mostra o que foi pago fora e o que resta.
 - Mensalidades de contrato entram sozinhas (faturamento automático); meses futuros aparecem como **projeção** (não são gravados).
 - **Estornar**: efetivado errado (pago em duplicidade, valor errado) → abra o lançamento → **Estornar** (motivo obrigatório). Nasce um contra-lançamento de hoje devolvendo o valor; o original não muda — funciona até com o mês dele fechado. **Cancelar** é para quando o mês ainda está aberto e o lançamento nunca deveria ter existido.
+- **Filtros**: tipo, status, negócio, **categoria**, **conta** e **centro de custo** (inclui "Geral (sem centro)"), mais a busca livre. Filtrar por centro esconde as projeções de contrato — elas não têm centro.
 - **Fechar mês**: depois de conferir um mês passado com o extrato, clique em **🔒 Fechar mês** (ao lado do seletor). Nada efetivado dentro dele poderá ser alterado, cancelado ou excluído — cobranças em aberto continuam baixáveis (o dinheiro entra no mês atual). Para mexer no passado, use **reabrir** (fica auditado).
 
 ### 3.2 Contas a receber
@@ -62,6 +65,8 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 ![Contas a receber](img/04-contas-a-receber.png)
 
 Só as receitas previstas do mês, com atrasadas destacadas. Pesquise pelo cliente e dê baixa direto no botão da linha. O filtro **Todos os negócios** separa por empresa (Servnet, Pessoal…) — ele vale também para os quatro cartões do topo, então dá para ver *previsto, realizado, saldo e vencidos de um negócio só*. O mesmo filtro está em Contas a pagar.
+
+Filtros da tela: negócio, cliente/fornecedor, situação (aberto/vencido/pago), **categoria**, **conta** e **dias de atraso** (até 30, 31–60, 61–90, mais de 90) — o aging responde "quanto está vencido há mais de 60 dias" sem sair da tela.
 
 **🤝 Cliente prometeu pagar em outro dia?** Clique em **🤝 Prometeu pagar** na linha dele, escolha até quando e anote o combinado. A linha passa a mostrar o selo **🤝 Paga até DD/MM** aqui e na tela de Cobrança, e o bloqueio fica segurado até essa data. Pagou no prazo → a promessa se resolve sozinha como cumprida; passou devendo → ele volta na Cobrança destacado como **confiança furada** (você sabe que já confiou uma vez). Para desfazer, clique de novo na linha e use **Cancelar promessa**.
 
@@ -86,7 +91,7 @@ A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do pr
 
 ### 3.5 Conciliação bancária
 
-Escolha a conta e o mês e marque cada movimento que você encontrou no extrato do banco (ou use "Conferir todos"). Os cartões mostram conferidos × pendentes com as somas. Rotina de dono: no início do mês, conferir o mês anterior movimento a movimento e então **Fechar o mês** — saldo do sistema conferido vira fato, não fé.
+Escolha a conta e o mês e marque cada movimento que você encontrou no extrato do banco (ou use "Conferir todos" — ele confere só o que está aparecendo, então dá para conferir em blocos). Filtros: busca por descrição/valor, **só pendentes** ou **só conferidos** e **entradas/saídas**. Os cartões mostram conferidos × pendentes com as somas. Rotina de dono: no início do mês, conferir o mês anterior movimento a movimento e então **Fechar o mês** — saldo do sistema conferido vira fato, não fé.
 
 ## 4. Contas
 
@@ -98,7 +103,7 @@ Cadastro das contas (caixa, banco, carteira digital, cartão). O **saldo é calc
 
 ![Cartões](img/08-cartoes.png)
 
-Cartão tem **fatura por mês**: as despesas no cartão entram como previstas na fatura; pagar a fatura é uma transferência da conta escolhida. Configure dia de fechamento e vencimento uma vez. O fechamento é **automático** (todo dia às 02:30, horário de Brasília) — "Fechar faturas agora" é só um atalho manual, não é preciso clicar nele. Fechamento e vencimento que caem em sábado/domingo antecipam para o dia útil anterior. O **disponível** já desconta as parcelas futuras (comprometidas), não só o que foi efetivado — o cartão mostra "R$X comprometido em parcelas futuras" quando há.
+Cartão tem **fatura por mês**: as despesas no cartão entram como previstas na fatura; pagar a fatura é uma transferência da conta escolhida. Configure dia de fechamento e vencimento uma vez. O fechamento é **automático** (todo dia às 02:30, horário de Brasília) — "Fechar faturas agora" é só um atalho manual, não é preciso clicar nele. Fechamento e vencimento que caem em sábado/domingo antecipam para o dia útil anterior. O **disponível** já desconta as parcelas futuras (comprometidas), não só o que foi efetivado — o cartão mostra "R$X comprometido em parcelas futuras" quando há. A lista de faturas filtra por **cartão**, **situação** (aberta/paga/vencida) e **mês de vencimento**.
 
 ## 6. Categorias
 
@@ -136,6 +141,8 @@ Cada operação sua (Servnet, etc.) é um **negócio**. Quase tudo no sistema é
 
 Cadastro único de clientes e fornecedores (o técnico também vira uma pessoa, para receber comissões). O **endereço** alimenta o mapa FTTH; **CPF + data de nascimento** são o login do cliente no portal; "receber avisos" controla o WhatsApp de cobrança. A busca encontra por nome, CPF/CNPJ, e-mail ou login do servidor.
 
+Com a lista grande, três filtros ao lado da busca: **negócio** (com a opção *Sem vínculo*, útil para achar cadastro solto), **papel** (cliente, fornecedor, parceiro, outro) e **tipo** (física ou jurídica). Eles se combinam — ex.: fornecedores pessoa jurídica da Servnet. O contador ao lado mostra quantas pessoas sobraram.
+
 Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pessoa **sem histórico** — se ela tiver contrato, lançamento, OS ou comodato, o sistema barra e o caminho é **desativar** (desmarcar "Pessoa ativa"). A exclusão remove junto o acesso dela ao portal.
 
 ## 9. Contratos
@@ -164,8 +171,9 @@ Mapa real da rede (OpenStreetMap):
 Passo a passo comum:
 
 1. **Nova CTO**: código sugerido, "Alimentado por" (POP ou CEO), portas/splitter e clique no mapa para marcar o local.
-2. Clique numa CTO → **portas**: vincular cliente (contrato ativo), reservar, liberar, trocar de porta, marcar defeito, lacre por porta e da caixa.
-3. Clique num POP/CEO → mostra **o que cai junto** num rompimento (pontos e clientes abaixo).
+2. A aba **CTOs** busca por código, endereço ou lacre e filtra por **status** e **ocupação** (críticas ≥90%, só lotadas, com folga). A aba **Histórico** filtra por **CTO**, **evento** e **mês**, com busca por cliente/observação.
+3. Clique numa CTO → **portas**: vincular cliente (contrato ativo), reservar, liberar, trocar de porta, marcar defeito, lacre por porta e da caixa.
+4. Clique num POP/CEO → mostra **o que cai junto** num rompimento (pontos e clientes abaixo).
 4. Se o monitoramento da OLT estiver ativo, um alerta vermelho aparece aqui quando a OLT não responde.
 
 ## 11. Estoque
@@ -179,8 +187,9 @@ Estoque da Servnet com **custo médio ponderado** e movimentações imutáveis:
 - **Aba Patrimônio**: bens individuais que não se consomem (fusionadora, power meter, estante, nobreak…) com nº de patrimônio (PAT-001), série, valor de aquisição, NF, localização e estado. Clique no bem para transferir de local, mudar o estado ou dar **baixa** (venda/perda/descarte — definitiva, com histórico). O topo mostra o valor total do inventário e o **Exportar CSV** gera a lista para seguro ou venda da operação. Patrimônio não entra em alerta de reposição; a despesa da compra vai no Financeiro em categoria "Investimento / ativo".
 - **+ Criar item novo**: dentro da Nova compra dá para criar o item na hora (nome, categoria, código sugerido e unidade) sem sair da tela — os detalhes podem ser completados depois na aba Itens.
 - **Importar de print**: dentro da Nova compra, clique em "📷 Importar de print", cole (Ctrl+V) ou arraste o print do pedido (Shopee, Mercado Livre, e-mail). O sistema lê a imagem no próprio navegador e preenche descrição, quantidade e valor total — você só confere, escolhe o item e a conta, e registra. Funciona melhor com print de tela (não foto); a primeira leitura demora alguns segundos (baixa o leitor de texto).
-- **Movimentações**: histórico imutável (compra, instalação, devolução, ajuste, perda, transferência para a bolsa do técnico).
-- **Instalações/Relatórios**: consumo por mês/origem e custo de instalação por contrato (payback).
+- **Movimentações**: histórico imutável (compra, instalação, devolução, ajuste, perda, transferência para a bolsa do técnico). Filtros por **item**, **origem** e **mês**.
+- **Instalações/Relatórios**: consumo por mês/origem e custo de instalação por contrato (payback). Instalações filtram por **técnico** (inclusive "sem técnico"), **mês** e busca por cliente.
+- A aba **Itens** tem busca por código/nome/marca/modelo e filtro por **categoria**; a aba **Patrimônio**, busca por nome/série/nº e filtros de **localização**, **estado** e **situação** (começa em "Ativo") — o CSV exporta exatamente o que está filtrado.
 
 ### 11.1 Comodato (onde está cada ONU)
 
@@ -216,12 +225,13 @@ Chamados técnicos. O dashboard mostra abertos/em atendimento/encerrados, valor 
 3. No detalhe: ciência → agendar (o **tempo conta do horário agendado**) → iniciar → pausar/retomar (motivo obrigatório) → **encerrar** com materiais, equipamentos (série), diagnóstico, sinal dBm e fotos.
 4. Encerrado: **avaliar** (não resolvido → reabrir), **gerar comissão** (instalação/mudança; padrão 50% da mensalidade, editável — vira despesa prevista na categoria Comissões).
 5. Remarcação pedida pelo técnico aparece para **quem abriu** aprovar (você ou o cliente no portal).
+6. Filtros da lista: busca (número ou cliente), **status**, **tipo de OS**, **técnico** (inclui "sem técnico") e **agendamento** (hoje, próximos 7 dias, **agendamento vencido**, sem agendamento) — "agendamento vencido" é a varredura de chamado esquecido.
 
 ### 12.2 Agenda e Técnicos
 
 ![Agenda](img/18-os-agenda.png)
 
-Agenda dos próximos 7 dias, por técnico e hora — confira antes de atribuir chamado novo.
+Agenda dos próximos 7 dias, por técnico e hora — confira antes de atribuir chamado novo. Os filtros de **técnico** e **tipo** no topo deixam a semana de um técnico só na tela.
 
 ![Técnicos](img/19-os-tecnicos.png)
 
@@ -251,7 +261,9 @@ Relatórios disponíveis: Financeiro — resultado por negócio, gastos por cent
 
 - **Notificações**: régua de cobrança no WhatsApp **configurável por negócio** — escolha em quais dias o cliente recebe aviso antes e depois do vencimento (até 5 pontos de cada lado; o aviso do dia sempre sai). Padrão enxuto: **2 antes · no dia · 3 depois**. Cada ponto manda no máximo uma mensagem por fatura — sem enxurrada de WhatsApp. Configure também número, instância Evolution e templates; acompanhe o histórico de envio. Os avisos de OS (visita agendada/concluída) e o Pix copia-e-cola pegam carona nessa mesma configuração.
 - **Disparos** (![Disparos](img/22-disparos.png)): mensagens manuais em lote (ex.: aviso de manutenção) com proteção anti-bloqueio.
-- **Apps**: controle de recargas/ativações de apps com carteira de dois saldos.
+- **Apps**: controle de recargas/ativações de apps com carteira de dois saldos. O **histórico da carteira** filtra por tipo (recarga/consumo) e mês; os **contratos de app**, por app, situação e busca por cliente/nº do contrato.
+- **Cobrança**: as listas de **confianças ativas** e **Pix recentes** têm busca por cliente e filtro de situação do Pix (aguardando/pago/cancelado).
+- **Indicações**: filtre por situação — incluindo **presente pendente** (convertida e ainda não entregue) — mês e busca por indicado/indicante. Os números do topo continuam sendo os do negócio inteiro, não os do filtro.
 
 ## 15. Portal do cliente (o que o seu cliente vê)
 

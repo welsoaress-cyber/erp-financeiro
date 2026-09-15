@@ -13,7 +13,8 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useContas } from '../../contas/api'
 import { useCartoesConfig, useCartoesLimite, useFaturas, useFecharFaturasAgora, useItensFatura, usePagarFatura, useSalvarCartaoConfig } from '../api'
-import { ROTULO_STATUS_FATURA, type CartaoConfig, type Fatura } from '../tipos'
+import { ROTULO_STATUS_FATURA, type CartaoConfig, type Fatura, type StatusFatura } from '../tipos'
+import { BarraFiltros, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 
 const TOM: Record<Fatura['status'], 'ok' | 'alerta' | 'neutro'> = { paga: 'ok', vencida: 'alerta', aberta: 'neutro' }
 
@@ -29,9 +30,20 @@ export function CartoesPage() {
   const [configurando, setConfigurando] = useState<{ config?: CartaoConfig } | null>(null)
   const [pagando, setPagando] = useState<Fatura | null>(null)
   const [detalhe, setDetalhe] = useState<Fatura | null>(null)
+  const [faturaCartao, setFaturaCartao] = useState('')
+  const [faturaStatus, setFaturaStatus] = useState<StatusFatura | ''>('')
+  const [faturaMes, setFaturaMes] = useState('')
   const itens = useItensFatura(detalhe?.id ?? null)
 
   const contasCredito = useMemo(() => (contas.data ?? []).filter((c) => c.tipo === 'credito' && c.ativo), [contas.data])
+  // faturas acumulam 12 por cartão por ano: filtro de cartão, situação e mês de vencimento
+  const mesesFatura = useMemo(() => [...new Set((faturas.data ?? []).map((f) => f.data_vencimento.slice(0, 7)))].sort().reverse(), [faturas.data])
+  const faturasFiltradas = (faturas.data ?? []).filter((f) => {
+    if (faturaCartao && f.conta_id !== faturaCartao) return false
+    if (faturaStatus && f.status !== faturaStatus) return false
+    if (faturaMes && !f.data_vencimento.startsWith(faturaMes)) return false
+    return true
+  })
   const contaPorId = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c])), [contas.data])
   const contasPagamento = (contas.data ?? []).filter((c) => c.ativo && c.tipo !== 'credito')
   const semConfig = contasCredito.filter((c) => !(configs.data ?? []).some((k) => k.conta_id === c.id))
@@ -112,11 +124,26 @@ export function CartoesPage() {
       {faturas.isSuccess && (
         <Cartao className="p-0">
           <div className="border-b border-line px-6 py-3"><h2 className="text-sm font-semibold">Faturas</h2></div>
-          {(faturas.data ?? []).length === 0 ? (
-            <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhuma fatura ainda. Compras no cartão entram na próxima fatura, gerada automaticamente no dia do fechamento (ou com "Fechar faturas agora").</p>
+          <BarraFiltros>
+            <SelectFiltro valor={faturaCartao} aoMudar={setFaturaCartao} rotulo="Filtrar por cartão">
+              <option value="">Todos os cartões</option>
+              {contasCredito.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={faturaStatus} aoMudar={(v) => setFaturaStatus(v as StatusFatura | '')} rotulo="Filtrar por situação">
+              <option value="">Todas as situações</option>
+              {(Object.keys(ROTULO_STATUS_FATURA) as StatusFatura[]).map((st) => <option key={st} value={st}>{ROTULO_STATUS_FATURA[st]}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={faturaMes} aoMudar={setFaturaMes} rotulo="Filtrar por mês de vencimento">
+              <option value="">Todos os vencimentos</option>
+              {mesesFatura.map((m) => <option key={m} value={m}>{m.split('-').reverse().join('/')}</option>)}
+            </SelectFiltro>
+            <ContagemFiltro visiveis={faturasFiltradas.length} total={(faturas.data ?? []).length} singular="fatura" plural="faturas" />
+          </BarraFiltros>
+          {faturasFiltradas.length === 0 ? (
+            <p className="px-6 py-10 text-center text-sm text-ink-muted">{(faturas.data ?? []).length === 0 ? 'Nenhuma fatura ainda. Compras no cartão entram na próxima fatura, gerada automaticamente no dia do fechamento (ou com "Fechar faturas agora").' : 'Nenhuma fatura com esses filtros.'}</p>
           ) : (
             <ul className="divide-y divide-line">
-              {(faturas.data ?? []).map((f) => (
+              {faturasFiltradas.map((f) => (
                 <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 text-sm">
                   <button type="button" className="min-w-0 text-left" onClick={() => setDetalhe(f)}>
                     <p className="font-medium">{contaPorId.get(f.conta_id)?.nome ?? '—'} · {formatarData(f.periodo_inicio)} a {formatarData(f.periodo_fim)}</p>

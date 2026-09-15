@@ -10,6 +10,7 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { useAtualizarCategoria, useCategorias, useCriarCategoria } from '../api'
 import { FormularioCategoria } from '../components/FormularioCategoria'
 import { montarArvore, TIPOS_CATEGORIA, type Categoria, type DadosCategoria, type TipoCategoria } from '../tipos'
+import { CampoBusca, ContagemFiltro } from '../../../core/ui/Filtros'
 
 type Edicao = { modo: 'nova'; paiId?: string } | { modo: 'editar'; categoria: Categoria } | null
 
@@ -19,11 +20,16 @@ export function CategoriasPage() {
   const atualizar = useAtualizarCategoria()
   const [tipo, setTipo] = useState<TipoCategoria>('despesa')
   const [mostrarInativas, setMostrarInativas] = useState(false)
+  const [busca, setBusca] = useState('')
   const [edicao, setEdicao] = useState<Edicao>(null)
 
   const todas = categorias.data ?? []
   const doTipo = todas.filter((c) => c.tipo === tipo)
-  const visiveis = doTipo.filter((c) => mostrarInativas || c.ativo)
+  const termo = busca.trim().toLowerCase()
+  // busca mantém a árvore de pé: se a filha casa, a raiz dela continua visível
+  const casam = new Set(doTipo.filter((c) => c.nome.toLowerCase().includes(termo)).map((c) => c.id))
+  const visiveis = doTipo.filter((c) => (mostrarInativas || c.ativo)
+    && (!termo || casam.has(c.id) || (c.categoria_pai_id != null && casam.has(c.categoria_pai_id)) || doTipo.some((f) => f.categoria_pai_id === c.id && casam.has(f.id))))
   const arvore = montarArvore(visiveis)
   const totalInativas = doTipo.filter((c) => !c.ativo).length
 
@@ -108,8 +114,9 @@ export function CategoriasPage() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-ink-muted">{visiveis.length} {visiveis.length === 1 ? 'categoria' : 'categorias'}</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar categoria" />
+              <ContagemFiltro visiveis={visiveis.length} total={doTipo.filter((c) => mostrarInativas || c.ativo).length} singular="categoria" plural="categorias" />
               {totalInativas > 0 && (
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={mostrarInativas} onChange={(e) => setMostrarInativas(e.target.checked)} className="size-4 accent-brand-600" />

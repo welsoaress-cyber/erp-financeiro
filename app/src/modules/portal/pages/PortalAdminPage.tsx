@@ -17,6 +17,7 @@ import { usePlanos } from '../../contratos/api'
 import { useAcessosPortal, usePortalConfigs, usePromocoesAdmin, useSalvarPortalConfig, useSalvarPromocao } from '../api'
 import type { PortalConfig, PromocaoAdmin } from '../tipos'
 import { OperacaoPortal } from '../components/OperacaoPortal'
+import { CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 
 type Janela = { tipo: 'config' } | { tipo: 'promocao'; promocao?: PromocaoAdmin } | null
 
@@ -107,6 +108,15 @@ function FormPromocao({ negocioId, promocao, aoConcluir }: { negocioId: string; 
 export function PortalAdminPage() {
   const negocios = useNegocios(); const configs = usePortalConfigs(); const promocoes = usePromocoesAdmin(); const acessos = useAcessosPortal()
   const [negocioSel, setNegocioSel] = useState(''); const [janela, setJanela] = useState<Janela>(null)
+  const [buscaAcesso, setBuscaAcesso] = useState(''); const [filtroAcesso, setFiltroAcesso] = useState('')
+  // um acesso por cliente cadastrado: a lista passa de centenas
+  const termoAcesso = buscaAcesso.trim().toLowerCase()
+  const acessosFiltrados = (acessos.data ?? []).filter((a) => {
+    if (filtroAcesso === 'com' && a.indicacoes === 0) return false
+    if (filtroAcesso === 'sem' && a.indicacoes > 0) return false
+    if (!termoAcesso) return true
+    return a.pessoa.toLowerCase().includes(termoAcesso) || a.codigo_indicacao.toLowerCase().includes(termoAcesso)
+  })
   const ativos = useMemo(() => (negocios.data ?? []).filter((n) => n.ativo), [negocios.data])
   const negocio = ativos.find((n) => n.id === negocioSel) ?? ativos[0] ?? null
   const config = (configs.data ?? []).find((c) => c.negocio_id === negocio?.id) ?? null
@@ -132,7 +142,16 @@ export function PortalAdminPage() {
             </Cartao>
             <Cartao>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">Acessos ao portal</h2>
-              {acessos.isPending ? <Carregando /> : (acessos.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Nenhum cliente criou acesso ainda. Eles se cadastram em /portal/cadastro com CPF/CNPJ e telefone.</p> : <ul className="divide-y divide-line rounded-md border border-line">{(acessos.data ?? []).map((a) => <li key={a.id} className="flex items-center justify-between px-3 py-2 text-sm"><span>{a.pessoa}<span className="ml-2 font-mono text-xs text-ink-muted">{a.codigo_indicacao}</span></span><span className="text-xs text-ink-muted">{a.indicacoes} indicação(ões) · desde {formatarData(a.criado_em.slice(0, 10))}</span></li>)}</ul>}
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                <CampoBusca valor={buscaAcesso} aoMudar={setBuscaAcesso} rotulo="Buscar por cliente ou código" />
+                <SelectFiltro valor={filtroAcesso} aoMudar={setFiltroAcesso} rotulo="Filtrar por indicações">
+                  <option value="">Todos os acessos</option>
+                  <option value="com">Com indicação</option>
+                  <option value="sem">Sem indicação</option>
+                </SelectFiltro>
+                <ContagemFiltro visiveis={acessosFiltrados.length} total={(acessos.data ?? []).length} singular="acesso" plural="acessos" />
+              </div>
+              {acessos.isPending ? <Carregando /> : (acessos.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Nenhum cliente criou acesso ainda. Eles se cadastram em /portal/cadastro com CPF/CNPJ e telefone.</p> : acessosFiltrados.length === 0 ? <p className="text-sm text-ink-muted">Nenhum acesso com esses filtros.</p> : <ul className="max-h-96 divide-y divide-line overflow-y-auto rounded-md border border-line">{acessosFiltrados.map((a) => <li key={a.id} className="flex items-center justify-between px-3 py-2 text-sm"><span>{a.pessoa}<span className="ml-2 font-mono text-xs text-ink-muted">{a.codigo_indicacao}</span></span><span className="text-xs text-ink-muted">{a.indicacoes} indicação(ões) · desde {formatarData(a.criado_em.slice(0, 10))}</span></li>)}</ul>}
             </Cartao>
           </div>
           <OperacaoPortal negocioId={negocio.id} />

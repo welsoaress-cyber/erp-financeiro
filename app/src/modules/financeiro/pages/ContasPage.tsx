@@ -111,6 +111,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const negocios = useNegocios()
   const [filtroPessoa, setFiltroPessoa] = useState(''); const [filtroSituacao, setFiltroSituacao] = useState<Situacao | ''>(''); const [busca, setBusca] = useState('')
   const [filtroNegocio, setFiltroNegocio] = useState('') // '' = todos, 'pessoal' = sem negócio, ou o id
+  const [filtroCategoria, setFiltroCategoria] = useState(''); const [filtroConta, setFiltroConta] = useState(''); const [filtroAtraso, setFiltroAtraso] = useState('')
   const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState(''); const [encargos, setEncargos] = useState(''); const [contaBaixa, setContaBaixa] = useState('')
   const categorias = useCategorias()
   const criarAjuste = useCriarLancamento()
@@ -144,8 +145,18 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     .filter((l) => !filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio))
   const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const termo = normalizar(busca.trim())
+  // aging: dias de atraso de quem está vencido (30/60/90+), como no extrato de inadimplência
+  const diasAtraso = (l: Lancamento) => Math.floor((Date.parse(hojeISO()) - Date.parse(l.data_vencimento)) / 86_400_000)
   const lista = base
     .filter((l) => (!filtroPessoa || l.pessoa_id === filtroPessoa) && (!filtroSituacao || (!ehCortesia(l) && situacaoDe(l) === filtroSituacao)))
+    .filter((l) => !filtroCategoria || l.categoria_id === filtroCategoria)
+    .filter((l) => !filtroConta || l.conta_id === filtroConta)
+    .filter((l) => {
+      if (!filtroAtraso) return true
+      if (situacaoDe(l) !== 'vencido' || ehCortesia(l)) return false
+      const d = diasAtraso(l)
+      return filtroAtraso === '30' ? d <= 30 : filtroAtraso === '60' ? d > 30 && d <= 60 : filtroAtraso === '90' ? d > 60 && d <= 90 : d > 90
+    })
     .filter((l) => !termo || normalizar([l.descricao, l.pessoa_id ? nomePessoa.get(l.pessoa_id) : null, l.observacao].filter(Boolean).join(' ')).includes(termo))
     .sort((a, b) => a.data_vencimento.localeCompare(b.data_vencimento))
   // agrupamento visual por fatura de cartão (item 4 do levantamento): só na tela de despesas.
@@ -214,6 +225,21 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
         </select>
         <select aria-label="Filtrar por situação" value={filtroSituacao} onChange={(e) => setFiltroSituacao(e.target.value as Situacao | '')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
           <option value="">Todas as situações</option><option value="aberto">Em aberto</option><option value="vencido">Vencidos</option><option value="pago">{receber ? 'Recebidos' : 'Pagos'}</option>
+        </select>
+        <select aria-label="Filtrar por categoria" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <option value="">Todas as categorias</option>
+          {(categorias.data ?? []).filter((c) => c.ativo && c.tipo === tipo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        </select>
+        <select aria-label="Filtrar por conta" value={filtroConta} onChange={(e) => setFiltroConta(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <option value="">Todas as contas</option>
+          {(contas.data ?? []).filter((c) => c.ativo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        </select>
+        <select aria-label="Filtrar por dias de atraso" value={filtroAtraso} onChange={(e) => setFiltroAtraso(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <option value="">Qualquer atraso</option>
+          <option value="30">Vencidos até 30 dias</option>
+          <option value="60">31 a 60 dias</option>
+          <option value="90">61 a 90 dias</option>
+          <option value="mais">Mais de 90 dias</option>
         </select>
         <input
           type="search"

@@ -20,6 +20,7 @@ import { Recarga } from '../components/Recarga'
 import { FormularioApp } from '../components/FormularioApp'
 import { AtivarApp } from '../components/AtivarApp'
 import { ROTULO_SITUACAO, formatarValor, type AppCatalogo, type SituacaoContratoApp } from '../tipos'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 
 type Janela = { tipo: 'config' } | { tipo: 'recarga' } | { tipo: 'app'; app?: AppCatalogo } | { tipo: 'ativar' } | null
 const TOM_SITUACAO: Record<SituacaoContratoApp, 'ok' | 'alerta' | 'neutro'> = { ativo: 'ok', vencido: 'alerta', cancelado: 'neutro' }
@@ -43,6 +44,8 @@ export function AppsPage() {
   const planos = usePlanos()
   const [negocioSel, setNegocioSel] = useState('')
   const [janela, setJanela] = useState<Janela>(null)
+  const [buscaContrato, setBuscaContrato] = useState(''); const [situacaoApp, setSituacaoApp] = useState<SituacaoContratoApp | ''>('')
+  const [appFiltro, setAppFiltro] = useState(''); const [txTipo, setTxTipo] = useState<'' | 'recarga' | 'consumo'>(''); const [txMes, setTxMes] = useState('')
 
   const lista = resumos.data ?? []
   const resumo = lista.find((r) => r.negocio_id === negocioSel) ?? lista[0] ?? null
@@ -52,6 +55,18 @@ export function AppsPage() {
   const nomeApp = useMemo(() => new Map(apps.map((a) => [a.id, a.nome])), [apps])
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const anuidadePlano = useMemo(() => new Map((planos.data ?? []).map((p) => [p.id, p.valor_tabela])), [planos.data])
+  // carteira e contratos crescem sem teto: filtros de período/tipo e de situação/app/cliente
+  const txLista = transacoes.data ?? []
+  const mesesTx = useMemo(() => [...new Set((transacoes.data ?? []).map((t) => t.data.slice(0, 7)))].sort().reverse(), [transacoes.data])
+  const txFiltradas = txLista.filter((t) => (!txTipo || t.tipo === txTipo) && (!txMes || t.data.startsWith(txMes)))
+  const contratosLista = contratos.data ?? []
+  const termoContrato = buscaContrato.trim().toLowerCase()
+  const contratosFiltrados = contratosLista.filter((c) => {
+    if (situacaoApp && c.situacao !== situacaoApp) return false
+    if (appFiltro && c.app !== appFiltro) return false
+    if (!termoContrato) return true
+    return (nomePessoa.get(c.pessoa_id) ?? '').toLowerCase().includes(termoContrato) || codigoContrato(c).toLowerCase().includes(termoContrato)
+  })
   const configurada = Boolean(resumo?.carteira_id)
   const fechar = () => setJanela(null)
 
@@ -123,12 +138,24 @@ export function AppsPage() {
 
             <Cartao>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">Histórico da carteira</h2>
-              {transacoes.isPending && configurada ? <Carregando /> : (transacoes.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Nenhuma transação. Use "Recarregar" para colocar saldo.</p> : (
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                <SelectFiltro valor={txTipo} aoMudar={(v) => setTxTipo(v as typeof txTipo)} rotulo="Filtrar por tipo">
+                  <option value="">Recargas e consumos</option>
+                  <option value="recarga">Só recargas</option>
+                  <option value="consumo">Só consumos</option>
+                </SelectFiltro>
+                <SelectFiltro valor={txMes} aoMudar={setTxMes} rotulo="Filtrar por mês">
+                  <option value="">Todos os meses</option>
+                  {mesesTx.map((m) => <option key={m} value={m}>{m.split('-').reverse().join('/')}</option>)}
+                </SelectFiltro>
+                <ContagemFiltro visiveis={txFiltradas.length} total={txLista.length} singular="transação" plural="transações" />
+              </div>
+              {transacoes.isPending && configurada ? <Carregando /> : txLista.length === 0 ? <p className="text-sm text-ink-muted">Nenhuma transação. Use "Recarregar" para colocar saldo.</p> : txFiltradas.length === 0 ? <p className="text-sm text-ink-muted">Nenhuma transação com esses filtros.</p> : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr><th className="py-2 pr-3">Data</th><th className="py-2 pr-3">Tipo</th><th className="py-2 pr-3">Detalhe</th><th className="py-2 text-right">Valor</th></tr></thead>
                     <tbody className="divide-y divide-line">
-                      {(transacoes.data ?? []).map((t) => (
+                      {txFiltradas.map((t) => (
                         <tr key={t.id}>
                           <td className="py-2 pr-3 tabular-nums text-ink-muted">{formatarData(t.data)}</td>
                           <td className="py-2 pr-3"><Distintivo tom={t.tipo === 'recarga' ? 'ok' : 'neutro'}>{t.tipo === 'recarga' ? 'Recarga' : 'Consumo'}</Distintivo></td>
@@ -145,12 +172,24 @@ export function AppsPage() {
 
           <Cartao className="p-0">
             <div className="border-b border-line px-6 py-3"><h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Contratos de app</h2></div>
-            {(contratos.data ?? []).length === 0 ? <p className="px-6 py-8 text-center text-sm text-ink-muted">Nenhuma ativação ainda.</p> : (
+            <BarraFiltros>
+              <CampoBusca valor={buscaContrato} aoMudar={setBuscaContrato} rotulo="Buscar por cliente ou nº do contrato" />
+              <SelectFiltro valor={appFiltro} aoMudar={setAppFiltro} rotulo="Filtrar por app">
+                <option value="">Todos os apps</option>
+                {[...new Set(contratosLista.map((c) => c.app))].sort().map((a) => <option key={a} value={a}>{a}</option>)}
+              </SelectFiltro>
+              <SelectFiltro valor={situacaoApp} aoMudar={(v) => setSituacaoApp(v as SituacaoContratoApp | '')} rotulo="Filtrar por situação">
+                <option value="">Todas as situações</option>
+                {(Object.keys(ROTULO_SITUACAO) as SituacaoContratoApp[]).map((st) => <option key={st} value={st}>{ROTULO_SITUACAO[st]}</option>)}
+              </SelectFiltro>
+              <ContagemFiltro visiveis={contratosFiltrados.length} total={contratosLista.length} singular="contrato" plural="contratos" />
+            </BarraFiltros>
+            {contratosFiltrados.length === 0 ? <p className="px-6 py-8 text-center text-sm text-ink-muted">{contratosLista.length === 0 ? 'Nenhuma ativação ainda.' : 'Nenhum contrato com esses filtros.'}</p> : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-6 py-3 font-medium">Contrato</th><th className="px-6 py-3 font-medium">Cliente</th><th className="px-6 py-3 font-medium">App</th><th className="px-6 py-3 text-right font-medium">Anuidade</th><th className="px-6 py-3 font-medium">Pago com</th><th className="px-6 py-3 font-medium">Próximo vencimento</th><th className="px-6 py-3 font-medium">Situação</th></tr></thead>
                   <tbody>
-                    {(contratos.data ?? []).map((c) => (
+                    {contratosFiltrados.map((c) => (
                       <tr key={c.contrato_id} className="border-b border-line last:border-0">
                         <td className="px-6 py-3 font-mono text-xs">{codigoContrato(c)}</td>
                         <td className="px-6 py-3 font-medium">{nomePessoa.get(c.pessoa_id) ?? '—'}</td>

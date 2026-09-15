@@ -16,8 +16,9 @@ import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useAbaixoDe, useClientesMapa, useCtos, useOltStatus, useDefeitoPorta, useHistoricoCto, useLacrePorta, useLiberarPorta, usePortasCto, useRotaCliente, useRotaPop, useSalvarCto, useTrocarPorta, useVincularPorta } from '../api'
 import { MapaCtos } from '../components/MapaCtos'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { useOrdens } from '../../os/api'
-import { buscarEndereco, ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type StatusCto, type TipoPontoRede } from '../tipos'
+import { buscarEndereco, ocupacaoDe, ROTULO_EVENTO, ROTULO_STATUS_CTO, type ClienteNoMapa, type CtoOcupacao, type CtoPorta, type DadosCto, type EventoPorta, type StatusCto, type TipoPontoRede } from '../tipos'
 
 type Aba = 'mapa' | 'ctos' | 'historico'
 
@@ -320,6 +321,13 @@ export function FtthPage() {
   const pessoas = usePessoas()
   const salvar = useSalvarCto()
   const [aba, setAba] = useState<Aba>('mapa')
+  const [buscaCto, setBuscaCto] = useState('')
+  const [statusCto, setStatusCto] = useState<StatusCto | ''>('')
+  const [ocupacaoFiltro, setOcupacaoFiltro] = useState<'' | 'critica' | 'lotada' | 'livre'>('')
+  const [buscaHistorico, setBuscaHistorico] = useState('')
+  const [histCto, setHistCto] = useState('')
+  const [histEvento, setHistEvento] = useState<EventoPorta | ''>('')
+  const [histMes, setHistMes] = useState('')
   const [detalhe, setDetalhe] = useState<CtoOcupacao | null>(null)
   const [editando, setEditando] = useState<CtoOcupacao | 'nova' | 'novo-pop' | 'nova-ceo' | null>(null)
   const historicoGeral = useHistoricoCto(null)
@@ -343,6 +351,32 @@ export function FtthPage() {
   const nomeCto = useMemo(() => new Map((ctos.data ?? []).map((c) => [c.id, c.codigo])), [ctos.data])
   const servnet = (negocios.data ?? []).find((n) => n.nome.toLowerCase().includes('servnet')) ?? (negocios.data ?? [])[0]
   const criticas = (ctos.data ?? []).filter((c) => c.status === 'ativa' && ocupacaoDe(c).tom !== 'ok')
+
+  // CTOs e histórico são listas longas: filtros de busca/status/ocupação e de CTO/evento/mês
+  const termoCto = buscaCto.trim().toLowerCase()
+  const ctosFiltradas = (ctos.data ?? []).filter((c) => {
+    if (statusCto && c.status !== statusCto) return false
+    if (ocupacaoFiltro) {
+      const { tom, pct } = ocupacaoDe(c)
+      if (ocupacaoFiltro === 'critica' && tom === 'ok') return false
+      if (ocupacaoFiltro === 'lotada' && tom !== 'lotada') return false
+      if (ocupacaoFiltro === 'livre' && pct >= 50) return false
+    }
+    if (!termoCto) return true
+    return [c.codigo, c.endereco ?? '', c.lacre ?? '', c.referencia ?? ''].some((x) => x.toLowerCase().includes(termoCto))
+  })
+  const historicoLista = historicoGeral.data ?? []
+  const mesesHistorico = useMemo(() => [...new Set((historicoGeral.data ?? []).map((h) => h.criado_em.slice(0, 7)))].sort().reverse(), [historicoGeral.data])
+  const termoHist = buscaHistorico.trim().toLowerCase()
+  const historicoFiltrado = historicoLista.filter((h) => {
+    if (histCto && h.cto_id !== histCto) return false
+    if (histEvento && h.evento !== histEvento) return false
+    if (histMes && !h.criado_em.startsWith(histMes)) return false
+    if (!termoHist) return true
+    return (nomeCto.get(h.cto_id) ?? '').toLowerCase().includes(termoHist)
+      || (h.pessoa_id ? (nomePessoa.get(h.pessoa_id) ?? '').toLowerCase().includes(termoHist) : false)
+      || (h.observacao ?? '').toLowerCase().includes(termoHist)
+  })
 
   const detalheAtual = detalhe ? (ctos.data ?? []).find((c) => c.id === detalhe.id) ?? detalhe : null
 
@@ -379,11 +413,25 @@ export function FtthPage() {
 
       {aba === 'ctos' && ctos.isSuccess && (
         <Cartao className="p-0">
-          {ctos.data.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">Nenhuma CTO cadastrada. Clique em "Nova CTO".</p> : (
+          <BarraFiltros>
+            <CampoBusca valor={buscaCto} aoMudar={setBuscaCto} rotulo="Buscar por código, endereço ou lacre" />
+            <SelectFiltro valor={statusCto} aoMudar={(v) => setStatusCto(v as StatusCto | '')} rotulo="Filtrar por status">
+              <option value="">Todos os status</option>
+              {(Object.keys(ROTULO_STATUS_CTO) as StatusCto[]).map((st) => <option key={st} value={st}>{ROTULO_STATUS_CTO[st]}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={ocupacaoFiltro} aoMudar={(v) => setOcupacaoFiltro(v as typeof ocupacaoFiltro)} rotulo="Filtrar por ocupação">
+              <option value="">Qualquer ocupação</option>
+              <option value="critica">Críticas (≥90%)</option>
+              <option value="lotada">Só lotadas</option>
+              <option value="livre">Com folga (&lt;50%)</option>
+            </SelectFiltro>
+            <ContagemFiltro visiveis={ctosFiltradas.length} total={ctos.data.length} singular="CTO" plural="CTOs" />
+          </BarraFiltros>
+          {ctosFiltradas.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">{ctos.data.length === 0 ? 'Nenhuma CTO cadastrada. Clique em "Nova CTO".' : 'Nenhuma CTO com esses filtros.'}</p> : (
             <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Código</th><th className="px-4 py-2 font-medium">Endereço</th><th className="px-4 py-2 font-medium">Splitter</th><th className="px-4 py-2 text-right font-medium">Ocupação</th><th className="px-4 py-2 font-medium">Drops</th><th className="px-4 py-2 font-medium">Status</th></tr></thead>
               <tbody>
-                {ctos.data.map((c) => { const { pct, tom } = ocupacaoDe(c); return (
+                {ctosFiltradas.map((c) => { const { pct, tom } = ocupacaoDe(c); return (
                   <tr key={c.id} onClick={() => setDetalhe(c)} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
                     <td className="px-4 py-2 font-medium">{c.codigo}{c.lacre && <span className="ml-2 font-mono text-xs text-ink-muted">{c.lacre}</span>}{c.com_defeito > 0 && <span className="ml-2 text-xs text-red-700">⚠ {c.com_defeito} defeito(s)</span>}</td>
                     <td className="px-4 py-2 text-ink-muted">{c.endereco ?? '—'}</td>
@@ -401,9 +449,25 @@ export function FtthPage() {
 
       {aba === 'historico' && (
         <Cartao className="p-0">
-          {(historicoGeral.data ?? []).length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">Sem movimentações ainda.</p> : (
+          <BarraFiltros>
+            <CampoBusca valor={buscaHistorico} aoMudar={setBuscaHistorico} rotulo="Buscar por CTO, cliente ou observação" />
+            <SelectFiltro valor={histCto} aoMudar={setHistCto} rotulo="Filtrar por CTO">
+              <option value="">Todas as CTOs</option>
+              {(ctos.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.codigo}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={histEvento} aoMudar={(v) => setHistEvento(v as EventoPorta | '')} rotulo="Filtrar por evento">
+              <option value="">Todos os eventos</option>
+              {(Object.keys(ROTULO_EVENTO) as EventoPorta[]).map((e) => <option key={e} value={e}>{ROTULO_EVENTO[e]}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={histMes} aoMudar={setHistMes} rotulo="Filtrar por mês">
+              <option value="">Todos os meses</option>
+              {mesesHistorico.map((m) => <option key={m} value={m}>{m.split('-').reverse().join('/')}</option>)}
+            </SelectFiltro>
+            <ContagemFiltro visiveis={historicoFiltrado.length} total={historicoLista.length} singular="evento" plural="eventos" />
+          </BarraFiltros>
+          {historicoFiltrado.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">{historicoLista.length === 0 ? 'Sem movimentações ainda.' : 'Nenhum evento com esses filtros.'}</p> : (
             <ul className="divide-y divide-line text-sm">
-              {(historicoGeral.data ?? []).map((h) => (
+              {historicoFiltrado.map((h) => (
                 <li key={h.id} className="flex flex-wrap justify-between gap-2 px-4 py-2">
                   <span><span className="font-medium">{nomeCto.get(h.cto_id) ?? '—'}</span> · {ROTULO_EVENTO[h.evento]}{h.pessoa_id && ` · ${nomePessoa.get(h.pessoa_id) ?? ''}`}{h.observacao && <span className="text-ink-muted"> · {h.observacao}</span>}</span>
                   <span className="text-ink-muted">{new Date(h.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>

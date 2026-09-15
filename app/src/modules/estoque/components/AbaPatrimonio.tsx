@@ -11,6 +11,7 @@ import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { usePatrimonioHistorico, usePatrimonios, useSalvarPatrimonio } from '../api'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { codigoPatrimonio, ROTULO_ESTADO_PAT, ROTULO_STATUS_PAT, type EstadoPatrimonio, type Patrimonio, type StatusPatrimonio } from '../tipos'
 
 const TOM_PAT = { ativo: 'ok', vendido: 'info', perdido: 'alerta', descartado: 'neutro' } as const
@@ -88,7 +89,20 @@ function FormPatrimonio({ negocioId, bem, aoFechar }: { negocioId: string; bem: 
 export function AbaPatrimonio({ negocioId }: { negocioId: string }) {
   const patrimonios = usePatrimonios()
   const [modal, setModal] = useState<{ bem: Patrimonio | null } | null>(null)
-  const lista = (patrimonios.data ?? []).filter((p) => p.negocio_id === negocioId)
+  const [busca, setBusca] = useState('')
+  const [local, setLocal] = useState('')
+  const [estado, setEstado] = useState<EstadoPatrimonio | ''>('')
+  const [situacao, setSituacao] = useState<StatusPatrimonio | ''>('ativo')
+  const todos = (patrimonios.data ?? []).filter((p) => p.negocio_id === negocioId)
+  const locais = [...new Set(todos.map((p) => p.localizacao))].sort()
+  const termo = busca.trim().toLowerCase()
+  const lista = todos.filter((p) => {
+    if (situacao && p.status !== situacao) return false
+    if (local && p.localizacao !== local) return false
+    if (estado && p.estado !== estado) return false
+    if (!termo) return true
+    return p.nome.toLowerCase().includes(termo) || (p.numero_serie ?? '').toLowerCase().includes(termo) || codigoPatrimonio(p).toLowerCase().includes(termo)
+  })
   const ativos = lista.filter((p) => p.status === 'ativo')
   const total = ativos.reduce((s, p) => s + p.valor_aquisicao, 0)
 
@@ -115,8 +129,24 @@ export function AbaPatrimonio({ negocioId }: { negocioId: string }) {
           <Botao onClick={() => setModal({ bem: null })}>Novo bem</Botao>
         </span>
       </div>
+      <BarraFiltros>
+        <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar por nome, nº de série ou nº do bem" />
+        <SelectFiltro valor={local} aoMudar={setLocal} rotulo="Filtrar por localização">
+          <option value="">Todas as localizações</option>
+          {locais.map((l) => <option key={l} value={l}>{l}</option>)}
+        </SelectFiltro>
+        <SelectFiltro valor={estado} aoMudar={(v) => setEstado(v as EstadoPatrimonio | '')} rotulo="Filtrar por estado">
+          <option value="">Todos os estados</option>
+          {(Object.keys(ROTULO_ESTADO_PAT) as EstadoPatrimonio[]).map((v) => <option key={v} value={v}>{ROTULO_ESTADO_PAT[v]}</option>)}
+        </SelectFiltro>
+        <SelectFiltro valor={situacao} aoMudar={(v) => setSituacao(v as StatusPatrimonio | '')} rotulo="Filtrar por situação">
+          <option value="">Ativos e baixados</option>
+          {(Object.keys(ROTULO_STATUS_PAT) as StatusPatrimonio[]).map((v) => <option key={v} value={v}>{ROTULO_STATUS_PAT[v]}</option>)}
+        </SelectFiltro>
+        <ContagemFiltro visiveis={lista.length} total={todos.length} singular="bem" plural="bens" />
+      </BarraFiltros>
       {patrimonios.isPending ? <div className="p-6"><Carregando /></div> : lista.length === 0 ? (
-        <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhum bem cadastrado. Patrimônio é o que não se consome: fusionadora, power meter, estante, nobreak, escada…</p>
+        <p className="px-6 py-10 text-center text-sm text-ink-muted">{todos.length === 0 ? 'Nenhum bem cadastrado. Patrimônio é o que não se consome: fusionadora, power meter, estante, nobreak, escada…' : 'Nenhum bem com esses filtros.'}</p>
       ) : (
         <div className="overflow-x-auto"><table className="w-full text-sm">
           <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line">

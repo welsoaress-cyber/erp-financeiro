@@ -17,6 +17,8 @@ import { usePessoas } from '../../pessoas/api'
 import { useCategorias } from '../../categorias/api'
 import { useContas } from '../../contas/api'
 import { useCriarLancamento } from '../../lancamentos/api'
+import { useCartoesConfig } from '../../cartoes/api'
+import { vencimentoFatura } from '../../cartoes/tipos'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useExcluirEstoqueItem, useInstalacoes, useItensComEntrada, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
@@ -153,6 +155,7 @@ function NovaCompra({ negocioId, itens, itemInicial, aoFechar }: { negocioId: st
   const categorias = useCategorias()
   const contratos = useContratos()
   const pessoasQ = usePessoas()
+  const cartoesConfig = useCartoesConfig()
   const criarLancamento = useCriarLancamento()
   const entrada = useEntradaEstoque()
   const [data, setData] = useState(hojeISO())
@@ -193,10 +196,13 @@ function NovaCompra({ negocioId, itens, itemInicial, aoFechar }: { negocioId: st
         const totalLinha = Math.round(Number(p.valor.replace(',', '.')) * 100) / 100
         // valor digitado é o TOTAL da linha; parcelado, cada lançamento recebe o valor DIVIDIDO por N (não o total repetido)
         const valorParcela = nParcelas > 1 ? Math.round((totalLinha / nParcelas) * 100) / 100 : totalLinha
+        // cartão: vencimento é o da FATURA (fechamento/vencimento do cartão), não a data da compra
+        const cartaoCfg = ehCartao ? (cartoesConfig.data ?? []).find((k) => k.conta_id === p.contaId) : undefined
+        const vencimentoLinha = cartaoCfg ? vencimentoFatura(data, cartaoCfg) : data
         const l = await criarLancamento.mutateAsync({
           tipo: 'despesa', descricao: `${descricao.trim() || 'Compra de estoque'}${pagtosOk.length > 1 ? ` (${conta?.nome})` : ''}`,
           valor: valorParcela,
-          data_competencia: data, data_vencimento: data,
+          data_competencia: data, data_vencimento: vencimentoLinha,
           data_efetivacao: !ehCartao && p.pago ? data : null,
           conta_id: p.contaId, conta_destino_id: null, categoria_id: categoriaId,
           observacao: 'Entrada de estoque', negocio_id: negocioId, pessoa_id: contratoSel?.pessoa_id ?? null, contrato_id: contratoSel?.id ?? null,
@@ -297,6 +303,10 @@ function NovaCompra({ negocioId, itens, itemInicial, aoFechar }: { negocioId: st
             {contaDe(p.contaId)?.tipo === 'credito' && nP > 1 && valorLinha > 0 && (
               <p className="pl-1 text-xs text-ink-muted">Total {formatarMoeda(valorLinha)} ÷ {nP} = <b>{nP}× de {formatarMoeda(Math.round((valorLinha / nP) * 100) / 100)}</b></p>
             )}
+            {(() => {
+              const cfg = contaDe(p.contaId)?.tipo === 'credito' ? (cartoesConfig.data ?? []).find((k) => k.conta_id === p.contaId) : undefined
+              return cfg && data ? <p className="pl-1 text-xs text-ink-muted">Entra na fatura com vencimento em {vencimentoFatura(data, cfg).split('-').reverse().join('/')}</p> : null
+            })()}
           </div>
         )})}
         <Botao variante="secundario" onClick={() => setPagtos((xs) => [...xs, { contaId: '', valor: '', pago: true, parcelas: '1' }])}>+ Forma de pagamento</Botao>

@@ -19,7 +19,7 @@ import { useContas } from '../../contas/api'
 import { useCriarLancamento } from '../../lancamentos/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
-import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useInstalacoes, useItensComEntrada, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
+import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useExcluirEstoqueItem, useInstalacoes, useItensComEntrada, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
 import { NovaInstalacao } from '../components/NovaInstalacao'
 import { fmtQtd, ROTULO_ORIGEM, statusItem, UNIDADES, type EstoqueItem, type Unidade } from '../tipos'
 import { AbaComodato } from '../components/AbaComodato'
@@ -355,6 +355,7 @@ export function EstoquePage() {
   const pessoas = usePessoas()
   const salvarItem = useSalvarEstoqueItem()
   const salvarCategoria = useSalvarEstoqueCategoria()
+  const excluirItem = useExcluirEstoqueItem()
   const [aba, setAba] = useState<Aba>('dashboard')
   const [negocioId, setNegocioId] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
@@ -453,6 +454,10 @@ export function EstoquePage() {
                     <td className="whitespace-nowrap px-4 py-2 text-right">
                       <button type="button" className="text-brand-700 hover:underline" onClick={() => setItemMov(i)}>Movimentar</button>
                       <button type="button" className="ml-3 text-brand-700 hover:underline" onClick={() => { setItemEdicao(i); setModal('item') }}>Editar</button>
+                      {i.quantidade_atual === 0 && (
+                        <button type="button" className="ml-3 text-red-700 hover:underline" disabled={excluirItem.isPending}
+                          onClick={() => { if (window.confirm(`Excluir "${i.nome}"? Só é possível excluir item que nunca teve movimentação (compra, instalação, comodato…). Não dá para desfazer.`)) excluirItem.mutate(i.id, { onError: (e) => alert(mensagemDeErro(e)) }) }}>Excluir</button>
+                      )}
                     </td>
                   </tr>
                 ) })}

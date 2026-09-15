@@ -65,3 +65,6 @@ Item comprado que chega com defeito: "fornecedor não devolve na hora" — é pe
   - **Troca**: entrada no estoque pelo **mesmo valor** que saiu (custo médio preservado, sem custo novo) e cancela a receita prevista.
   - **Negada**: cancela a receita prevista; a saída já registrada documenta a perda.
 - Histórico imutável (`devolucoes_fornecedor`, motor protegido igual ao resto do estoque). Aba **Devoluções** no módulo Estoque; relatório "Devoluções ao fornecedor" na Central de Relatórios.
+
+## Excluir item sem movimentação (0086)
+Item criado na hora (Nova compra, lançamento…) e nunca movimentado pode ser excluído: `excluir_estoque_item` bloqueia se `quantidade_atual <> 0` ou se qualquer FK real existir (movimentação, comodato, OS, indicação, devolução — captura via `foreign_key_violation`). Aba Itens: link **Excluir** aparece só para item com saldo zero; a mensagem de erro pede para desativar em vez de excluir quando há histórico.

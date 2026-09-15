@@ -17,7 +17,7 @@ import type { CentroCusto } from '../../centros_custo/tipos'
 import { EntradaEstoqueCampo, type EntradaEstoque } from './EntradaEstoqueCampo'
 import { useCriarConta } from '../../contas/api'
 import { useCartoesConfig } from '../../cartoes/api'
-import type { CartaoConfig } from '../../cartoes/tipos'
+import { vencimentoFatura } from '../../cartoes/tipos'
 import { useCriarCategoria } from '../../categorias/api'
 import { useCriarNegocio } from '../../negocios/api'
 import { useCriarPessoa } from '../../pessoas/api'
@@ -129,16 +129,6 @@ interface Props {
   /** edição de recorrente com parcela já gerada: salva descrição/valor/observação no escopo escolhido */
   aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente; data_vencimento?: string | null }) => void
   aoCancelar: () => void
-}
-
-/** Vencimento da fatura em que uma compra na data informada entra (mesma regra do fechamento no banco). */
-function vencimentoFatura(dataISO: string, cfg: CartaoConfig): string {
-  const [ano, mes, dia] = dataISO.split('-').map(Number)
-  let fAno = ano
-  let fMes = mes
-  if (dia > cfg.dia_fechamento) { fMes++; if (fMes > 12) { fMes = 1; fAno++ } }
-  if (cfg.dia_vencimento <= cfg.dia_fechamento) { fMes++; if (fMes > 12) { fMes = 1; fAno++ } }
-  return `${fAno}-${String(fMes).padStart(2, '0')}-${String(cfg.dia_vencimento).padStart(2, '0')}`
 }
 
 interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string; recorrencia?: string; estoque?: string }

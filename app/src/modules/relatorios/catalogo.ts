@@ -252,7 +252,7 @@ export const RELATORIOS: Relatorio[] = [
     id: 'estoque-itens',
     titulo: 'Materiais em estoque',
     area: 'Operação',
-    descricao: 'Lista de itens com saldo, custo médio, valor em estoque, mínimo, situação e quantos estão em comodato.',
+    descricao: 'Lista de itens com saldo, custo médio, valor em estoque, mínimo, situação e o que está em comodato (quantidade e valor).',
     view: 'vw_rel_estoque_itens',
     filtros: ['negocio'],
     colunas: [
@@ -265,6 +265,7 @@ export const RELATORIOS: Relatorio[] = [
       { chave: 'valor_estoque', rotulo: 'Valor em estoque', tipo: 'moeda', totalizar: true },
       { chave: 'quantidade_minima', rotulo: 'Mínimo', tipo: 'numero' },
       { chave: 'em_comodato', rotulo: 'Em comodato', tipo: 'numero' },
+      { chave: 'valor_comodato', rotulo: 'Valor em comodato', tipo: 'moeda', totalizar: true },
       { chave: 'situacao', rotulo: 'Situação' },
       { chave: 'localizacao', rotulo: 'Local' },
     ],

@@ -40,6 +40,9 @@ export function LancamentosPage() {
   const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | '' | 'ativos'>('ativos')
   const [filtroNegocio, setFiltroNegocio] = useState<string>('') // '' = todos, 'pessoal', ou id
   const [busca, setBusca] = useState('')
+  const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [filtroConta, setFiltroConta] = useState('')
+  const [filtroCentro, setFiltroCentro] = useState('') // '' = todos, 'geral' = sem centro
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [avisoDuplicidade, setAvisoDuplicidade] = useState<string | null>(null)
 
@@ -88,10 +91,16 @@ export function LancamentosPage() {
     (!filtroTipo || l.tipo === filtroTipo)
     && (filtroStatus === 'ativos' ? l.status !== 'cancelado' : (!filtroStatus || l.status === filtroStatus))
     && (!filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio))
+    && (!filtroCategoria || l.categoria_id === filtroCategoria)
+    && (!filtroConta || l.conta_id === filtroConta || l.conta_destino_id === filtroConta)
+    && (!filtroCentro || (filtroCentro === 'geral' ? l.centro_custo_id == null : l.centro_custo_id === filtroCentro))
     && combina(l))
   // Meses futuros de contratos ativos: projeção derivada (nada gravado; o lançamento real nasce no mês certo).
-  const projetados = (projecaoContratos.data ?? []).filter((p) =>
+  // a projeção não carrega centro de custo: filtrar por centro esconde as projeções (nada de falso positivo)
+  const projetados = (filtroCentro ? [] : (projecaoContratos.data ?? [])).filter((p) =>
     (!filtroTipo || p.tipo === filtroTipo)
+    && (!filtroCategoria || p.categoria_id === filtroCategoria)
+    && (!filtroConta || p.conta_id === filtroConta)
     && (!filtroStatus || filtroStatus === 'ativos' || filtroStatus === 'previsto')
     && (!filtroNegocio || (filtroNegocio === 'pessoal' ? p.negocio_id === null : p.negocio_id === filtroNegocio))
     && combina(p))
@@ -250,6 +259,21 @@ export function LancamentosPage() {
             <option value="">Todos os negócios</option>
             <option value="pessoal">{ROTULO_PESSOAL}</option>
             {(negocios.data ?? []).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
+          </select>
+        )}
+        <select aria-label="Filtrar por categoria" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <option value="">Todas as categorias</option>
+          {(categorias.data ?? []).filter((c) => c.ativo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        </select>
+        <select aria-label="Filtrar por conta" value={filtroConta} onChange={(e) => setFiltroConta(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <option value="">Todas as contas</option>
+          {(contas.data ?? []).filter((c) => c.ativo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        </select>
+        {(centros.data ?? []).length > 0 && (
+          <select aria-label="Filtrar por centro de custo" value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+            <option value="">Todos os centros</option>
+            <option value="geral">Geral (sem centro)</option>
+            {(centros.data ?? []).filter((c) => c.ativo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         )}
         <input

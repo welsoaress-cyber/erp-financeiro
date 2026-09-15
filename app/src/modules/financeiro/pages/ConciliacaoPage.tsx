@@ -13,6 +13,7 @@ import { supabase } from '../../../core/supabase/client'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { usePeriodo } from '../../../core/periodo/usePeriodo'
 import { useContas } from '../../contas/api'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 
 interface MovConciliacao { id: string; lancamento_id: string; valor: number; data: string; conciliado_em: string | null; descricao: string }
 
@@ -58,6 +59,9 @@ export function ConciliacaoPage() {
   const { mes, setMes } = usePeriodo()
   const contas = useContas()
   const [contaId, setContaId] = useState('')
+  const [busca, setBusca] = useState('')
+  const [situacao, setSituacao] = useState<'' | 'pendente' | 'conferido'>('')
+  const [sinal, setSinal] = useState<'' | 'entrada' | 'saida'>('')
   const conciliar = useConciliar()
   const contasAtivas = (contas.data ?? []).filter((c) => c.ativo)
   const conta = contasAtivas.find((c) => c.id === contaId) ?? contasAtivas[0] ?? null
@@ -71,6 +75,18 @@ export function ConciliacaoPage() {
     }
   }, [movs.data])
   const soma = (xs: MovConciliacao[]) => xs.reduce((s, m) => s + m.valor, 0)
+
+  const termo = busca.trim().toLowerCase()
+  const lista = (movs.data ?? []).filter((m) => {
+    if (situacao === 'pendente' && m.conciliado_em) return false
+    if (situacao === 'conferido' && !m.conciliado_em) return false
+    if (sinal === 'entrada' && m.valor < 0) return false
+    if (sinal === 'saida' && m.valor >= 0) return false
+    if (!termo) return true
+    return m.descricao.toLowerCase().includes(termo) || String(m.valor).includes(termo)
+  })
+  // o botão "Conferir todos" segue o que está na tela: filtrou, confere só o que aparece
+  const pendentesVisiveis = lista.filter((m) => !m.conciliado_em)
 
   return (
     <>
@@ -93,15 +109,29 @@ export function ConciliacaoPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-6 py-3">
               <h2 className="text-sm font-semibold">{conta.nome} · {mes}</h2>
               <span className="flex gap-2">
-                <Botao variante="secundario" disabled={pendentes.length === 0} carregando={conciliar.isPending}
-                  onClick={() => conciliar.mutate({ ids: pendentes.map((m) => m.id), conciliar: true })}>Conferir todos</Botao>
+                <Botao variante="secundario" disabled={pendentesVisiveis.length === 0} carregando={conciliar.isPending}
+                  onClick={() => conciliar.mutate({ ids: pendentesVisiveis.map((m) => m.id), conciliar: true })}>Conferir todos{pendentesVisiveis.length !== pendentes.length ? ` (${pendentesVisiveis.length})` : ''}</Botao>
               </span>
             </div>
-            {(movs.data ?? []).length === 0 ? (
-              <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhum movimento nesta conta neste mês.</p>
+            <BarraFiltros>
+              <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar por descrição ou valor" />
+              <SelectFiltro valor={situacao} aoMudar={(v) => setSituacao(v as typeof situacao)} rotulo="Filtrar por situação">
+                <option value="">Conferidos e pendentes</option>
+                <option value="pendente">Só pendentes</option>
+                <option value="conferido">Só conferidos</option>
+              </SelectFiltro>
+              <SelectFiltro valor={sinal} aoMudar={(v) => setSinal(v as typeof sinal)} rotulo="Filtrar por entrada ou saída">
+                <option value="">Entradas e saídas</option>
+                <option value="entrada">Só entradas</option>
+                <option value="saida">Só saídas</option>
+              </SelectFiltro>
+              <ContagemFiltro visiveis={lista.length} total={(movs.data ?? []).length} singular="movimento" plural="movimentos" />
+            </BarraFiltros>
+            {lista.length === 0 ? (
+              <p className="px-6 py-10 text-center text-sm text-ink-muted">{(movs.data ?? []).length === 0 ? 'Nenhum movimento nesta conta neste mês.' : 'Nenhum movimento com esses filtros.'}</p>
             ) : (
               <ul className="divide-y divide-line">
-                {(movs.data ?? []).map((m) => (
+                {lista.map((m) => (
                   <li key={m.id} className="flex items-center justify-between gap-3 px-6 py-2.5 text-sm">
                     <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                       <input type="checkbox" className="size-4 accent-brand-600" checked={Boolean(m.conciliado_em)}

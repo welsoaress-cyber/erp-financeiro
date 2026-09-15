@@ -16,7 +16,8 @@ import { codigoContrato } from '../../contratos/tipos'
 import { useCtos } from '../../ftth/api'
 import { useEstoqueItens } from '../../estoque/api'
 import { useBolsaResumo, useCriarLoginTecnico, useOrdens, useReposicoesPendentes, useSalvarTecnico, useTecnicos } from '../api'
-import { fmtMinutos, ROTULO_STATUS_OS, ROTULO_TIPO_OS, type OrdemServico, type Tecnico } from '../tipos'
+import { fmtMinutos, ROTULO_STATUS_OS, ROTULO_TIPO_OS, type OrdemServico, type Tecnico, type TipoOs } from '../tipos'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { NovoChamado } from '../components/NovoChamado'
 import { DetalheChamado } from '../components/DetalheChamado'
 import { BolsaTecnico } from '../components/BolsaTecnico'
@@ -45,6 +46,10 @@ export function OsPage() {
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroTecnico, setFiltroTecnico] = useState('')
   const [busca, setBusca] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState<TipoOs | ''>('')
+  const [filtroPeriodo, setFiltroPeriodo] = useState('') // agendamento: '' | hoje | semana | atrasado | sem
+  const [agendaTecnico, setAgendaTecnico] = useState('')
+  const [agendaTipo, setAgendaTipo] = useState<TipoOs | ''>('')
   const [modal, setModal] = useState<'novo' | 'tecnico' | null>(null)
   const [osVista, setOsVista] = useState<string | null>(null)
   const [tecnicoBolsa, setTecnicoBolsa] = useState<Tecnico | null>(null)
@@ -79,14 +84,26 @@ export function OsPage() {
     ...bolsasAlerta.map((b) => `Bolsa de ${b.tecnico}: ${b.itens_negativos > 0 ? `${b.itens_negativos} item(ns) negativo(s)` : `${b.itens_abaixo_minimo} abaixo do mínimo`}`),
   ]
 
-  const filtrada = lista.filter((o) =>
-    (!filtroStatus || o.status === filtroStatus) &&
-    (!filtroTecnico || o.tecnico_id === filtroTecnico) &&
-    (!busca.trim() || o.numero.toLowerCase().includes(busca.toLowerCase()) || (nomePessoa.get(o.pessoa_id ?? '') ?? '').toLowerCase().includes(busca.toLowerCase())))
+  const hojeStr = hojeISO()
+  const fimSemana = new Date(Date.parse(hojeStr) + 7 * 86_400_000).toISOString().slice(0, 10)
+  const filtrada = lista.filter((o) => {
+    if (filtroStatus && o.status !== filtroStatus) return false
+    if (filtroTecnico === 'sem' ? o.tecnico_id != null : filtroTecnico && o.tecnico_id !== filtroTecnico) return false
+    if (filtroTipo && o.tipo !== filtroTipo) return false
+    if (filtroPeriodo === 'sem' && o.data_agendada) return false
+    if (filtroPeriodo === 'hoje' && o.data_agendada !== hojeStr) return false
+    if (filtroPeriodo === 'semana' && !(o.data_agendada && o.data_agendada >= hojeStr && o.data_agendada <= fimSemana)) return false
+    if (filtroPeriodo === 'atrasado' && !(o.data_agendada && o.data_agendada < hojeStr && o.status !== 'encerrado' && o.status !== 'cancelado')) return false
+    if (!busca.trim()) return true
+    const t = busca.toLowerCase()
+    return o.numero.toLowerCase().includes(t) || (nomePessoa.get(o.pessoa_id ?? '') ?? '').toLowerCase().includes(t)
+  })
 
   // agenda: próximos 7 dias, agendadas e não finalizadas
   const dias = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d.toISOString().slice(0, 10) })
-  const agendadasDe = (dia: string) => abertas.filter((o) => o.data_agendada === dia).sort((a, b) => (a.hora_agendada ?? '').localeCompare(b.hora_agendada ?? ''))
+  const agendadasDe = (dia: string) => abertas
+    .filter((o) => o.data_agendada === dia && (!agendaTecnico || o.tecnico_id === agendaTecnico) && (!agendaTipo || o.tipo === agendaTipo))
+    .sort((a, b) => (a.hora_agendada ?? '').localeCompare(b.hora_agendada ?? ''))
 
   const osAtual = (ordens.data ?? []).find((o) => o.id === osVista) ?? null
   const tecnicosNegocio = (tecnicos.data ?? []).filter((t) => t.negocio_id === negocioAtual)
@@ -145,17 +162,28 @@ export function OsPage() {
 
       {aba === 'chamados' && ordens.isSuccess && (
         <Cartao className="p-0">
-          <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3 text-sm">
-            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar número ou cliente…" className="h-9 w-56 rounded-md border border-line bg-white px-3" />
-            <select aria-label="Status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className="h-9 rounded-md border border-line bg-white px-2">
-              <option value="">Todos</option>{Object.entries(ROTULO_STATUS_OS).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
-            </select>
-            <select aria-label="Técnico" value={filtroTecnico} onChange={(e) => setFiltroTecnico(e.target.value)} className="h-9 rounded-md border border-line bg-white px-2">
+          <BarraFiltros>
+            <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar número ou cliente" />
+            <SelectFiltro valor={filtroStatus} aoMudar={setFiltroStatus} rotulo="Filtrar por status">
+              <option value="">Todos os status</option>{Object.entries(ROTULO_STATUS_OS).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={filtroTipo} aoMudar={(v) => setFiltroTipo(v as TipoOs | '')} rotulo="Filtrar por tipo">
+              <option value="">Todos os tipos</option>{Object.entries(ROTULO_TIPO_OS).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={filtroTecnico} aoMudar={setFiltroTecnico} rotulo="Filtrar por técnico">
               <option value="">Todos os técnicos</option>{tecnicosNegocio.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
-            </select>
-            <span className="text-ink-muted">{filtrada.length} chamado(s)</span>
-          </div>
-          {filtrada.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">Nenhum chamado. Clique em "Novo chamado".</p> : (
+              <option value="sem">Sem técnico</option>
+            </SelectFiltro>
+            <SelectFiltro valor={filtroPeriodo} aoMudar={setFiltroPeriodo} rotulo="Filtrar por agendamento">
+              <option value="">Qualquer agendamento</option>
+              <option value="hoje">Agendados hoje</option>
+              <option value="semana">Próximos 7 dias</option>
+              <option value="atrasado">Agendamento vencido</option>
+              <option value="sem">Sem agendamento</option>
+            </SelectFiltro>
+            <ContagemFiltro visiveis={filtrada.length} total={lista.length} singular="chamado" plural="chamados" />
+          </BarraFiltros>
+          {filtrada.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">{lista.length === 0 ? 'Nenhum chamado. Clique em "Novo chamado".' : 'Nenhum chamado com esses filtros.'}</p> : (
             <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Número</th><th className="px-4 py-2 font-medium">Tipo</th><th className="px-4 py-2 font-medium">Cliente</th><th className="px-4 py-2 font-medium">Técnico</th><th className="px-4 py-2 font-medium">Agendado</th><th className="px-4 py-2 font-medium">Status</th><th className="px-4 py-2"></th></tr></thead>
               <tbody>
@@ -177,6 +205,15 @@ export function OsPage() {
       )}
 
       {aba === 'agenda' && ordens.isSuccess && (
+        <>
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+          <SelectFiltro valor={agendaTecnico} aoMudar={setAgendaTecnico} rotulo="Filtrar agenda por técnico">
+            <option value="">Todos os técnicos</option>{tecnicosNegocio.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+          </SelectFiltro>
+          <SelectFiltro valor={agendaTipo} aoMudar={(v) => setAgendaTipo(v as TipoOs | '')} rotulo="Filtrar agenda por tipo">
+            <option value="">Todos os tipos</option>{Object.entries(ROTULO_TIPO_OS).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
+          </SelectFiltro>
+        </div>
         <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-7">
           {dias.map((dia) => (
             <Cartao key={dia} className="p-3">
@@ -191,6 +228,7 @@ export function OsPage() {
             </Cartao>
           ))}
         </div>
+        </>
       )}
 
       {aba === 'tecnicos' && (

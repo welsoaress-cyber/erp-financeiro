@@ -13,6 +13,7 @@ import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { codigoContrato } from '../../contratos/tipos'
 
 interface Bloqueio { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; tipo: 'bloqueio' | 'desbloqueio'; status: string; motivo: string; confianca_furada: boolean; criado_em: string }
@@ -27,6 +28,8 @@ export function CobrancaPage() {
   const pessoas = usePessoas()
   const contratos = useContratos()
   const [negocioId, setNegocioId] = useState('')
+  const [buscaPix, setBuscaPix] = useState(''); const [statusPix, setStatusPix] = useState('')
+  const [buscaConfianca, setBuscaConfianca] = useState('')
   const servnet = (negocios.data ?? []).find((n) => n.nome.toLowerCase().includes('servnet')) ?? (negocios.data ?? [])[0]
   const negocioAtual = negocioId || servnet?.id || ''
 
@@ -104,8 +107,19 @@ export function CobrancaPage() {
   const buscaNorm = busca.trim().toLowerCase()
   const listaTodas = (bloqueios.data ?? []).filter((b) => b.negocio_id === negocioAtual)
   const lista = listaTodas.filter((b) => !buscaNorm || (nomePessoa.get(b.pessoa_id) ?? '').toLowerCase().includes(buscaNorm) || rotuloContrato(b.contrato_id).toLowerCase().includes(buscaNorm))
-  const pixLista = (pix.data ?? []).filter((p) => p.negocio_id === negocioAtual)
-  const confLista = (confiancas.data ?? []).filter((c) => c.negocio_id === negocioAtual)
+  const pixTodos = (pix.data ?? []).filter((p) => p.negocio_id === negocioAtual)
+  // Pix acumula rápido: filtro de situação e busca por cliente
+  const termoPix = buscaPix.trim().toLowerCase()
+  const pixLista = pixTodos.filter((p) => {
+    if (statusPix && p.status !== statusPix) return false
+    if (!termoPix) return true
+    return (nomePessoa.get(p.pessoa_id ?? '') ?? '').toLowerCase().includes(termoPix)
+  })
+  const confTodas = (confiancas.data ?? []).filter((c) => c.negocio_id === negocioAtual)
+  const termoConf = buscaConfianca.trim().toLowerCase()
+  const confLista = confTodas.filter((c) => !termoConf
+    || (nomePessoa.get(c.pessoa_id) ?? '').toLowerCase().includes(termoConf)
+    || rotuloContrato(c.contrato_id).toLowerCase().includes(termoConf))
   const erro = gerar.error ?? executar.error ?? descartar.error ?? darConfianca.error ?? cancelarConfianca.error
 
   return (
@@ -170,12 +184,13 @@ export function CobrancaPage() {
           )}
         </Cartao>
 
-        {confLista.length > 0 && (
+        {confTodas.length > 0 && (
           <Cartao className="p-0">
             <div className="border-b border-line px-6 py-3">
-              <h2 className="text-sm font-semibold">Confianças ativas ({confLista.length})</h2>
+              <h2 className="text-sm font-semibold">Confianças ativas ({confTodas.length})</h2>
               <p className="text-xs text-ink-muted">Bloqueio segurado até a data combinada. Pagou → cumprida; passou devendo → volta na lista como confiança furada.</p>
             </div>
+            {confTodas.length > 6 && <BarraFiltros><CampoBusca valor={buscaConfianca} aoMudar={setBuscaConfianca} rotulo="Buscar por cliente ou contrato" /><ContagemFiltro visiveis={confLista.length} total={confTodas.length} singular="confiança" plural="confianças" /></BarraFiltros>}
             <ul className="divide-y divide-line text-sm">
               {confLista.map((c) => (
                 <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-6 py-3">
@@ -195,7 +210,17 @@ export function CobrancaPage() {
             <h2 className="text-sm font-semibold">Pix recentes</h2>
             {reconciliado && <span className="text-xs text-ink-muted">{reconciliado.verificados > 0 ? `Reconciliação: ${reconciliado.verificados} verificados no Mercado Pago · ${reconciliado.confirmados} baixados agora` : 'Reconciliação: nenhum Pix antigo aguardando'}</span>}
           </div>
-          {pixLista.length === 0 ? <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhuma cobrança Pix ainda. Ative o Pix automático em Portal → Configurar e coloque o token do Mercado Pago nos secrets.</p> : (
+          <BarraFiltros>
+            <CampoBusca valor={buscaPix} aoMudar={setBuscaPix} rotulo="Buscar por cliente" />
+            <SelectFiltro valor={statusPix} aoMudar={setStatusPix} rotulo="Filtrar por situação do Pix">
+              <option value="">Todas as situações</option>
+              <option value="pendente">Aguardando</option>
+              <option value="pago">Pagos</option>
+              <option value="cancelado">Cancelados</option>
+            </SelectFiltro>
+            <ContagemFiltro visiveis={pixLista.length} total={pixTodos.length} singular="cobrança" plural="cobranças" />
+          </BarraFiltros>
+          {pixLista.length === 0 ? <p className="px-6 py-10 text-center text-sm text-ink-muted">{pixTodos.length === 0 ? 'Nenhuma cobrança Pix ainda. Ative o Pix automático em Portal → Configurar e coloque o token do Mercado Pago nos secrets.' : 'Nenhuma cobrança Pix com esses filtros.'}</p> : (
             <ul className="divide-y divide-line text-sm">
               {pixLista.map((p) => (
                 <li key={p.id} className="flex items-center justify-between px-6 py-3">

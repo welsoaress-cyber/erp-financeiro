@@ -23,10 +23,11 @@ import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useExcluirEstoqueItem, useInstalacoes, useItensComEntrada, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
 import { NovaInstalacao } from '../components/NovaInstalacao'
-import { fmtQtd, ROTULO_ORIGEM, statusItem, UNIDADES, type EstoqueItem, type Unidade } from '../tipos'
+import { fmtQtd, ROTULO_ORIGEM, statusItem, UNIDADES, type EstoqueItem, type OrigemMov, type Unidade } from '../tipos'
 import { AbaComodato } from '../components/AbaComodato'
 import { AbaDevolucaoFornecedor } from '../components/AbaDevolucaoFornecedor'
 import { AbaPatrimonio } from '../components/AbaPatrimonio'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 
 type Aba = 'dashboard' | 'itens' | 'movs' | 'instalacoes' | 'comodato' | 'devolucoes' | 'patrimonio' | 'relatorios' | 'categorias'
 const TOM_STATUS = { zerado: 'alerta', baixo: 'alerta', excesso: 'info', ok: 'ok', novo: 'neutro' } as const
@@ -369,6 +370,14 @@ export function EstoquePage() {
   const [aba, setAba] = useState<Aba>('dashboard')
   const [negocioId, setNegocioId] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
+  const [buscaItem, setBuscaItem] = useState('')
+  const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [movMes, setMovMes] = useState('') // '' = todos os meses
+  const [movOrigem, setMovOrigem] = useState<OrigemMov | ''>('')
+  const [movItem, setMovItem] = useState('')
+  const [instMes, setInstMes] = useState('')
+  const [instTecnico, setInstTecnico] = useState('')
+  const [instBusca, setInstBusca] = useState('')
   const [modal, setModal] = useState<'item' | 'compra' | 'instalacao' | null>(null)
   const [itemEdicao, setItemEdicao] = useState<EstoqueItem | null>(null)
   const [itemMov, setItemMov] = useState<EstoqueItem | null>(null)
@@ -389,10 +398,37 @@ export function EstoquePage() {
   const lista = (itens.data ?? []).filter((i) => i.negocio_id === negocioAtual)
   const comEntrada = useItensComEntrada()
   const stItem = (i: EstoqueItem) => statusItem(i, (comEntrada.data ?? new Set()).has(i.id))
-  const listaFiltrada = lista.filter((i) => !filtroStatus || stItem(i).tom === filtroStatus)
+  const termoItem = buscaItem.trim().toLowerCase()
+  const listaFiltrada = lista.filter((i) => {
+    if (filtroStatus && stItem(i).tom !== filtroStatus) return false
+    if (filtroCategoria && i.categoria_id !== filtroCategoria) return false
+    if (!termoItem) return true
+    return [i.codigo, i.nome, i.marca ?? '', i.modelo ?? ''].some((c) => c.toLowerCase().includes(termoItem))
+  })
   const nomeItem = useMemo(() => new Map((itens.data ?? []).map((i) => [i.id, `${i.codigo} · ${i.nome}`])), [itens.data])
+  const negocioDoItem = useMemo(() => new Map((itens.data ?? []).map((i) => [i.id, i.negocio_id])), [itens.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
+  // movimentações e instalações: listas longas — filtros de item/origem/mês/técnico
+  const movsNegocio = (movs.data ?? []).filter((m) => negocioDoItem.get(m.item_id) === negocioAtual)
+  const mesesMovs = useMemo(() => [...new Set(movsNegocio.map((m) => m.data.slice(0, 7)))].sort().reverse(), [movsNegocio])
+  const movsFiltradas = movsNegocio.filter((m) => {
+    if (movItem && m.item_id !== movItem) return false
+    if (movOrigem && m.origem !== movOrigem) return false
+    if (movMes && !m.data.startsWith(movMes)) return false
+    return true
+  })
+  const instalacoesNegocio = (instalacoes.data ?? []).filter((x) => x.negocio_id === negocioAtual)
+  const mesesInstalacoes = useMemo(() => [...new Set(instalacoesNegocio.map((x) => x.data.slice(0, 7)))].sort().reverse(), [instalacoesNegocio])
+  const tecnicosInstalacao = useMemo(() => [...new Set(instalacoesNegocio.map((x) => x.tecnico).filter((t): t is string => Boolean(t)))].sort(), [instalacoesNegocio])
+  const termoInst = instBusca.trim().toLowerCase()
+  const instalacoesFiltradas = instalacoesNegocio.filter((x) => {
+    if (instTecnico === 'sem' ? Boolean(x.tecnico) : instTecnico && x.tecnico !== instTecnico) return false
+    if (instMes && !x.data.startsWith(instMes)) return false
+    if (!termoInst) return true
+    return (nomePessoa.get(x.pessoa_id) ?? '').toLowerCase().includes(termoInst) || (x.observacao ?? '').toLowerCase().includes(termoInst)
+  })
+
   const baixos = lista.filter((i) => i.ativo && stItem(i).tom === 'baixo')
   const zerados = lista.filter((i) => i.ativo && stItem(i).tom === 'zerado')
   const aguardando = lista.filter((i) => i.ativo && stItem(i).tom === 'novo')
@@ -442,13 +478,18 @@ export function EstoquePage() {
 
       {aba === 'itens' && itens.isSuccess && (
         <Cartao className="p-0">
-          <div className="flex items-center gap-3 border-b border-line px-4 py-3 text-sm">
-            <select aria-label="Filtrar status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className="h-9 rounded-md border border-line bg-white px-2">
-              <option value="">Todos</option><option value="baixo">Baixo</option><option value="zerado">Zerado</option><option value="novo">Aguardando 1ª entrada</option><option value="excesso">Excesso</option><option value="ok">Normal</option>
-            </select>
-            <span className="text-ink-muted">{listaFiltrada.length} item(ns)</span>
-          </div>
-          {listaFiltrada.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">Nenhum item. Clique em "Novo item" e depois lance a quantidade com Ajuste ou Compra.</p> : (
+          <BarraFiltros>
+            <CampoBusca valor={buscaItem} aoMudar={setBuscaItem} rotulo="Buscar por código, nome, marca ou modelo" />
+            <SelectFiltro valor={filtroCategoria} aoMudar={setFiltroCategoria} rotulo="Filtrar por categoria">
+              <option value="">Todas as categorias</option>
+              {(categorias.data ?? []).filter((c) => c.negocio_id === negocioAtual).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={filtroStatus} aoMudar={setFiltroStatus} rotulo="Filtrar por status">
+              <option value="">Todos os status</option><option value="baixo">Baixo</option><option value="zerado">Zerado</option><option value="novo">Aguardando 1ª entrada</option><option value="excesso">Excesso</option><option value="ok">Normal</option>
+            </SelectFiltro>
+            <ContagemFiltro visiveis={listaFiltrada.length} total={lista.length} singular="item" plural="itens" />
+          </BarraFiltros>
+          {listaFiltrada.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">{lista.length === 0 ? 'Nenhum item. Clique em "Novo item" e depois lance a quantidade com Ajuste ou Compra.' : 'Nenhum item com esses filtros.'}</p> : (
             <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Código</th><th className="px-4 py-2 font-medium">Item</th><th className="px-4 py-2 font-medium">Categoria</th><th className="px-4 py-2 text-right font-medium">Qtd.</th><th className="px-4 py-2 text-right font-medium">Custo médio</th><th className="px-4 py-2 text-right font-medium">Total</th><th className="px-4 py-2 font-medium">Status</th><th className="px-4 py-2"></th></tr></thead>
               <tbody>
@@ -479,11 +520,26 @@ export function EstoquePage() {
 
       {aba === 'movs' && (
         <Cartao className="p-0">
-          {(movs.data ?? []).length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">Sem movimentações ainda.</p> : (
+          <BarraFiltros>
+            <SelectFiltro valor={movItem} aoMudar={setMovItem} rotulo="Filtrar por item">
+              <option value="">Todos os itens</option>
+              {lista.map((i) => <option key={i.id} value={i.id}>{i.codigo} · {i.nome}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={movOrigem} aoMudar={(v) => setMovOrigem(v as OrigemMov | '')} rotulo="Filtrar por origem">
+              <option value="">Todas as origens</option>
+              {(Object.keys(ROTULO_ORIGEM) as OrigemMov[]).map((o) => <option key={o} value={o}>{ROTULO_ORIGEM[o]}</option>)}
+            </SelectFiltro>
+            <SelectFiltro valor={movMes} aoMudar={setMovMes} rotulo="Filtrar por mês">
+              <option value="">Todos os meses</option>
+              {mesesMovs.map((m) => <option key={m} value={m}>{m.split('-').reverse().join('/')}</option>)}
+            </SelectFiltro>
+            <ContagemFiltro visiveis={movsFiltradas.length} total={movsNegocio.length} singular="movimentação" plural="movimentações" />
+          </BarraFiltros>
+          {movsFiltradas.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">{movsNegocio.length === 0 ? 'Sem movimentações ainda.' : 'Nenhuma movimentação com esses filtros.'}</p> : (
             <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Data</th><th className="px-4 py-2 font-medium">Item</th><th className="px-4 py-2 font-medium">Origem</th><th className="px-4 py-2 text-right font-medium">Qtd.</th><th className="px-4 py-2 text-right font-medium">Valor</th><th className="px-4 py-2 font-medium">Obs.</th></tr></thead>
               <tbody>
-                {(movs.data ?? []).map((m) => (
+                {movsFiltradas.map((m) => (
                   <tr key={m.id} className="border-b border-line last:border-0">
                     <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatarData(m.data)}</td>
                     <td className="px-4 py-2">{nomeItem.get(m.item_id) ?? '—'}</td>
@@ -501,13 +557,26 @@ export function EstoquePage() {
 
       {aba === 'instalacoes' && (
         <Cartao className="p-0">
-          {(instalacoes.data ?? []).filter((x) => x.negocio_id === negocioAtual).length === 0 ? (
-            <p className="px-6 py-12 text-center text-sm text-ink-muted">Nenhuma instalação registrada. Clique em "Nova instalação".</p>
+          <BarraFiltros>
+            <CampoBusca valor={instBusca} aoMudar={setInstBusca} rotulo="Buscar por cliente ou observação" />
+            <SelectFiltro valor={instTecnico} aoMudar={setInstTecnico} rotulo="Filtrar por técnico">
+              <option value="">Todos os técnicos</option>
+              {tecnicosInstalacao.map((t) => <option key={t} value={t}>{t}</option>)}
+              <option value="sem">Sem técnico</option>
+            </SelectFiltro>
+            <SelectFiltro valor={instMes} aoMudar={setInstMes} rotulo="Filtrar por mês">
+              <option value="">Todos os meses</option>
+              {mesesInstalacoes.map((m) => <option key={m} value={m}>{m.split('-').reverse().join('/')}</option>)}
+            </SelectFiltro>
+            <ContagemFiltro visiveis={instalacoesFiltradas.length} total={instalacoesNegocio.length} singular="instalação" plural="instalações" />
+          </BarraFiltros>
+          {instalacoesFiltradas.length === 0 ? (
+            <p className="px-6 py-12 text-center text-sm text-ink-muted">{instalacoesNegocio.length === 0 ? 'Nenhuma instalação registrada. Clique em "Nova instalação".' : 'Nenhuma instalação com esses filtros.'}</p>
           ) : (
             <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Data</th><th className="px-4 py-2 font-medium">Cliente</th><th className="px-4 py-2 text-right font-medium">Material</th><th className="px-4 py-2 text-right font-medium">Mão de obra</th><th className="px-4 py-2 text-right font-medium">Total</th><th className="px-4 py-2 font-medium">Técnico</th><th className="px-4 py-2 font-medium">Obs.</th></tr></thead>
               <tbody>
-                {(instalacoes.data ?? []).filter((x) => x.negocio_id === negocioAtual).map((x) => (
+                {instalacoesFiltradas.map((x) => (
                   <tr key={x.id} className="border-b border-line last:border-0">
                     <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatarData(x.data)}</td>
                     <td className="px-4 py-2 font-medium">{nomePessoa.get(x.pessoa_id) ?? '—'}{x.contrato_id ? '' : <span className="ml-2 text-xs font-normal text-ink-muted">(sem contrato)</span>}</td>

@@ -18,6 +18,7 @@ import { useEstoqueItens } from '../../estoque/api'
 import { useContratos } from '../../contratos/api'
 import type { IndicacaoAdmin } from '../../portal/tipos'
 import { VitrinePremiosAdmin } from '../../portal/components/VitrinePremiosAdmin'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 
 type Janela = { tipo: 'converter'; indicacao: IndicacaoAdmin } | { tipo: 'nova-indicacao' } | null
 
@@ -42,19 +43,31 @@ export function IndicacoesPage() {
   const [negocioSel, setNegocioSel] = useState(''); const [janela, setJanela] = useState<Janela>(null); const [pessoaConv, setPessoaConv] = useState('')
   const [novoIndicante, setNovoIndicante] = useState(''); const [novoNome, setNovoNome] = useState(''); const [novoTel, setNovoTel] = useState('')
   const [presenteSel, setPresenteSel] = useState<Record<string, string>>({})
+  const [busca, setBusca] = useState(''); const [filtroStatus, setFiltroStatus] = useState(''); const [filtroMes, setFiltroMes] = useState('')
   const ativos = useMemo(() => (negocios.data ?? []).filter((n) => n.ativo), [negocios.data])
   // padrão: Servnet (onde a campanha roda); o seletor troca quando precisar
   const servnet = ativos.find((n) => n.nome.toLowerCase().includes('servnet'))
   const negocio = ativos.find((n) => n.id === negocioSel) ?? servnet ?? ativos[0] ?? null
   const config = (configs.data ?? []).find((c) => c.negocio_id === negocio?.id) ?? null
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
-  const inds = (indicacoes.data ?? []).filter((i) => i.negocio_id === negocio?.id)
+  const indsNegocio = (indicacoes.data ?? []).filter((i) => i.negocio_id === negocio?.id)
+  const mesesInds = useMemo(() => [...new Set(indsNegocio.map((i) => i.criado_em.slice(0, 7)))].sort().reverse(), [indsNegocio])
+  const termo = busca.trim().toLowerCase()
+  // a lista cresce indefinidamente: filtro por situação (inclui "presente pendente"), mês e busca
+  const inds = indsNegocio.filter((i) => {
+    if (filtroStatus === 'presente' ? !(i.status === 'convertida' && !i.presente_entregue_em) : filtroStatus && i.status !== filtroStatus) return false
+    if (filtroMes && !i.criado_em.startsWith(filtroMes)) return false
+    if (!termo) return true
+    return i.nome_indicado.toLowerCase().includes(termo)
+      || i.telefone_indicado.includes(termo)
+      || (nomePessoa.get(i.indicador_pessoa_id) ?? '').toLowerCase().includes(termo)
+  })
   const nomeItem = useMemo(() => new Map((itensEstoque.data ?? []).map((i) => [i.id, i.nome])), [itensEstoque.data])
   const brindes = useMemo(() => {
     const itensPremio = new Set((premios.data ?? []).filter((p) => p.negocio_id === negocio?.id && p.ativo).map((p) => p.item_id))
     return (itensEstoque.data ?? []).filter((i) => i.negocio_id === negocio?.id && i.ativo && itensPremio.has(i.id))
   }, [itensEstoque.data, premios.data, negocio?.id])
-  const convertidas = inds.filter((i) => i.status === 'convertida')
+  const convertidas = indsNegocio.filter((i) => i.status === 'convertida')
   const custoPresentes = convertidas.reduce((s, i) => s + (i.presente_custo ?? 0), 0)
   const mrrGerado = convertidas.reduce((s, i) => {
     const c = (contratos.data ?? []).find((x) => x.pessoa_id === i.indicado_pessoa_id && x.negocio_id === i.negocio_id && x.status === 'ativo')
@@ -76,14 +89,29 @@ export function IndicacoesPage() {
         <div className="space-y-6">
           <Cartao className="p-0">
             <div className="grid grid-cols-2 gap-4 border-b border-line px-6 py-3 text-sm sm:grid-cols-5">
-              <div><p className="text-xs uppercase text-ink-muted">Indicações</p><p className="font-semibold tabular-nums">{inds.filter((i) => i.status !== 'cancelada').length}</p></div>
-              <div><p className="text-xs uppercase text-ink-muted">Convertidas</p><p className="font-semibold tabular-nums">{convertidas.length}{inds.length > 0 && <span className="ml-1 text-xs font-normal text-ink-muted">({Math.round((convertidas.length / Math.max(1, inds.filter((i) => i.status !== 'cancelada').length)) * 100)}%)</span>}</p></div>
+              <div><p className="text-xs uppercase text-ink-muted">Indicações</p><p className="font-semibold tabular-nums">{indsNegocio.filter((i) => i.status !== 'cancelada').length}</p></div>
+              <div><p className="text-xs uppercase text-ink-muted">Convertidas</p><p className="font-semibold tabular-nums">{convertidas.length}{indsNegocio.length > 0 && <span className="ml-1 text-xs font-normal text-ink-muted">({Math.round((convertidas.length / Math.max(1, indsNegocio.filter((i) => i.status !== 'cancelada').length)) * 100)}%)</span>}</p></div>
               <div><p className="text-xs uppercase text-ink-muted">Presentes entregues</p><p className="font-semibold tabular-nums">{convertidas.filter((i) => i.presente_entregue_em).length}</p></div>
               <div><p className="text-xs uppercase text-ink-muted">Custo dos presentes</p><p className="font-semibold tabular-nums text-red-700">{formatarMoeda(custoPresentes)}</p></div>
               <div><p className="text-xs uppercase text-ink-muted">Mensalidade gerada</p><p className="font-semibold tabular-nums text-green-700">{formatarMoeda(mrrGerado)}/mês</p></div>
             </div>
             {(converter.error || cancelar.error || escolherPresente.error || entregar.error) && <div className="p-4"><Alerta tipo="erro">{mensagemDeErro(converter.error ?? cancelar.error ?? escolherPresente.error ?? entregar.error)}</Alerta></div>}
-            {inds.length === 0 ? <p className="px-6 py-8 text-center text-sm text-ink-muted">Nenhuma indicação recebida.</p> : (
+            <BarraFiltros>
+              <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar por indicado, telefone ou indicante" />
+              <SelectFiltro valor={filtroStatus} aoMudar={setFiltroStatus} rotulo="Filtrar por situação">
+                <option value="">Todas as situações</option>
+                <option value="pendente">Aguardando conversão</option>
+                <option value="convertida">Convertidas</option>
+                <option value="presente">Presente pendente</option>
+                <option value="cancelada">Canceladas</option>
+              </SelectFiltro>
+              <SelectFiltro valor={filtroMes} aoMudar={setFiltroMes} rotulo="Filtrar por mês">
+                <option value="">Todos os meses</option>
+                {mesesInds.map((m) => <option key={m} value={m}>{m.split('-').reverse().join('/')}</option>)}
+              </SelectFiltro>
+              <ContagemFiltro visiveis={inds.length} total={indsNegocio.length} singular="indicação" plural="indicações" />
+            </BarraFiltros>
+            {inds.length === 0 ? <p className="px-6 py-8 text-center text-sm text-ink-muted">{indsNegocio.length === 0 ? 'Nenhuma indicação recebida.' : 'Nenhuma indicação com esses filtros.'}</p> : (
               <div className="overflow-x-auto"><table className="w-full text-sm">
                 <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-6 py-3">Data</th><th className="px-6 py-3">Indicado</th><th className="px-6 py-3">Indicado por</th><th className="px-6 py-3">Status</th><th className="px-6 py-3"></th></tr></thead>
                 <tbody>{inds.map((i) => (

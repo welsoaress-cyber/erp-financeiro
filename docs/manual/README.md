@@ -136,6 +136,8 @@ Cada operação sua (Servnet, etc.) é um **negócio**. Quase tudo no sistema é
 
 Cadastro único de clientes e fornecedores (o técnico também vira uma pessoa, para receber comissões). O **endereço** alimenta o mapa FTTH; **CPF + data de nascimento** são o login do cliente no portal; "receber avisos" controla o WhatsApp de cobrança. A busca encontra por nome, CPF/CNPJ, e-mail ou login do servidor.
 
+Com a lista grande, três filtros ao lado da busca: **negócio** (com a opção *Sem vínculo*, útil para achar cadastro solto), **papel** (cliente, fornecedor, parceiro, outro) e **tipo** (física ou jurídica). Eles se combinam — ex.: fornecedores pessoa jurídica da Servnet. O contador ao lado mostra quantas pessoas sobraram.
+
 Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pessoa **sem histórico** — se ela tiver contrato, lançamento, OS ou comodato, o sistema barra e o caminho é **desativar** (desmarcar "Pessoa ativa"). A exclusão remove junto o acesso dela ao portal.
 
 ## 9. Contratos

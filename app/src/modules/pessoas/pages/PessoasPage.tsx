@@ -11,7 +11,7 @@ import { useNegocios } from '../../negocios/api'
 import { useAtualizarPessoa, useCriarPessoa, useExcluirPessoa, usePessoas, useVinculos } from '../api'
 import { FormularioPessoa } from '../components/FormularioPessoa'
 import { VinculosPessoa } from '../components/VinculosPessoa'
-import { formatarDocumento, formatarTelefone, ROTULO_PAPEL, somenteDigitos, type DadosPessoa } from '../tipos'
+import { formatarDocumento, formatarTelefone, PAPEIS_VINCULO, ROTULO_PAPEL, somenteDigitos, TIPOS_PESSOA, type DadosPessoa, type PapelVinculo, type TipoPessoa, type Vinculo } from '../tipos'
 
 type Edicao = { modo: 'nova' } | { modo: 'editar'; pessoaId: string } | null
 
@@ -24,16 +24,39 @@ export function PessoasPage() {
   const excluir = useExcluirPessoa()
   const [busca, setBusca] = useState('')
   const [mostrarInativas, setMostrarInativas] = useState(false)
+  const [filtroNegocio, setFiltroNegocio] = useState('') // '' = todos, 'sem' = sem vínculo, ou o id
+  const [filtroPapel, setFiltroPapel] = useState<PapelVinculo | ''>('')
+  const [filtroTipo, setFiltroTipo] = useState<TipoPessoa | ''>('')
   const [edicao, setEdicao] = useState<Edicao>(null)
 
   const nomeNegocio = useMemo(() => new Map((negocios.data ?? []).map((n) => [n.id, n.nome])), [negocios.data])
+  // vínculos ativos por pessoa: a lista tem centenas de linhas, então o índice evita varrer tudo a cada render
+  const vinculosPorPessoa = useMemo(() => {
+    const m = new Map<string, Vinculo[]>()
+    for (const v of vinculos.data ?? []) {
+      if (!v.ativo) continue
+      const atual = m.get(v.pessoa_id)
+      if (atual) atual.push(v); else m.set(v.pessoa_id, [v])
+    }
+    return m
+  }, [vinculos.data])
+  const vinculosDe = (id: string) => vinculosPorPessoa.get(id) ?? []
   const termo = busca.trim().toLowerCase()
   const digitos = somenteDigitos(busca)
-  const lista = (pessoas.data ?? []).filter((p) =>
-    (mostrarInativas || p.ativo)
-    && (!termo || p.nome.toLowerCase().includes(termo) || (digitos.length > 0 && (p.documento ?? '').includes(digitos)) || (p.email ?? '').includes(termo) || (p.login_servidor ?? '').toLowerCase().includes(termo)))
+  const lista = (pessoas.data ?? []).filter((p) => {
+    if (!mostrarInativas && !p.ativo) return false
+    if (filtroTipo && p.tipo !== filtroTipo) return false
+    const vs = vinculosDe(p.id)
+    if (filtroNegocio === 'sem' ? vs.length > 0 : filtroNegocio && !vs.some((v) => v.negocio_id === filtroNegocio)) return false
+    if (filtroPapel && !vs.some((v) => v.papel === filtroPapel)) return false
+    if (!termo) return true
+    return p.nome.toLowerCase().includes(termo)
+      || (digitos.length > 0 && (p.documento ?? '').includes(digitos))
+      || (p.email ?? '').includes(termo)
+      || (p.login_servidor ?? '').toLowerCase().includes(termo)
+  })
   const totalInativas = (pessoas.data ?? []).filter((p) => !p.ativo).length
-  const vinculosDe = (id: string) => (vinculos.data ?? []).filter((v) => v.pessoa_id === id && v.ativo)
+  const temFiltro = Boolean(termo || filtroNegocio || filtroPapel || filtroTipo)
   const pessoaEmEdicao = edicao?.modo === 'editar' ? (pessoas.data ?? []).find((p) => p.id === edicao.pessoaId) : undefined
 
   function fechar() { criar.reset(); atualizar.reset(); excluir.reset(); setEdicao(null) }
@@ -55,6 +78,21 @@ export function PessoasPage() {
         <Cartao className="p-0">
           <div className="flex flex-wrap items-center gap-3 border-b border-line px-6 py-3 text-sm">
             <input type="search" aria-label="Buscar por nome, documento, e-mail ou login" placeholder="Buscar por nome, CPF/CNPJ, e-mail ou login" value={busca} onChange={(e) => setBusca(e.target.value)} className="h-9 w-full max-w-sm rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" />
+            {(negocios.data ?? []).length > 0 && (
+              <select aria-label="Filtrar por negócio" value={filtroNegocio} onChange={(e) => setFiltroNegocio(e.target.value)} className="h-9 rounded-md border border-line bg-white px-2 text-sm">
+                <option value="">Todos os negócios</option>
+                {(negocios.data ?? []).filter((n) => n.ativo).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
+                <option value="sem">Sem vínculo</option>
+              </select>
+            )}
+            <select aria-label="Filtrar por papel" value={filtroPapel} onChange={(e) => setFiltroPapel(e.target.value as PapelVinculo | '')} className="h-9 rounded-md border border-line bg-white px-2 text-sm">
+              <option value="">Todos os papéis</option>
+              {PAPEIS_VINCULO.map((p) => <option key={p.valor} value={p.valor}>{p.rotulo}</option>)}
+            </select>
+            <select aria-label="Filtrar por tipo de pessoa" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value as TipoPessoa | '')} className="h-9 rounded-md border border-line bg-white px-2 text-sm">
+              <option value="">Física e jurídica</option>
+              {TIPOS_PESSOA.map((t) => <option key={t.valor} value={t.valor}>{t.rotulo}</option>)}
+            </select>
             <span className="text-ink-muted">{lista.length} {lista.length === 1 ? 'pessoa' : 'pessoas'}</span>
             {totalInativas > 0 && (
               <label className="ml-auto flex items-center gap-2">
@@ -65,8 +103,8 @@ export function PessoasPage() {
           </div>
           {lista.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <p className="text-sm font-medium">{termo ? 'Nenhuma pessoa encontrada' : 'Nenhuma pessoa cadastrada'}</p>
-              {!termo && <Botao onClick={() => setEdicao({ modo: 'nova' })}>Nova pessoa</Botao>}
+              <p className="text-sm font-medium">{temFiltro ? "Nenhuma pessoa encontrada" : "Nenhuma pessoa cadastrada"}</p>
+              {!temFiltro && <Botao onClick={() => setEdicao({ modo: "nova" })}>Nova pessoa</Botao>}
             </div>
           ) : (
             <div className="overflow-x-auto">

@@ -170,6 +170,10 @@ const tabelas = {
   bloqueios: [
     { id: id('b', 5), organizacao_id: ORG, negocio_id: NEG, contrato_id: id('1', 3), pessoa_id: id('c', 3), tipo: 'bloqueio', status: 'pendente', motivo: '2 cobrança(s) vencida(s) desde ' + dia(2).split('-').reverse().join('/') + ' · R$ 199,80', criado_em: new Date().toISOString() },
   ],
+  // promessa de pagamento ativa: aparece como selo em Contas a receber e na Cobrança
+  confiancas: [
+    { id: id('k', 1), organizacao_id: ORG, negocio_id: NEG, contrato_id: id('1', 2), pessoa_id: id('c', 2), segurar_ate: dia(20), observacao: 'Falou que recebe dia 20', status: 'ativa' },
+  ],
   vw_bi_mensal_negocio: bi,
   vw_resultado_mensal_negocio: [{ organizacao_id: ORG, mes: mesAtual, negocio_id: NEG, receitas: 12480.9, despesas: 6320.4, resultado: 6160.5 }],
   notificacoes_config: [{ id: id('n', 1), organizacao_id: ORG, negocio_id: NEG, numero_whatsapp: '+5592999998888', provedor: 'evolution', instancia: 'servnet', ativo: true, dias_antes: 3, dias_apos: 3, hora_inicio: '08:00', hora_fim: '18:00' }],

@@ -20,6 +20,7 @@ import { useCategorias } from '../../categorias/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useBaixaParcial, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useLancamentos, useLancamentosVencidosAntes } from '../../lancamentos/api'
 import { rotuloParcela, type Lancamento } from '../../lancamentos/tipos'
+import { useCancelarConfianca, useConfiancasAtivas, useDarConfianca, type Confianca } from '../confiancas'
 
 const diasAtraso = (vencimento: string) => Math.max(0, Math.round((Date.parse(hojeISO()) - Date.parse(vencimento)) / 86400000))
 
@@ -109,6 +110,20 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState(''); const [encargos, setEncargos] = useState(''); const [contaBaixa, setContaBaixa] = useState('')
   const categorias = useCategorias()
   const criarAjuste = useCriarLancamento()
+  // promessa de pagamento (voto de confiança): só faz sentido em contas a receber
+  const confiancas = useConfiancasAtivas(receber)
+  const darConfianca = useDarConfianca()
+  const cancelarConfianca = useCancelarConfianca()
+  const confiancaPorContrato = useMemo(() => new Map((confiancas.data ?? []).map((c) => [c.contrato_id, c])), [confiancas.data])
+  const [promessa, setPromessa] = useState<{ l: Lancamento; atual: Confianca | undefined } | null>(null)
+  const [promessaAte, setPromessaAte] = useState(''); const [promessaObs, setPromessaObs] = useState('')
+  const promessaDe = (l: Lancamento) => (receber && l.contrato_id ? confiancaPorContrato.get(l.contrato_id) : undefined)
+  function abrirPromessa(l: Lancamento) {
+    const atual = l.contrato_id ? confiancaPorContrato.get(l.contrato_id) : undefined
+    setPromessaAte(atual?.segurar_ate ?? ''); setPromessaObs(atual?.observacao ?? '')
+    darConfianca.reset(); cancelarConfianca.reset()
+    setPromessa({ l, atual })
+  }
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const contratoPorId = useMemo(() => new Map((contratos.data ?? []).map((c) => [c.id, c])), [contratos.data])
   const contaPorId = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c])), [contas.data])
@@ -273,9 +288,11 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
                     <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
                       {ehCortesia(l) ? <Distintivo tom="info">Cortesia</Distintivo> : <Distintivo tom={TOM[st]}>{st === 'pago' ? (receber ? 'Recebido' : 'Pago') : ROTULO[st]}</Distintivo>}
                       {l.data_efetivacao && <span className="text-ink-muted">{formatarData(l.data_efetivacao)}</span>}
+                      {promessaDe(l) && <Distintivo tom="info">{`🤝 Paga até ${formatarData(promessaDe(l)!.segurar_ate)}`}</Distintivo>}
                       {l.status === 'previsto' && <>
                         <button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'baixa', l })}>{receber ? 'Receber' : 'Pagar'}</button>
                         <button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'parcial', l })}>Baixa parcial</button>
+                        {receber && l.contrato_id && <button type="button" className="text-brand-700 hover:underline" onClick={() => abrirPromessa(l)}>🤝 Promessa</button>}
                         <button type="button" className="text-ink-muted hover:underline" onClick={() => setAcao({ tipo: 'cancelar', l })}>Cancelar</button>
                       </>}
                     </p>
@@ -309,8 +326,12 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
                   <td className="px-4 py-3"><span className="font-medium">{l.descricao}</span>{c && <span className="ml-2 font-mono text-xs text-ink-muted">{codigoContrato(c)}</span>}{l.recorrente && <span className="ml-2 text-xs text-ink-muted">🔄 {rotuloParcela(l)}</span>}{l.observacao && <p className="text-xs text-ink-muted">{l.observacao}</p>}</td>
                   <td className="whitespace-nowrap px-4 py-3">{l.pessoa_id ? nomePessoa.get(l.pessoa_id) ?? '—' : '—'}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{ehCortesia(l) ? <span className="text-ink-muted line-through">{formatarMoeda(l.valor)}</span> : formatarMoeda(l.valor)}</td>
-                  <td className="whitespace-nowrap px-4 py-3">{ehCortesia(l) ? <Distintivo tom="info">Cortesia</Distintivo> : <Distintivo tom={TOM[st]}>{st === 'pago' ? (receber ? 'Recebido' : 'Pago') : ROTULO[st]}</Distintivo>}{l.data_efetivacao && <span className="ml-1 text-xs text-ink-muted">{formatarData(l.data_efetivacao)}</span>}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">{l.status === 'previsto' && <><button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'baixa', l })}>{receber ? 'Receber' : 'Pagar'}</button><button type="button" className="ml-3 text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'parcial', l })}>Baixa parcial</button><button type="button" className="ml-3 text-ink-muted hover:underline" onClick={() => setAcao({ tipo: 'cancelar', l })}>Cancelar</button></>}</td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    {ehCortesia(l) ? <Distintivo tom="info">Cortesia</Distintivo> : <Distintivo tom={TOM[st]}>{st === 'pago' ? (receber ? 'Recebido' : 'Pago') : ROTULO[st]}</Distintivo>}
+                    {l.data_efetivacao && <span className="ml-1 text-xs text-ink-muted">{formatarData(l.data_efetivacao)}</span>}
+                    {promessaDe(l) && <span className="ml-1" title={promessaDe(l)!.observacao ?? undefined}><Distintivo tom="info">{`🤝 Paga até ${formatarData(promessaDe(l)!.segurar_ate)}`}</Distintivo></span>}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right">{l.status === 'previsto' && <><button type="button" className="text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'baixa', l })}>{receber ? 'Receber' : 'Pagar'}</button><button type="button" className="ml-3 text-brand-700 hover:underline" onClick={() => setAcao({ tipo: 'parcial', l })}>Baixa parcial</button>{receber && l.contrato_id && <button type="button" className="ml-3 text-brand-700 hover:underline" onClick={() => abrirPromessa(l)}>🤝 Promessa</button>}<button type="button" className="ml-3 text-ink-muted hover:underline" onClick={() => setAcao({ tipo: 'cancelar', l })}>Cancelar</button></>}</td>
                 </tr>) })}</tbody>
             </table></div>
             </>
@@ -342,6 +363,28 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
             {acao.tipo === 'parcial' && <><Campo rotulo={receber ? 'Valor recebido (R$)' : 'Valor pago (R$)'} type="number" step="0.01" min="0.01" value={valorParcial} onChange={(e) => setValorParcial(e.target.value)} autoFocus /><p className="text-xs text-ink-muted">O restante ({parcialValido ? formatarMoeda(Math.round((acao.l.valor - vParcial) * 100) / 100) : '…'}) continua previsto com o mesmo vencimento.</p></>}
             {acao.tipo === 'cancelar' && <Campo rotulo="Motivo (opcional)" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={200} />}
             <div className="flex justify-end gap-2"><Botao variante="secundario" onClick={fechar}>Voltar</Botao><Botao variante={acao.tipo === 'cancelar' ? 'perigo' : 'primario'} onClick={confirmar} carregando={ocupado} disabled={(acao.tipo === 'parcial' && !parcialValido) || pagoInsuficiente}>Confirmar</Botao></div>
+          </div>
+        )}
+      </Modal>
+      <Modal aberto={promessa !== null} aoFechar={() => setPromessa(null)} largura="md" titulo="Promessa de pagamento">
+        {promessa && (
+          <div className="space-y-4">
+            {(darConfianca.error ?? cancelarConfianca.error) && <Alerta tipo="erro">{mensagemDeErro(darConfianca.error ?? cancelarConfianca.error)}</Alerta>}
+            <p className="text-sm"><span className="font-medium">{promessa.l.pessoa_id ? nomePessoa.get(promessa.l.pessoa_id) ?? '—' : '—'}</span> · {formatarMoeda(promessa.l.valor)} · vence {formatarData(promessa.l.data_vencimento)}</p>
+            <p className="text-xs text-ink-muted">O cliente prometeu pagar até a data? O bloqueio fica segurado até lá e a promessa aparece nesta tela e na Cobrança. Pagou no prazo → confiança cumprida; passou devendo → volta destacado como <b>confiança furada</b>.</p>
+            <Campo rotulo="Pagar até" type="date" value={promessaAte} min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)} onChange={(e) => setPromessaAte(e.target.value)} />
+            <Campo rotulo="Combinado (opcional)" value={promessaObs} onChange={(e) => setPromessaObs(e.target.value)} maxLength={200} placeholder="Ex.: falou que recebe dia 20" />
+            <div className="flex flex-wrap justify-end gap-2">
+              {promessa.atual && (
+                <Botao variante="perigo" carregando={cancelarConfianca.isPending}
+                  onClick={() => cancelarConfianca.mutate(promessa.atual!.id, { onSuccess: () => setPromessa(null) })}>Cancelar promessa</Botao>
+              )}
+              <Botao variante="secundario" onClick={() => setPromessa(null)}>Voltar</Botao>
+              <Botao disabled={!promessaAte} carregando={darConfianca.isPending}
+                onClick={() => promessa.l.contrato_id && darConfianca.mutate({ contratoId: promessa.l.contrato_id, segurarAte: promessaAte, observacao: promessaObs.trim() || null }, { onSuccess: () => setPromessa(null) })}>
+                {promessa.atual ? 'Atualizar' : 'Registrar'}
+              </Botao>
+            </div>
           </div>
         )}
       </Modal>

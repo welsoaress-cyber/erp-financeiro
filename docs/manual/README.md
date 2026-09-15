@@ -63,6 +63,8 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 
 Só as receitas previstas do mês, com atrasadas destacadas. Pesquise pelo cliente e dê baixa direto no botão da linha.
 
+**🤝 Cliente prometeu pagar em outro dia?** Clique em **🤝 Prometeu pagar** na linha dele, escolha até quando e anote o combinado. A linha passa a mostrar o selo **🤝 Paga até DD/MM** aqui e na tela de Cobrança, e o bloqueio fica segurado até essa data. Pagou no prazo → a promessa se resolve sozinha como cumprida; passou devendo → ele volta na Cobrança destacado como **confiança furada** (você sabe que já confiou uma vez). Para desfazer, clique de novo na linha e use **Cancelar promessa**.
+
 ### 3.3 Contas a pagar
 
 ![Contas a pagar](img/05-contas-a-pagar.png)

@@ -18,7 +18,7 @@ import { useCategorias } from '../../categorias/api'
 import { useContas } from '../../contas/api'
 import { useCriarLancamento } from '../../lancamentos/api'
 import { useCartoesConfig } from '../../cartoes/api'
-import { vencimentoFatura } from '../../cartoes/tipos'
+import { vencimentoFatura, vencimentoFaturaReal } from '../../cartoes/tipos'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, useEstoqueCategorias, useEstoqueItens, useEstoqueMovs, useExcluirEstoqueItem, useInstalacoes, useItensComEntrada, useSaidaEstoque, useSalvarEstoqueCategoria, useSalvarEstoqueItem } from '../api'
@@ -305,7 +305,7 @@ function NovaCompra({ negocioId, itens, itemInicial, aoFechar }: { negocioId: st
             )}
             {(() => {
               const cfg = contaDe(p.contaId)?.tipo === 'credito' ? (cartoesConfig.data ?? []).find((k) => k.conta_id === p.contaId) : undefined
-              return cfg && data ? <p className="pl-1 text-xs text-ink-muted">Entra na fatura com vencimento em {vencimentoFatura(data, cfg).split('-').reverse().join('/')}</p> : null
+              return cfg && data ? <p className="pl-1 text-xs text-ink-muted">Entra na fatura com vencimento em {vencimentoFaturaReal(data, cfg).split('-').reverse().join('/')}</p> : null
             })()}
           </div>
         )})}

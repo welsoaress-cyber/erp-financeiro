@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
 import type { Lancamento } from '../lancamentos/tipos'
-import type { CartaoConfig, Fatura } from './tipos'
+import type { CartaoConfig, CartaoLimite, Fatura } from './tipos'
 
 const chave = (org: string) => ['cartoes', org] as const
 
@@ -14,6 +14,18 @@ export function useCartoesConfig() {
       const { data, error } = await supabase.from('cartoes_config').select('*').eq('organizacao_id', organizacao.id)
       if (error) throw error
       return (data ?? []) as CartaoConfig[]
+    },
+  })
+}
+
+export function useCartoesLimite() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'limite'],
+    queryFn: async (): Promise<CartaoLimite[]> => {
+      const { data, error } = await supabase.from('vw_cartoes_limite').select('*').eq('organizacao_id', organizacao.id)
+      if (error) throw error
+      return (data ?? []).map((r) => ({ ...r, limite_total: Number(r.limite_total), uso_efetivado: Number(r.uso_efetivado), comprometido: Number(r.comprometido), disponivel: Number(r.disponivel) })) as CartaoLimite[]
     },
   })
 }

@@ -17,7 +17,7 @@ import type { CentroCusto } from '../../centros_custo/tipos'
 import { EntradaEstoqueCampo, type EntradaEstoque } from './EntradaEstoqueCampo'
 import { useCriarConta } from '../../contas/api'
 import { useCartoesConfig } from '../../cartoes/api'
-import { vencimentoFatura } from '../../cartoes/tipos'
+import { vencimentoFatura, vencimentoFaturaReal } from '../../cartoes/tipos'
 import { useCriarCategoria } from '../../categorias/api'
 import { useCriarNegocio } from '../../negocios/api'
 import { useCriarPessoa } from '../../pessoas/api'
@@ -354,7 +354,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         <div className="rounded-md border border-line bg-surface/60 p-3 text-sm">
           <p className="font-medium">Compra no cartão de crédito</p>
           {vencCartao
-            ? <p className="mt-1 text-xs text-ink-muted">Entra na fatura com vencimento em {vencCartao.split('-').reverse().join('/')} e é efetivada no fechamento do cartão.</p>
+            ? <p className="mt-1 text-xs text-ink-muted">Entra na fatura com vencimento em {vencimentoFaturaReal(data, cartaoCfg!).split('-').reverse().join('/')} e é efetivada no fechamento do cartão.</p>
             : <p className="mt-1 text-xs text-amber-800">Cartão sem configuração de fechamento/vencimento: configure em Cartões. Por enquanto o vencimento fica na data da compra.</p>}
         </div>
       ) : (

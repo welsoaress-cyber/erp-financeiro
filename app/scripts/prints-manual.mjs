@@ -68,6 +68,9 @@ const lancamentos = [
   lanc(4, { tipo: 'despesa', descricao: 'Energia da central', valor: 480, categoria_id: id('e', 2), pessoa_id: null, contrato_id: null, status: 'efetivado', data_efetivacao: dia(6), conta_id: id('d', 1) }),
   lanc(5, { tipo: 'despesa', descricao: 'Link dedicado 1 Gbps', valor: 1500, categoria_id: id('e', 3), pessoa_id: null, contrato_id: null, data_vencimento: dia(15), data_competencia: dia(15) }),
   lanc(6, { tipo: 'despesa', descricao: 'Comissão OS00111092026A — João Batista', valor: 49.95, categoria_id: id('e', 4), pessoa_id: id('c', 9), contrato_id: null, data_vencimento: dia(25), data_competencia: dia(25) }),
+  // fatura de cartão (0087): dois lançamentos com mesma conta + vencimento agrupam visualmente em Contas a Pagar
+  lanc(7, { tipo: 'despesa', descricao: 'Anuidade cartão', valor: 39.9, categoria_id: id('e', 2), pessoa_id: null, contrato_id: null, conta_id: id('d', 3), data_vencimento: dia(20), data_competencia: dia(10) }),
+  lanc(8, { tipo: 'despesa', descricao: 'Assinatura Cloud', valor: 89.9, categoria_id: id('e', 3), pessoa_id: null, contrato_id: null, conta_id: id('d', 3), data_vencimento: dia(20), data_competencia: dia(12), recorrente: true, numero_parcelas: 3, parcela_atual: 1 }),
 ]
 const tecnicos = [{ id: id('3', 1), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 9), usuario_id: 'u2000000-0000-4000-8000-000000000002', login: 'joao', nome: 'João Batista', telefone: '92988889999', ativo: true, criado_em: dia(1), atualizado_em: dia(1) }]
 const os = (n, extra) => ({
@@ -130,6 +133,9 @@ const bi = Array.from({ length: 13 }, (_, i) => {
 const tabelas = {
   organizacao_membros: [{ organizacao_id: ORG, usuario_id: 'u1', papel: 'proprietario', criado_em: '2026-01-01', organizacoes: { id: ORG, nome: 'Grupo Tom' } }],
   contas, vw_saldo_contas: contas, categorias, negocios, pessoas, planos, contratos, lancamentos, tecnicos,
+  cartoes_config: [{ id: id('g', 1), organizacao_id: ORG, conta_id: id('d', 3), dia_fechamento: 16, dia_vencimento: 25, limite_total: 5000 }],
+  vw_cartoes_limite: [{ config_id: id('g', 1), conta_id: id('d', 3), organizacao_id: ORG, limite_total: 5000, uso_efetivado: -830.4, comprometido: 129.8, disponivel: 5000 - 830.4 - 129.8 }],
+  faturas: [],
   ordens_servico: ordens, os_materiais: [], os_historico: [], os_fotos: [], reposicao_solicitacoes: [],
   tecnico_estoque: [
     { id: id('9', 1), organizacao_id: ORG, tecnico_id: id('3', 1), item_id: id('5', 1), quantidade: 145, quantidade_minima: 100 },

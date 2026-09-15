@@ -40,6 +40,7 @@ with checks as (
   union all select '0050 endereço em pessoas', exists (select 1 from information_schema.columns where table_name='pessoas' and column_name='endereco')
   union all select '0051 lacre numerado por porta', exists (select 1 from information_schema.columns where table_name='cto_portas' and column_name='lacre') and exists (select 1 from pg_proc where proname='lacre_porta_cto')
   union all select '0052 identificação (lacre) da própria CTO', exists (select 1 from information_schema.columns where table_name='ctos' and column_name='lacre')
+  union all select '0087 cartão: limite comprometido, dia útil, casamento de fatura', exists (select 1 from pg_proc where proname='ajustar_dia_util') and exists (select 1 from pg_views where schemaname='public' and viewname='vw_cartoes_limite')
   union all select '0086 excluir item de estoque sem movimentação', exists (select 1 from pg_proc where proname='excluir_estoque_item' and prosecdef)
   union all select '0085 devolução ao fornecedor (tabela, motor, relatório)', exists (select 1 from pg_tables where schemaname='public' and tablename='devolucoes_fornecedor') and (select count(distinct proname) from pg_proc where proname in ('abrir_devolucao_fornecedor','resolver_devolucao_fornecedor')) = 2 and exists (select 1 from pg_views where schemaname='public' and viewname='vw_rel_devolucoes_fornecedor')
   union all select '0084 valor em comodato no relatório de estoque', exists (select 1 from information_schema.columns where table_name='vw_rel_estoque_itens' and column_name='valor_comodato')

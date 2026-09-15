@@ -12,7 +12,7 @@ import { Distintivo } from '../../../core/ui/Distintivo'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useContas } from '../../contas/api'
-import { useCartoesConfig, useFaturas, useFecharFaturasAgora, useItensFatura, usePagarFatura, useSalvarCartaoConfig } from '../api'
+import { useCartoesConfig, useCartoesLimite, useFaturas, useFecharFaturasAgora, useItensFatura, usePagarFatura, useSalvarCartaoConfig } from '../api'
 import { ROTULO_STATUS_FATURA, type CartaoConfig, type Fatura } from '../tipos'
 
 const TOM: Record<Fatura['status'], 'ok' | 'alerta' | 'neutro'> = { paga: 'ok', vencida: 'alerta', aberta: 'neutro' }
@@ -20,6 +20,7 @@ const TOM: Record<Fatura['status'], 'ok' | 'alerta' | 'neutro'> = { paga: 'ok', 
 export function CartoesPage() {
   const contas = useContas()
   const configs = useCartoesConfig()
+  const limites = useCartoesLimite()
   const faturas = useFaturas()
   const salvar = useSalvarCartaoConfig()
   const pagar = usePagarFatura()
@@ -83,7 +84,7 @@ export function CartoesPage() {
 
       {!carregando && contasCredito.length === 0 && (
         <Alerta tipo="info" titulo="Nenhuma conta de crédito">
-          Crie uma conta do tipo "Cartão de crédito" em <Link to="/contas" className="underline">Contas</Link> com saldo inicial = limite total. Depois configure aqui o fechamento e o vencimento.
+          Crie uma conta do tipo "Cartão de crédito" em <Link to="/contas" className="underline">Contas</Link>. Depois configure aqui o fechamento e o vencimento.
         </Alerta>
       )}
 
@@ -91,7 +92,8 @@ export function CartoesPage() {
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(configs.data ?? []).map((k) => {
             const conta = contaPorId.get(k.conta_id)
-            const disponivel = Number(conta?.saldo ?? 0)
+            const lim = limites.data?.find((x) => x.config_id === k.id)
+            const disponivel = lim?.disponivel ?? k.limite_total
             return (
               <Cartao key={k.id} className="p-5">
                 <div className="flex items-start justify-between">
@@ -100,6 +102,7 @@ export function CartoesPage() {
                 </div>
                 <p className={`mt-2 text-2xl font-semibold tabular-nums ${disponivel < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(disponivel)}</p>
                 <p className="text-xs text-ink-muted">disponível de {formatarMoeda(k.limite_total)} · fecha dia {k.dia_fechamento} · vence dia {k.dia_vencimento}</p>
+                {lim && lim.comprometido > 0 && <p className="text-xs text-ink-muted">{formatarMoeda(lim.comprometido)} comprometido em parcelas futuras</p>}
               </Cartao>
             )
           })}
@@ -146,7 +149,7 @@ export function CartoesPage() {
             <Campo rotulo="Dia do vencimento" type="number" min={1} max={28} value={diaVenc} onChange={(e) => setDiaVenc(e.target.value)} />
             <Campo rotulo="Limite total (R$)" type="number" inputMode="decimal" step="0.01" min="0" value={limite} onChange={(e) => setLimite(e.target.value)} />
           </div>
-          <p className="text-xs text-ink-muted">O limite disponível é o saldo da conta (saldo inicial = limite total). Compras à vista descontam na hora; parcelas previstas descontam no fechamento da fatura em que caem.</p>
+          <p className="text-xs text-ink-muted">O disponível já desconta parcelas futuras (comprometidas), não só o que foi efetivado. Fechamento e vencimento que caem em sábado/domingo antecipam para o dia útil anterior.</p>
           <div className="flex justify-end gap-2">
             <Botao variante="secundario" onClick={() => setConfigurando(null)}>Cancelar</Botao>
             <Botao

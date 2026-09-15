@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
@@ -42,7 +43,16 @@ export function LancamentosPage() {
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [avisoDuplicidade, setAvisoDuplicidade] = useState<string | null>(null)
 
+  const [buscaParams, setBuscaParams] = useSearchParams()
   const lancamentos = useLancamentos(mes)
+  const editarParam = buscaParams.get('editar')
+  // oxlint-disable-next-line react/set-state-in-effect -- sincroniza com a URL (?editar=), sistema externo (deep link do Contas a Pagar)
+  useEffect(() => {
+    if (!editarParam || !lancamentos.isSuccess) return
+    const alvo = (lancamentos.data ?? []).find((l) => l.id === editarParam)
+    if (alvo) setEdicao({ modo: 'editar', lancamento: alvo })
+    setBuscaParams({}, { replace: true })
+  }, [editarParam, lancamentos.isSuccess, lancamentos.data, setBuscaParams])
   const projecaoContratos = useProjecaoContratos(mes)
   const contas = useContas()
   const categorias = useCategorias()

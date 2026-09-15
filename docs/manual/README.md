@@ -65,7 +65,7 @@ Só as receitas previstas do mês, com atrasadas destacadas. Pesquise pelo clien
 
 ![Contas a pagar](img/05-contas-a-pagar.png)
 
-Mesma ideia para as despesas (energia, link, comissões dos técnicos etc.).
+Mesma ideia para as despesas (energia, link, comissões dos técnicos etc.). Despesas de **cartão de crédito** que caem no mesmo vencimento aparecem agrupadas visualmente numa linha **"Fatura [cartão] · N item(ns)"** (clique na seta pra abrir) — os lançamentos continuam individuais no banco, cada um com sua categoria; é só a tela que agrupa. Dentro do grupo: **Editar** cada compra, dar baixa/cancelar uma por uma, ou **+ Ajuste** para lançar algo direto na fatura (anuidade, juros, estorno manual…).
 
 ### 3.4 Cobrança (bloqueio assistido + Pix)
 
@@ -94,7 +94,7 @@ Cadastro das contas (caixa, banco, carteira digital, cartão). O **saldo é calc
 
 ![Cartões](img/08-cartoes.png)
 
-Cartão tem **fatura por mês**: as despesas no cartão entram como previstas na fatura; pagar a fatura é uma transferência da conta escolhida. Configure dia de fechamento e vencimento uma vez.
+Cartão tem **fatura por mês**: as despesas no cartão entram como previstas na fatura; pagar a fatura é uma transferência da conta escolhida. Configure dia de fechamento e vencimento uma vez. O fechamento é **automático** (todo dia às 02:30, horário de Brasília) — "Fechar faturas agora" é só um atalho manual, não é preciso clicar nele. Fechamento e vencimento que caem em sábado/domingo antecipam para o dia útil anterior. O **disponível** já desconta as parcelas futuras (comprometidas), não só o que foi efetivado — o cartão mostra "R$X comprometido em parcelas futuras" quando há.
 
 ## 6. Categorias
 

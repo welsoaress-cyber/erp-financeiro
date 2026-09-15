@@ -30,7 +30,10 @@ export function AppShell({ modulos }: { modulos: DefinicaoModulo[] }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <BarraSuperior aoAbrirMenu={() => setMenuAberto(true)} />
           <main className="flex-1 overflow-y-auto p-4 md:p-8">
-            <div className="mx-auto max-w-6xl">
+            {/* largura: as listas (lançamentos, contas, contratos) precisam de espaço — com
+                max-w-6xl a descrição quebrava em 4 linhas e as ações saíam da tela num monitor
+                comum. Ainda há um teto para não esticar demais em tela ultrawide. */}
+            <div className="mx-auto max-w-[110rem]">
               <ErrorBoundary>
                 <Outlet />
               </ErrorBoundary>

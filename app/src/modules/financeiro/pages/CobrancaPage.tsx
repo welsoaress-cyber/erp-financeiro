@@ -98,9 +98,12 @@ export function CobrancaPage() {
   // atualiza a lista ao abrir a tela
   useEffect(() => { if (negocioAtual) gerar.mutate() }, [negocioAtual]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [busca, setBusca] = useState('')
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   const rotuloContrato = (id: string) => { const c = (contratos.data ?? []).find((x) => x.id === id); return c ? codigoContrato(c) : '—' }
-  const lista = (bloqueios.data ?? []).filter((b) => b.negocio_id === negocioAtual)
+  const buscaNorm = busca.trim().toLowerCase()
+  const listaTodas = (bloqueios.data ?? []).filter((b) => b.negocio_id === negocioAtual)
+  const lista = listaTodas.filter((b) => !buscaNorm || (nomePessoa.get(b.pessoa_id) ?? '').toLowerCase().includes(buscaNorm) || rotuloContrato(b.contrato_id).toLowerCase().includes(buscaNorm))
   const pixLista = (pix.data ?? []).filter((p) => p.negocio_id === negocioAtual)
   const confLista = (confiancas.data ?? []).filter((c) => c.negocio_id === negocioAtual)
   const erro = gerar.error ?? executar.error ?? descartar.error ?? darConfianca.error ?? cancelarConfianca.error
@@ -121,11 +124,18 @@ export function CobrancaPage() {
       <div className="space-y-6">
         <Cartao className="p-0">
           <div className="border-b border-line px-6 py-3">
-            <h2 className="text-sm font-semibold">Ações na rede ({lista.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold">Ações na rede ({buscaNorm ? `${lista.length} de ${listaTodas.length}` : listaTodas.length})</h2>
+              {listaTodas.length > 0 && (
+                <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar cliente ou nº do contrato…" className="h-9 w-64 rounded-md border border-line bg-white px-3 text-sm" />
+              )}
+            </div>
             <p className="text-xs text-ink-muted">Bloqueie/desbloqueie o cliente no seu sistema de rede e marque como executado — o contrato muda de status sozinho (ativo ↔ suspenso).</p>
           </div>
-          {bloqueios.isPending ? <div className="p-6"><Carregando /></div> : lista.length === 0 ? (
+          {bloqueios.isPending ? <div className="p-6"><Carregando /></div> : listaTodas.length === 0 ? (
             <p className="px-6 py-10 text-center text-sm text-ink-muted">Nada para bloquear ou desbloquear agora. 👍</p>
+          ) : lista.length === 0 ? (
+            <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhum resultado para "{busca}".</p>
           ) : (
             <ul className="divide-y divide-line text-sm">
               {lista.map((b) => (

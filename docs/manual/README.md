@@ -61,7 +61,7 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 
 ![Contas a receber](img/04-contas-a-receber.png)
 
-Só as receitas previstas do mês, com atrasadas destacadas. Pesquise pelo cliente e dê baixa direto no botão da linha.
+Só as receitas previstas do mês, com atrasadas destacadas. Pesquise pelo cliente e dê baixa direto no botão da linha. O filtro **Todos os negócios** separa por empresa (Servnet, Pessoal…) — ele vale também para os quatro cartões do topo, então dá para ver *previsto, realizado, saldo e vencidos de um negócio só*. O mesmo filtro está em Contas a pagar.
 
 **🤝 Cliente prometeu pagar em outro dia?** Clique em **🤝 Prometeu pagar** na linha dele, escolha até quando e anote o combinado. A linha passa a mostrar o selo **🤝 Paga até DD/MM** aqui e na tela de Cobrança, e o bloqueio fica segurado até essa data. Pagou no prazo → a promessa se resolve sozinha como cumprida; passou devendo → ele volta na Cobrança destacado como **confiança furada** (você sabe que já confiou uma vez). Para desfazer, clique de novo na linha e use **Cancelar promessa**.
 

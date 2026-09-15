@@ -20,7 +20,8 @@ Abas com seletor de negócio (padrão Servnet):
 
 - **Dashboard**: cartões (itens ativos, baixo/zerado, valor total do estoque = qtd × custo médio — ferramentas incluídas, consumo do mês) + alerta de itens zerados/baixos no topo.
 - **Itens**: cadastro (nasce zerado), status Zerado/Baixo/Excesso/Normal.
-- **Nova compra** (na aba Itens): várias linhas de itens (qtd + valor total) e **pagamento misto** — um lançamento de despesa por forma de pagamento (cartão de crédito → entra na fatura como previsto; pix/dinheiro/etc. → efetivado se marcado como pago). Soma dos pagamentos deve bater com a soma dos itens. As entradas de estoque ficam amarradas ao lançamento.
+- **Nova compra** (na aba Itens): várias linhas de itens (qtd + valor total) e **pagamento misto** — um lançamento de despesa por forma de pagamento (cartão de crédito → entra na fatura como previsto, com N× parcelas mensais; pix/dinheiro/etc. → efetivado se marcado como pago). Soma dos pagamentos deve bater com a soma dos itens. As entradas de estoque ficam amarradas ao lançamento.
+  - **Parcelamento (0086, correção):** o valor digitado no pagamento no cartão é o **total** daquela linha; cada parcela mensal recebe `total ÷ N` (arredondado), nunca o total repetido em cada mês. A tela mostra "Total R$X ÷ N = N× de R$Y" abaixo do campo de parcelas.
 - **Movimentações**: histórico imutável; ações de ajuste de inventário, perda e devolução (devolução reentra pelo custo médio — despesa **não** é gerada de novo).
 - **Categorias**: criar/renomear/desativar.
 
@@ -54,3 +55,13 @@ No formulário de despesa (`FormularioLancamento` → `EntradaEstoqueCampo`), a 
 
 ## Atalho de compra no alerta (0084)
 Cada item em alerta no dashboard geral (zerado/abaixo do mínimo) tem o link **Comprar**, que abre o Estoque com a **Nova compra** já aberta e o item pré-selecionado (`/estoque?comprar=<item>`).
+
+## Devolução ao fornecedor / RMA (0085)
+Item comprado que chega com defeito: "fornecedor não devolve na hora" — é pendência, não evento único.
+
+- **Abrir devolução** (`abrir_devolucao_fornecedor`): unidade sai do estoque pelo custo médio (origem `devolucao_fornecedor`) e nasce uma **receita prevista** no Contas a Receber (categoria e conta escolhidas na tela, vencimento em 30 dias), vinculada ao item e ao fornecedor (pessoa opcional).
+- **Resolver** (`resolver_devolucao_fornecedor`), três desfechos:
+  - **Reembolso**: efetiva a receita prevista na data informada — entra na Conciliação bancária normalmente.
+  - **Troca**: entrada no estoque pelo **mesmo valor** que saiu (custo médio preservado, sem custo novo) e cancela a receita prevista.
+  - **Negada**: cancela a receita prevista; a saída já registrada documenta a perda.
+- Histórico imutável (`devolucoes_fornecedor`, motor protegido igual ao resto do estoque). Aba **Devoluções** no módulo Estoque; relatório "Devoluções ao fornecedor" na Central de Relatórios.

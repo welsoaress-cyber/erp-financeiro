@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { Comodato, ConsumoItem, ConsumoMensal, DadosItem, EstoqueCategoria, EstoqueInstalacao, EstoqueItem, EstoqueMov, Patrimonio, PatrimonioHistorico } from './tipos'
+import type { Comodato, ConsumoItem, ConsumoMensal, DadosItem, DevolucaoFornecedor, EstoqueCategoria, EstoqueInstalacao, EstoqueItem, EstoqueMov, Patrimonio, PatrimonioHistorico } from './tipos'
 
 const chave = (org: string) => ['estoque', org] as const
 
@@ -306,5 +306,42 @@ export function usePatrimonioHistorico(patrimonioId: string | null) {
       if (error) throw error
       return data ?? []
     },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Devolução ao fornecedor / RMA (item 37 do levantamento)
+// ---------------------------------------------------------------------------
+export function useDevolucoesFornecedor() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'devolucoes-fornecedor'],
+    queryFn: async (): Promise<DevolucaoFornecedor[]> => {
+      const { data, error } = await supabase.from('devolucoes_fornecedor').select('*').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }).limit(500)
+      if (error) throw error
+      return (data ?? []).map((d) => ({ ...d, quantidade: Number(d.quantidade), valor: Number(d.valor) })) as DevolucaoFornecedor[]
+    },
+  })
+}
+export function useAbrirDevolucaoFornecedor() {
+  const invalidar = useInvalidarEstoque()
+  return useMutation({
+    mutationFn: async (p: { p_item_id: string; p_quantidade: number; p_motivo: string; p_conta_id: string; p_categoria_id: string; p_data?: string; p_pessoa_id?: string | null }) => {
+      const { data, error } = await supabase.rpc('abrir_devolucao_fornecedor', p)
+      if (error) throw error
+      return data as DevolucaoFornecedor
+    },
+    onSuccess: invalidar,
+  })
+}
+export function useResolverDevolucaoFornecedor() {
+  const invalidar = useInvalidarEstoque()
+  return useMutation({
+    mutationFn: async (p: { p_id: string; p_desfecho: 'reembolso' | 'troca' | 'negada'; p_data?: string; p_observacao?: string | null }) => {
+      const { data, error } = await supabase.rpc('resolver_devolucao_fornecedor', p)
+      if (error) throw error
+      return data as DevolucaoFornecedor
+    },
+    onSuccess: invalidar,
   })
 }

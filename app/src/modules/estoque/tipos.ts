@@ -158,3 +158,24 @@ export interface Patrimonio {
 export const codigoPatrimonio = (p: Pick<Patrimonio, 'numero'>) => `PAT-${String(p.numero).padStart(3, '0')}`
 
 export interface PatrimonioHistorico { id: string; patrimonio_id: string; evento: string; detalhe: string; criado_em: string }
+
+// ---- Devolução ao fornecedor (RMA) ----
+export type StatusDevolucao = 'aberta' | 'reembolsada' | 'trocada' | 'negada'
+export const ROTULO_DEVOLUCAO: Record<StatusDevolucao, string> = { aberta: 'Aberta', reembolsada: 'Reembolsada', trocada: 'Trocada', negada: 'Negada' }
+
+export interface DevolucaoFornecedor {
+  id: string
+  negocio_id: string
+  item_id: string
+  movimentacao_id: string
+  lancamento_id: string
+  pessoa_id: string | null
+  quantidade: number
+  valor: number
+  motivo: string
+  status: StatusDevolucao
+  data_envio: string
+  data_resolucao: string | null
+  observacao_resolucao: string | null
+  criado_em: string
+}

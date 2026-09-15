@@ -29,6 +29,7 @@ const pessoas = [
   { id: id('c', 2), organizacao_id: ORG, tipo: 'fisica', nome: 'José Lima', documento: '11144477735', email: null, telefone: '92988882222', endereco: 'Av. Brasil, 45', ativo: true, receber_avisos: true, data_nascimento: null, login_servidor: null, observacao: null, criado_em: dia(1), atualizado_em: dia(1) },
   { id: id('c', 3), organizacao_id: ORG, tipo: 'fisica', nome: 'Ana Pereira', documento: null, email: null, telefone: '92988883333', endereco: 'Rua do Sol, 8', ativo: true, receber_avisos: false, data_nascimento: null, login_servidor: null, observacao: null, criado_em: dia(1), atualizado_em: dia(1) },
   { id: id('c', 9), organizacao_id: ORG, tipo: 'fisica', nome: 'João Batista (Técnico)', documento: null, email: null, telefone: '92988889999', endereco: null, ativo: true, receber_avisos: false, data_nascimento: null, login_servidor: null, observacao: 'Técnico (comissões)', criado_em: dia(1), atualizado_em: dia(1) },
+  { id: id('c', 10), organizacao_id: ORG, tipo: 'juridica', nome: 'Distribuidora Fibra Norte', documento: null, email: null, telefone: '9232221111', endereco: null, ativo: true, receber_avisos: false, data_nascimento: null, login_servidor: null, observacao: 'Fornecedor', criado_em: dia(1), atualizado_em: dia(1) },
 ]
 const contas = [
   { id: id('d', 1), organizacao_id: ORG, nome: 'Caixa Servnet', tipo: 'dinheiro', saldo_inicial: 500, data_inicio: '2026-01-01', ativo: true, saldo: 3240.5, movimentos: 42, negocio_id: NEG },
@@ -139,6 +140,12 @@ const tabelas = {
   vw_bolsa_tecnicos: [{ organizacao_id: ORG, tecnico_id: id('3', 1), negocio_id: NEG, tecnico: 'João Batista', ativo: true, itens_negativos: 0, itens_abaixo_minimo: 1, valor_em_campo: 513.9 }],
   estoque_itens: estoqueItens, estoque_categorias: estoqueCategorias, estoque_movimentacoes: estoqueMovs,
   estoque_instalacoes: [{ id: id('a', 1), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 1), contrato_id: id('1', 1), porta_id: null, os_id: null, data: '2026-02-10', custo_material: 230.5, mao_de_obra: 120, custo_total: 350.5, tecnico: 'João Batista', observacao: null, criado_em: '2026-02-10' }],
+  devolucoes_fornecedor: [
+    { id: id('r', 1), organizacao_id: ORG, negocio_id: NEG, item_id: id('5', 2), movimentacao_id: id('9', 1), lancamento_id: id('2', 90), pessoa_id: id('c', 10), quantidade: 1, valor: 148.5, motivo: 'ONU não liga — defeito de fábrica', status: 'aberta', data_envio: dia(2), data_resolucao: null, observacao_resolucao: null, criado_em: dia(2), atualizado_em: dia(2) },
+  ],
+  vw_rel_devolucoes_fornecedor: [
+    { organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', devolucao_id: id('r', 1), item_id: id('5', 2), item: 'ONU ZTE F601', codigo: 'ONU-ZTE', quantidade: 1, valor: 148.5, motivo: 'ONU não liga — defeito de fábrica', situacao: 'aberta', data_envio: dia(2), data_resolucao: null, observacao_resolucao: null, fornecedor: 'Distribuidora Fibra Norte', situacao_reembolso: 'previsto' },
+  ],
   vw_payback_contrato: [
     { contrato_id: id('1', 1), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 1), status: 'ativo', valor: 99.9, periodicidade: 'mensal', data_inicio: '2026-02-10', custo_instalacao: 350.5, instalacoes: 1, primeira_instalacao: '2026-02-10', mensalidade: 99.9, payback_estimado_meses: 4, recebido: 699.3, data_payback_real: '2026-06-10', payback_real_meses: 4 },
     { contrato_id: id('1', 2), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 2), status: 'ativo', valor: 129.9, periodicidade: 'mensal', data_inicio: '2026-04-05', custo_instalacao: 412.8, instalacoes: 1, primeira_instalacao: '2026-04-05', mensalidade: 129.9, payback_estimado_meses: 4, recebido: 519.6, data_payback_real: null, payback_real_meses: null },
@@ -347,6 +354,8 @@ async function capturar(page, nome, ms = 1200) {
   await page.goto(BASE + '/estoque'); await espera(900)
   await page.getByRole('tab', { name: 'Comodato' }).click().catch(() => undefined)
   await capturar(page, '15-estoque-comodato')
+  await page.getByRole('tab', { name: 'Devoluções' }).click().catch(() => undefined)
+  await capturar(page, '48-estoque-devolucoes')
   await page.goto(BASE + '/os'); await espera(900)
   await page.getByRole('tab', { name: 'Chamados' }).click().catch(() => undefined)
   await capturar(page, '17-os-chamados')

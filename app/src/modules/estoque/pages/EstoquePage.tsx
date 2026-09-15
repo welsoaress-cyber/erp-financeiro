@@ -23,9 +23,10 @@ import { useAjusteEstoque, useConsumoItem, useConsumoMensal, useEntradaEstoque, 
 import { NovaInstalacao } from '../components/NovaInstalacao'
 import { fmtQtd, ROTULO_ORIGEM, statusItem, UNIDADES, type EstoqueItem, type Unidade } from '../tipos'
 import { AbaComodato } from '../components/AbaComodato'
+import { AbaDevolucaoFornecedor } from '../components/AbaDevolucaoFornecedor'
 import { AbaPatrimonio } from '../components/AbaPatrimonio'
 
-type Aba = 'dashboard' | 'itens' | 'movs' | 'instalacoes' | 'comodato' | 'patrimonio' | 'relatorios' | 'categorias'
+type Aba = 'dashboard' | 'itens' | 'movs' | 'instalacoes' | 'comodato' | 'devolucoes' | 'patrimonio' | 'relatorios' | 'categorias'
 const TOM_STATUS = { zerado: 'alerta', baixo: 'alerta', excesso: 'info', ok: 'ok', novo: 'neutro' } as const
 
 function FormularioItem({ item, negocioId, salvando, erro, aoSalvar, aoCancelar }: {
@@ -189,9 +190,12 @@ function NovaCompra({ negocioId, itens, itemInicial, aoFechar }: { negocioId: st
         const conta = contaDe(p.contaId)
         const ehCartao = conta?.tipo === 'credito'
         const nParcelas = ehCartao ? Math.max(1, Math.floor(Number(p.parcelas) || 1)) : 1
+        const totalLinha = Math.round(Number(p.valor.replace(',', '.')) * 100) / 100
+        // valor digitado é o TOTAL da linha; parcelado, cada lançamento recebe o valor DIVIDIDO por N (não o total repetido)
+        const valorParcela = nParcelas > 1 ? Math.round((totalLinha / nParcelas) * 100) / 100 : totalLinha
         const l = await criarLancamento.mutateAsync({
           tipo: 'despesa', descricao: `${descricao.trim() || 'Compra de estoque'}${pagtosOk.length > 1 ? ` (${conta?.nome})` : ''}`,
-          valor: Math.round(Number(p.valor.replace(',', '.')) * 100) / 100,
+          valor: valorParcela,
           data_competencia: data, data_vencimento: data,
           data_efetivacao: !ehCartao && p.pago ? data : null,
           conta_id: p.contaId, conta_destino_id: null, categoria_id: categoriaId,
@@ -275,18 +279,26 @@ function NovaCompra({ negocioId, itens, itemInicial, aoFechar }: { negocioId: st
       </div>
       <div>
         <p className="mb-1 text-sm font-medium">Pagamento (pode dividir: cartão + Pix, etc. Cartão de crédito vai para a fatura)</p>
-        {pagtos.map((p, i) => (
-          <div key={i} className="mb-2 flex items-end gap-2">
-            <div className="flex-1"><Selecao rotulo={i === 0 ? 'Conta' : ''} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(contas.data ?? []).filter((c) => c.ativo).map((c) => ({ valor: c.id, rotulo: `${c.nome}${c.tipo === 'credito' ? ' (cartão)' : ''}` }))]} value={p.contaId} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, contaId: e.target.value } : x)))} /></div>
-            <input type="number" step="0.01" min="0.01" placeholder="Valor R$" value={p.valor} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, valor: e.target.value } : x)))} className="h-10 w-32 rounded-md border border-line bg-white px-2 text-sm" />
-            {contaDe(p.contaId)?.tipo !== 'credito' ? (
-              <label className="flex items-center gap-1 pb-2.5 text-sm"><input type="checkbox" checked={p.pago} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, pago: e.target.checked } : x)))} className="size-4 accent-brand-600" />Pago</label>
-            ) : (
-              <label className="flex items-center gap-1 text-sm"><input type="number" min="1" max="48" step="1" aria-label="Parcelas" value={p.parcelas} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, parcelas: e.target.value } : x)))} className="h-10 w-16 rounded-md border border-line bg-white px-2 text-sm" />×</label>
+        {pagtos.map((p, i) => {
+          const nP = Math.max(1, Math.floor(Number(p.parcelas) || 1))
+          const valorLinha = Number(p.valor.replace(',', '.'))
+          return (
+          <div key={i} className="mb-2">
+            <div className="flex items-end gap-2">
+              <div className="flex-1"><Selecao rotulo={i === 0 ? 'Conta' : ''} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(contas.data ?? []).filter((c) => c.ativo).map((c) => ({ valor: c.id, rotulo: `${c.nome}${c.tipo === 'credito' ? ' (cartão)' : ''}` }))]} value={p.contaId} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, contaId: e.target.value } : x)))} /></div>
+              <input type="number" step="0.01" min="0.01" placeholder="Valor total R$" value={p.valor} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, valor: e.target.value } : x)))} className="h-10 w-32 rounded-md border border-line bg-white px-2 text-sm" />
+              {contaDe(p.contaId)?.tipo !== 'credito' ? (
+                <label className="flex items-center gap-1 pb-2.5 text-sm"><input type="checkbox" checked={p.pago} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, pago: e.target.checked } : x)))} className="size-4 accent-brand-600" />Pago</label>
+              ) : (
+                <label className="flex items-center gap-1 text-sm"><input type="number" min="1" max="48" step="1" aria-label="Parcelas" value={p.parcelas} onChange={(e) => setPagtos((xs) => xs.map((x, j) => (j === i ? { ...x, parcelas: e.target.value } : x)))} className="h-10 w-16 rounded-md border border-line bg-white px-2 text-sm" />×</label>
+              )}
+              <button type="button" aria-label="Remover pagamento" className="pb-2 text-ink-muted hover:text-red-700" onClick={() => setPagtos((xs) => xs.filter((_, j) => j !== i))}>×</button>
+            </div>
+            {contaDe(p.contaId)?.tipo === 'credito' && nP > 1 && valorLinha > 0 && (
+              <p className="pl-1 text-xs text-ink-muted">Total {formatarMoeda(valorLinha)} ÷ {nP} = <b>{nP}× de {formatarMoeda(Math.round((valorLinha / nP) * 100) / 100)}</b></p>
             )}
-            <button type="button" aria-label="Remover pagamento" className="pb-2 text-ink-muted hover:text-red-700" onClick={() => setPagtos((xs) => xs.filter((_, j) => j !== i))}>×</button>
           </div>
-        ))}
+        )})}
         <Botao variante="secundario" onClick={() => setPagtos((xs) => [...xs, { contaId: '', valor: '', pago: true, parcelas: '1' }])}>+ Forma de pagamento</Botao>
         <p className="mt-1 text-xs text-ink-muted">Itens: {formatarMoeda(totalItens)} · Pagamentos: {formatarMoeda(totalPagto)}{Math.abs(totalPagto - totalItens) > 0.01 && <span className="text-red-600"> — precisam bater</span>}</p>
       </div>
@@ -395,9 +407,9 @@ export function EstoquePage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div role="tablist" className="flex gap-1 rounded-md border border-line p-1 text-sm">
-          {(['dashboard', 'itens', 'movs', 'instalacoes', 'comodato', 'patrimonio', 'relatorios', 'categorias'] as Aba[]).map((a) => (
+          {(['dashboard', 'itens', 'movs', 'instalacoes', 'comodato', 'devolucoes', 'patrimonio', 'relatorios', 'categorias'] as Aba[]).map((a) => (
             <button key={a} role="tab" aria-selected={aba === a} onClick={() => setAba(a)} className={`rounded px-3 py-1.5 ${aba === a ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>
-              {a === 'dashboard' ? 'Dashboard' : a === 'itens' ? 'Itens' : a === 'movs' ? 'Movimentações' : a === 'instalacoes' ? 'Instalações' : a === 'comodato' ? 'Comodato' : a === 'patrimonio' ? 'Patrimônio' : a === 'relatorios' ? 'Relatórios' : 'Categorias'}
+              {a === 'dashboard' ? 'Dashboard' : a === 'itens' ? 'Itens' : a === 'movs' ? 'Movimentações' : a === 'instalacoes' ? 'Instalações' : a === 'comodato' ? 'Comodato' : a === 'devolucoes' ? 'Devoluções' : a === 'patrimonio' ? 'Patrimônio' : a === 'relatorios' ? 'Relatórios' : 'Categorias'}
             </button>
           ))}
         </div>
@@ -541,6 +553,7 @@ export function EstoquePage() {
       )}
 
       {aba === 'comodato' && negocioAtual && <AbaComodato negocioId={negocioAtual} />}
+      {aba === 'devolucoes' && negocioAtual && <AbaDevolucaoFornecedor negocioId={negocioAtual} />}
       {aba === 'patrimonio' && negocioAtual && <AbaPatrimonio negocioId={negocioAtual} />}
 
       {aba === 'categorias' && (

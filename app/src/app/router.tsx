@@ -3,6 +3,7 @@ import { RequireAuth, SomenteAnonimo } from '../core/auth/RequireAuth'
 import { AppShell } from '../core/layout/AppShell'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { CadastroPage } from '../pages/auth/CadastroPage'
+import { NovaSenhaPage } from '../pages/auth/NovaSenhaPage'
 import { MODULOS } from './modulos'
 import { PortalShell } from '../portal/PortalShell'
 import { PortalCadastroPage, PortalLoginEmailPage, PortalLoginPage, PortalNovaSenhaPage, PortalRecuperarPage, PortalVincularPage } from '../portal/pages/PortalAuthPages'
@@ -43,6 +44,8 @@ export const router = createBrowserRouter([
   },
   // Área do técnico (login próprio, sem acesso ao ERP)
   { path: '/tecnico/entrar', element: <TecnicoLoginPage /> },
+  // link do "Esqueci a senha" do administrador: o e-mail abre esta tela já com sessão
+  { path: '/nova-senha', element: <NovaSenhaPage /> },
   {
     path: '/tecnico',
     element: <TecnicoShell />,

@@ -18,8 +18,10 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 ![Login](img/01-login.png)
 
 1. Abra o endereço do sistema e informe **e-mail e senha** do administrador.
-2. Esqueceu a senha? Use "Recuperar senha" — chega um link no e-mail.
-3. Por segurança, a sessão expira após 30 minutos sem uso.
+2. **Lembrar meu e-mail** guarda só o e-mail neste aparelho (a senha nunca é salva) — no próximo acesso você só digita a senha.
+3. Esqueceu a senha? Digite o e-mail e clique em **Esqueci a senha**: chega um link para definir a senha nova. Abra o link **no mesmo navegador**.
+4. **Sou técnico** e **Sou cliente** levam às outras duas portas de entrada sem precisar decorar endereço.
+5. Por segurança, a sessão expira após 30 minutos sem uso.
 
 ## 2. Dashboard (visão geral)
 

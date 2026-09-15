@@ -304,7 +304,7 @@ export function LancamentosPage() {
                   <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
                     <tr className="border-b border-line">
                       <th className="px-6 py-3 font-medium">Data</th>
-                      <th className="px-6 py-3 font-medium">Descrição</th>
+                      <th className="w-full px-6 py-3 font-medium">Descrição</th>
                       <th className="px-6 py-3 font-medium">Tipo</th>
                       <th className="px-6 py-3 text-right font-medium">Valor</th>
                       <th className="px-6 py-3 font-medium">Status</th>

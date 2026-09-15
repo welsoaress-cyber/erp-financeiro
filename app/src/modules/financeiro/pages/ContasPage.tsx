@@ -302,7 +302,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
             </ul>
             {/* Desktop: tabela completa */}
             <div className="hidden overflow-x-auto sm:block"><table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="whitespace-nowrap px-4 py-3 font-medium">Vencimento</th><th className="px-4 py-3 font-medium">Descrição</th><th className="whitespace-nowrap px-4 py-3 font-medium">{receber ? 'Cliente' : 'Fornecedor'}</th><th className="whitespace-nowrap px-4 py-3 text-right font-medium">Valor</th><th className="whitespace-nowrap px-4 py-3 font-medium">Situação</th><th className="px-4 py-3"></th></tr></thead>
+              <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="whitespace-nowrap px-4 py-3 font-medium">Vencimento</th><th className="w-full px-4 py-3 font-medium">Descrição</th><th className="whitespace-nowrap px-4 py-3 font-medium">{receber ? 'Cliente' : 'Fornecedor'}</th><th className="whitespace-nowrap px-4 py-3 text-right font-medium">Valor</th><th className="whitespace-nowrap px-4 py-3 font-medium">Situação</th><th className="px-4 py-3"></th></tr></thead>
               <tbody>{linhasExibidas.map((x) => {
                 if ('fatura' in x) {
                   const chave = `${x.contaId}|${x.vencimento}`

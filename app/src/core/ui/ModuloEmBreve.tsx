@@ -6,7 +6,7 @@ export function ModuloEmBreve({ titulo, descricao, etapa }: { titulo: string; de
   return (
     <>
       <CabecalhoPagina titulo={titulo} descricao={descricao} />
-      <Cartao className="flex flex-col items-center gap-2 py-16 text-center">
+      <Cartao className="flex flex-col items-center gap-2 px-6 py-16 text-center">
         <p className="text-sm font-medium">Módulo ainda não disponível</p>
         <p className="text-sm text-ink-muted">Previsto para a {etapa}.</p>
       </Cartao>

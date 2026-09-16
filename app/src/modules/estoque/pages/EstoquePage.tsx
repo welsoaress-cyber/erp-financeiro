@@ -503,7 +503,7 @@ export function EstoquePage() {
                     <td className="px-4 py-2 text-right tabular-nums">{formatarMoeda(i.quantidade_atual * i.valor_custo)}</td>
                     <td className="px-4 py-2"><Distintivo tom={TOM_STATUS[st.tom]}>{st.rotulo}</Distintivo></td>
                     <td className="whitespace-nowrap px-4 py-2 text-right">
-                      <button type="button" className="text-brand-700 hover:underline" onClick={() => setItemMov(i)}>Movimentar</button>
+                      <button type="button" className="text-brand-700 hover:underline" onClick={() => setItemMov(i)}>Inventário</button>
                       <button type="button" className="ml-3 text-brand-700 hover:underline" onClick={() => { setItemEdicao(i); setModal('item') }}>Editar</button>
                       {i.quantidade_atual === 0 && (
                         <button type="button" className="ml-3 text-red-700 hover:underline" disabled={excluirItem.isPending}
@@ -675,7 +675,7 @@ export function EstoquePage() {
         {modal === 'instalacao' && negocioAtual && <NovaInstalacao negocioId={negocioAtual} itens={lista} aoFechar={() => setModal(null)} />}
       </Modal>
 
-      <Modal aberto={itemMov !== null} aoFechar={() => setItemMov(null)} largura="md" titulo="Movimentar item">
+      <Modal aberto={itemMov !== null} aoFechar={() => setItemMov(null)} largura="md" titulo="Inventário do item">
         {itemMov && <MovimentacaoSimples item={itemMov} aoFechar={() => setItemMov(null)} />}
       </Modal>
     </>

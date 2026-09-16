@@ -55,6 +55,18 @@ do $$ declare v_org uuid; v_neg uuid; v_conta uuid; v_cat uuid; v_catr uuid; l p
     assert (select count(*) from public.lancamentos where (id = v_raiz.id or lancamento_origem_id = v_raiz.id) and pessoa_id is null) = 2,
       'T6 correção pela filha sobe até a raiz';
   end;
+  -- T8: desfazer a baixa de UMA parcela com a cadeia já gerada (o "Já pago" da tela)
+  declare v_p public.lancamentos%rowtype; begin
+    v_p := public.criar_lancamento('despesa', 'Parcelado baixa', 30, current_date, current_date, null, v_conta, null, v_cat, null, v_neg, null, null, true, 'mensal', 4, null, 1);
+    perform public.efetivar_lancamento(v_p.id, current_date);
+    assert exists (select 1 from public.lancamentos where lancamento_origem_id = v_p.id), 'T8 cadeia gerada';
+    e := public.atualizar_lancamento(v_p.id, 'Parcelado baixa', 30, current_date, current_date, null, v_conta, null, v_cat, null, v_neg, null, null, true, 'mensal', 4, null, 1);
+    assert e.status = 'previsto' and e.data_efetivacao is null, 'T8 volta para previsto';
+    assert not exists (select 1 from public.movimentos where lancamento_id = v_p.id), 'T8 movimento sai junto';
+    -- e a parcela seguinte, que já existia, continua lá
+    assert exists (select 1 from public.lancamentos where lancamento_origem_id = v_p.id), 'T8 parcela seguinte intocada';
+  end;
+
   -- T7: despesa vinculada a contrato guarda o FORNECEDOR, não o cliente do contrato (0090)
   declare v_cli uuid; v_forn uuid; v_plano uuid; v_contrato uuid; begin
     insert into public.pessoas (organizacao_id, nome, tipo) values (v_org, 'Cliente do contrato', 'fisica') returning id into v_cli;

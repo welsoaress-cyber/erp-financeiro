@@ -386,13 +386,16 @@ export function LancamentosPage() {
               avisoDuplicidade={avisoDuplicidade}
               proximaGerada={Boolean(proximaParcela.data)}
               aoSalvar={salvar}
-              aoSalvarLote={edicao.modo === 'editar' ? ({ cadastro, ...lote }) => {
-                // lote primeiro (descrição/valor/observação no escopo escolhido); a correção de
-                // cadastro vem depois e vale para a cadeia inteira
-                atualizarLote.mutate({ id: edicao.lancamento.id, ...lote }, {
+              aoSalvarLote={edicao.modo === 'editar' ? ({ cadastro, atual, ...lote }) => {
+                // três passos, nesta ordem: lote (descrição/valor/observação no escopo escolhido),
+                // correção de cadastro na cadeia inteira e, por último, a baixa desta parcela —
+                // assim o atualizar_lancamento final já vê o cadastro novo e não bate no trigger
+                const id = edicao.lancamento.id
+                const baixa = () => (atual ? atualizar.mutate({ id, ...atual }, { onSuccess: fechar }) : fechar())
+                atualizarLote.mutate({ id, ...lote }, {
                   onSuccess: () => {
-                    if (!cadastro) { fechar(); return }
-                    corrigirCadeia.mutate({ id: edicao.lancamento.id, ...cadastro }, { onSuccess: fechar })
+                    if (!cadastro) { baixa(); return }
+                    corrigirCadeia.mutate({ id, ...cadastro }, { onSuccess: baixa })
                   },
                 })
               } : undefined}

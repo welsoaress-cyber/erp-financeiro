@@ -128,8 +128,9 @@ interface Props {
   aoSalvar: (dados: DadosLancamento, ignorarDuplicidade: boolean) => void
   /** edição de recorrente com parcela já gerada: salva descrição/valor/observação no escopo escolhido */
   /** `cadastro` vem preenchido quando o dono mudou fornecedor, categoria, contrato, negócio ou
-   *  centro: o lote não carrega esses campos, e em parcelamento eles valem para a cadeia inteira. */
-  aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente; data_vencimento?: string | null; cadastro?: { pessoa_id: string | null; categoria_id: string | null; contrato_id: string | null; negocio_id: string | null; centro_custo_id: string | null } }) => void
+   *  centro: o lote não carrega esses campos, e em parcelamento eles valem para a cadeia inteira.
+   *  `atual` vem quando mudou a baixa (pago ↔ previsto), que é sempre de UMA parcela só. */
+  aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente; data_vencimento?: string | null; cadastro?: { pessoa_id: string | null; categoria_id: string | null; contrato_id: string | null; negocio_id: string | null; centro_custo_id: string | null }; atual?: DadosLancamento }) => void
   aoCancelar: () => void
 }
 
@@ -258,12 +259,17 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         || (negocioId || null) !== (lancamento.negocio_id ?? null)
         || (centroId || null) !== (lancamento.centro_custo_id ?? null)
       )
+      // marcar/desmarcar pago é sempre de UMA parcela: vai pelo atualizar normal, depois do lote
+      const eraEfetivado = lancamento?.status === 'efetivado'
+      const mudouBaixa = lancamento != null && (efetivado !== eraEfetivado
+        || (efetivado && (dataEfetivacao || data) !== (lancamento.data_efetivacao ?? '')))
       aoSalvarLote({
         descricao: descricao.trim(), valor: Math.round(v * 100) / 100, observacao: observacao.trim() || null,
         escopo, data_vencimento: dataMudou ? data : null,
         cadastro: mudouCadastro
           ? { pessoa_id: pessoaId || null, categoria_id: categoriaId || null, contrato_id: contratoId || null, negocio_id: negocioId || null, centro_custo_id: centroId || null }
           : undefined,
+        atual: mudouBaixa ? montar() ?? undefined : undefined,
       })
       return
     }
@@ -300,7 +306,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       {travado && (
         <Alerta tipo="info" titulo="Parcelas já geradas">
           Este lançamento recorrente já gerou a próxima parcela: descrição, valor, observação e data podem ser alterados (data só em "apenas esta" ou "esta e as futuras" — as futuras deslocam junto para o novo dia).
-          <span className="mt-2 block">Correção de cadastro — <b>fornecedor, categoria, contrato, negócio e centro de custo</b> — vale sempre para <b>todas as parcelas</b>, porque numa compra parcelada esses dados são os mesmos do começo ao fim. A <b>conta</b> não muda aqui: ela mexe em saldo e em fatura já fechada.</span>
+          <span className="mt-2 block">Correção de cadastro — <b>fornecedor, categoria, contrato, negócio e centro de custo</b> — vale sempre para <b>todas as parcelas</b>, porque numa compra parcelada esses dados são os mesmos do começo ao fim. Marcar ou desmarcar <b>{tipo === 'receita' ? 'Já recebido' : 'Já pago'}</b> vale só para <b>esta parcela</b>. A <b>conta</b> não muda aqui: ela mexe em saldo e em fatura já fechada.</span>
           {aoSalvarLote && (
             <div role="radiogroup" aria-label="Alcance da alteração" className="mt-3 space-y-1.5">
               <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopo" checked={escopo === 'atual'} onChange={() => setEscopo('atual')} className="mt-0.5 accent-brand-600" /><span><b>Apenas esta parcela</b><span className="block text-xs text-ink-muted">Só esta ocorrência muda.</span></span></label>

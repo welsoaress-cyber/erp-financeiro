@@ -127,7 +127,9 @@ interface Props {
   proximaGerada?: boolean
   aoSalvar: (dados: DadosLancamento, ignorarDuplicidade: boolean) => void
   /** edição de recorrente com parcela já gerada: salva descrição/valor/observação no escopo escolhido */
-  aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente; data_vencimento?: string | null }) => void
+  /** `cadastro` vem preenchido quando o dono mudou fornecedor, categoria, contrato, negócio ou
+   *  centro: o lote não carrega esses campos, e em parcelamento eles valem para a cadeia inteira. */
+  aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente; data_vencimento?: string | null; cadastro?: { pessoa_id: string | null; categoria_id: string | null; contrato_id: string | null; negocio_id: string | null; centro_custo_id: string | null } }) => void
   aoCancelar: () => void
 }
 
@@ -247,7 +249,22 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       setErros(novos)
       if (Object.keys(novos).length > 0) return
       const dataMudou = escopo !== 'todas' && lancamento?.status === 'previsto' && data !== lancamento.data_competencia
-      aoSalvarLote({ descricao: descricao.trim(), valor: Math.round(v * 100) / 100, observacao: observacao.trim() || null, escopo, data_vencimento: dataMudou ? data : null })
+      // o lote só propaga descrição/valor/observação; fornecedor, categoria, contrato, negócio e
+      // centro eram descartados em silêncio — agora são corrigidos na cadeia inteira (0089)
+      const mudouCadastro = lancamento != null && (
+        (pessoaId || null) !== (lancamento.pessoa_id ?? null)
+        || (categoriaId || null) !== (lancamento.categoria_id ?? null)
+        || (contratoId || null) !== (lancamento.contrato_id ?? null)
+        || (negocioId || null) !== (lancamento.negocio_id ?? null)
+        || (centroId || null) !== (lancamento.centro_custo_id ?? null)
+      )
+      aoSalvarLote({
+        descricao: descricao.trim(), valor: Math.round(v * 100) / 100, observacao: observacao.trim() || null,
+        escopo, data_vencimento: dataMudou ? data : null,
+        cadastro: mudouCadastro
+          ? { pessoa_id: pessoaId || null, categoria_id: categoriaId || null, contrato_id: contratoId || null, negocio_id: negocioId || null, centro_custo_id: centroId || null }
+          : undefined,
+      })
       return
     }
     const d = montar()
@@ -283,6 +300,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       {travado && (
         <Alerta tipo="info" titulo="Parcelas já geradas">
           Este lançamento recorrente já gerou a próxima parcela: descrição, valor, observação e data podem ser alterados (data só em "apenas esta" ou "esta e as futuras" — as futuras deslocam junto para o novo dia).
+          <span className="mt-2 block">Correção de cadastro — <b>fornecedor, categoria, contrato, negócio e centro de custo</b> — vale sempre para <b>todas as parcelas</b>, porque numa compra parcelada esses dados são os mesmos do começo ao fim. A <b>conta</b> não muda aqui: ela mexe em saldo e em fatura já fechada.</span>
           {aoSalvarLote && (
             <div role="radiogroup" aria-label="Alcance da alteração" className="mt-3 space-y-1.5">
               <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopo" checked={escopo === 'atual'} onChange={() => setEscopo('atual')} className="mt-0.5 accent-brand-600" /><span><b>Apenas esta parcela</b><span className="block text-xs text-ink-muted">Só esta ocorrência muda.</span></span></label>
@@ -328,7 +346,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       ) : (
         <div className="space-y-1">
           <label htmlFor="categoria" className="block text-sm font-medium text-ink">Categoria</label>
-          <select id="categoria" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} disabled={travado} className="disabled:bg-surface disabled:text-ink-muted h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
+          <select id="categoria" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} className="disabled:bg-surface disabled:text-ink-muted h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
             <option value="">Selecione…</option>
             {arvore.map(({ raiz, filhas }) => filhas.length === 0
               ? <option key={raiz.id} value={raiz.id}>{raiz.nome}</option>

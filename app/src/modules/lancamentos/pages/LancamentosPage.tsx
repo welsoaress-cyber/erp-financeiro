@@ -20,7 +20,7 @@ import { useContratos } from '../../contratos/api'
 import { useCentrosCusto } from '../../centros_custo/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, useEstornarLancamento, type ProjecaoContrato } from '../api'
+import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCorrigirCadeiaLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, useEstornarLancamento, type ProjecaoContrato } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
 import { ROTULO_PERIODICIDADE, ROTULO_STATUS, ROTULO_TIPO, rotuloParcela, type DadosLancamento, type Lancamento, type StatusLancamento, type TipoLancamento } from '../tipos'
@@ -71,6 +71,7 @@ export function LancamentosPage() {
   const projetar = useProjetarLancamento()
   const estornar = useEstornarLancamento()
   const atualizarLote = useAtualizarLancamentoRecorrente()
+  const corrigirCadeia = useCorrigirCadeiaLancamento()
   const emEdicao = edicao?.modo === 'editar' ? edicao.lancamento : null
   const proximaParcela = useProximaParcela(emEdicao?.id ?? null, emEdicao?.recorrente ?? false)
 
@@ -129,7 +130,7 @@ export function LancamentosPage() {
   ].sort((a, b) => a.venc.localeCompare(b.venc) || ordemTipo[a.tipo] - ordemTipo[b.tipo])
 
   function fechar() {
-    criar.reset(); atualizar.reset(); efetivar.reset(); cancelar.reset(); excluir.reset(); projetar.reset(); atualizarLote.reset()
+    criar.reset(); atualizar.reset(); efetivar.reset(); cancelar.reset(); excluir.reset(); projetar.reset(); atualizarLote.reset(); corrigirCadeia.reset()
     setAvisoDuplicidade(null)
     setEdicao(null)
   }
@@ -152,7 +153,7 @@ export function LancamentosPage() {
 
   const carregando = lancamentos.isPending || contas.isPending || categorias.isPending
   const erroCarga = lancamentos.error ?? contas.error ?? categorias.error
-  const erroSalvar = criar.error ?? atualizar.error ?? atualizarLote.error
+  const erroSalvar = criar.error ?? atualizar.error ?? atualizarLote.error ?? corrigirCadeia.error
   const erroAcao = efetivar.error ?? cancelar.error ?? excluir.error ?? projetar.error ?? estornar.error
   const ocupadoAcao = efetivar.isPending || cancelar.isPending || excluir.isPending || projetar.isPending || estornar.isPending
 
@@ -380,12 +381,21 @@ export function LancamentosPage() {
               centros={centros.data ?? []}
               negocioInicial={filtroNegocio && filtroNegocio !== 'pessoal' ? filtroNegocio : null}
               tipoInicial={filtroTipo || 'despesa'}
-              salvando={criar.isPending || atualizar.isPending || atualizarLote.isPending}
+              salvando={criar.isPending || atualizar.isPending || atualizarLote.isPending || corrigirCadeia.isPending}
               erro={erroSalvar ? mensagemDeErro(erroSalvar) : null}
               avisoDuplicidade={avisoDuplicidade}
               proximaGerada={Boolean(proximaParcela.data)}
               aoSalvar={salvar}
-              aoSalvarLote={edicao.modo === 'editar' ? (d) => atualizarLote.mutate({ id: edicao.lancamento.id, ...d }, { onSuccess: fechar }) : undefined}
+              aoSalvarLote={edicao.modo === 'editar' ? ({ cadastro, ...lote }) => {
+                // lote primeiro (descrição/valor/observação no escopo escolhido); a correção de
+                // cadastro vem depois e vale para a cadeia inteira
+                atualizarLote.mutate({ id: edicao.lancamento.id, ...lote }, {
+                  onSuccess: () => {
+                    if (!cadastro) { fechar(); return }
+                    corrigirCadeia.mutate({ id: edicao.lancamento.id, ...cadastro }, { onSuccess: fechar })
+                  },
+                })
+              } : undefined}
               aoCancelar={fechar}
             />
             {edicao.modo === 'editar' && (

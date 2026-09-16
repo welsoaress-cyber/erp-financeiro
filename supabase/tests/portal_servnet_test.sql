@@ -93,7 +93,8 @@ do $$ declare v ct%rowtype; j jsonb; l public.lancamentos; n int; begin
   select * into l from public.lancamentos where contrato_id = v.igreja and data_vencimento = date '2026-08-15';
   perform public.efetivar_lancamento(l.id, date '2026-08-20');
   j := public.fidelidade_cartao(v.igreja);
-  assert (j->>'selos')::int = 0 and j->'slots'->0->>'estado' = 'atraso' and j->'slots'->1->>'estado' = 'aberto', 'T1 atraso não vale selo: ' || j::text;
+  -- a 2ª fatura é 'aberto' ou 'vencida' conforme o dia em que o teste roda: o que importa aqui é o selo
+  assert (j->>'selos')::int = 0 and j->'slots'->0->>'estado' = 'atraso' and j->'slots'->1->>'estado' in ('aberto', 'vencida'), 'T1 atraso não vale selo: ' || j::text;
 end $$;
 
 -- T2: login sem senha (só service_role) — CPF, CNPJ, erro, bloqueio após 5 falhas, sem contrato

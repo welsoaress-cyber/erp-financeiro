@@ -33,6 +33,27 @@ do $$ declare v_org uuid; v_neg uuid; v_conta uuid; v_cat uuid; l public.lancame
   -- T5: sem o parâmetro (default 1) continua funcionando
   e := public.atualizar_lancamento(l.id, 'Compra parcelada', 140, current_date, current_date, null, v_conta, null, v_cat, null, v_neg, null, null, true, 'mensal', 24, null);
   assert e.valor = 140 and e.parcela_atual = 2, 'T5 default';
+  -- T6: parcelamento com a próxima parcela já gerada — trocar só o fornecedor tem de passar
+  -- (é o que a tela faz depois do lote: o trigger só barra mudança na recorrência em si)
+  declare v_pes uuid; v_raiz public.lancamentos%rowtype; begin
+    insert into public.pessoas (organizacao_id, nome, tipo) values (v_org, 'Loja Fornecedora', 'juridica') returning id into v_pes;
+    v_raiz := public.criar_lancamento('despesa', 'Roteador 6x', 60, current_date, current_date, null, v_conta, null, v_cat, null, v_neg, null, null, true, 'mensal', 6, null, 1);
+    perform public.efetivar_lancamento(v_raiz.id, current_date);
+    assert exists (select 1 from public.lancamentos where lancamento_origem_id = v_raiz.id), 'T6 próxima parcela gerada';
+    -- mudar só uma parcela continua barrado (o parcelamento ficaria inconsistente)
+    begin
+      perform public.atualizar_lancamento(v_raiz.id, 'Roteador 6x', 60, current_date, current_date, current_date, v_conta, null, v_cat, null, v_neg, v_pes, null, true, 'mensal', 6, null, 1);
+      raise exception 'T6 mudar fornecedor de uma parcela só deveria falhar';
+    exception when check_violation then null; end;
+    -- corrigir a cadeia inteira é o caminho: todas as parcelas passam a ter o fornecedor
+    perform public.corrigir_cadeia_lancamento(v_raiz.id, v_pes, v_cat, null, v_neg, null);
+    assert (select count(*) from public.lancamentos where (id = v_raiz.id or lancamento_origem_id = v_raiz.id) and pessoa_id = v_pes) = 2,
+      'T6 fornecedor aplicado na cadeia inteira';
+    -- corrigir pela parcela filha também acha a raiz e aplica em todas
+    perform public.corrigir_cadeia_lancamento((select id from public.lancamentos where lancamento_origem_id = v_raiz.id), null, v_cat, null, v_neg, null);
+    assert (select count(*) from public.lancamentos where (id = v_raiz.id or lancamento_origem_id = v_raiz.id) and pessoa_id is null) = 2,
+      'T6 correção pela filha sobe até a raiz';
+  end;
 end $$;
 
 rollback;

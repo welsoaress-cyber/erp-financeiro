@@ -276,6 +276,22 @@ export function useAtualizarLancamentoRecorrente() {
   })
 }
 
+/** Correção de cadastro em parcelamento já gerado: vale para a cadeia inteira (0089). */
+export function useCorrigirCadeiaLancamento() {
+  const invalidar = useInvalidarFinanceiro()
+  return useMutation({
+    mutationFn: async (p: { id: string; pessoa_id: string | null; categoria_id: string | null; contrato_id: string | null; negocio_id: string | null; centro_custo_id: string | null }) => {
+      const { data, error } = await supabase.rpc('corrigir_cadeia_lancamento', {
+        p_id: p.id, p_pessoa_id: p.pessoa_id, p_categoria_id: p.categoria_id,
+        p_contrato_id: p.contrato_id, p_negocio_id: p.negocio_id, p_centro_custo_id: p.centro_custo_id,
+      })
+      if (error) throw error
+      return (data ?? []) as Lancamento[]
+    },
+    onSuccess: invalidar,
+  })
+}
+
 /** Lançamentos previstos com vencimento antes de uma data, independente do mês selecionado (pendências de meses anteriores). */
 export function useLancamentosVencidosAntes(tipo: 'receita' | 'despesa', antesDe: string) {
   const { organizacao } = useOrganizacao()

@@ -155,10 +155,13 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   const centrosDoNegocio = centros.filter((c) => c.negocio_id === negocioId && (c.ativo || c.id === lancamento?.centro_custo_id))
   const contratosDisponiveis = contratos.filter((c) => (c.status !== 'encerrado' || c.id === lancamento?.contrato_id) && (!negocioId || c.negocio_id === negocioId))
   const contratoSel = contratos.find((c) => c.id === contratoId)
+  // Receita do contrato = o cliente paga, então a pessoa é a dele e fica travada.
+  // Despesa vinculada a contrato = material/serviço COMPRADO para aquele cliente: o contrato
+  // serve ao custo e ao payback, mas a pessoa continua sendo quem vendeu (o fornecedor).
   function escolherContrato(id: string) {
     setContratoId(id)
     const c = contratos.find((x) => x.id === id)
-    if (c) { setNegocioId(c.negocio_id); setPessoaId(c.pessoa_id) }
+    if (c) { setNegocioId(c.negocio_id); if (tipo !== 'despesa') setPessoaId(c.pessoa_id) }
   }
   const [erros, setErros] = useState<Erros>({})
   const [escopo, setEscopo] = useState<EscopoEdicaoRecorrente>('atual')
@@ -440,11 +443,20 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
         <Selecao rotulo="Centro de custo (opcional)" opcoes={[{ valor: '', rotulo: 'Geral' }, ...centrosDoNegocio.map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={centroId} onChange={(e) => setCentroId(e.target.value)} ajuda="Departamento, projeto ou ponto de rede que arca com esta despesa. Sem centro = Geral." />
       )}
       {!ehTransferencia && contratosDisponiveis.length > 0 && (
-        <Selecao rotulo="Contrato (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...contratosDisponiveis.map((c) => ({ valor: c.id, rotulo: `${codigoContrato(c)} · ${pessoas.find((p) => p.id === c.pessoa_id)?.nome ?? '—'}` }))]} value={contratoId} onChange={(e) => escolherContrato(e.target.value)} ajuda={contratoSel ? 'Negócio e pessoa seguem o contrato.' : 'Vincule ao contrato para medir a rentabilidade por contrato.'} />
+        <Selecao rotulo="Contrato (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...contratosDisponiveis.map((c) => ({ valor: c.id, rotulo: `${codigoContrato(c)} · ${pessoas.find((p) => p.id === c.pessoa_id)?.nome ?? '—'}` }))]} value={contratoId} onChange={(e) => escolherContrato(e.target.value)} ajuda={contratoSel ? (tipo === 'despesa' ? 'Entra no custo e no payback deste cliente.' : 'Negócio e pessoa seguem o contrato.') : 'Vincule ao contrato para medir a rentabilidade por contrato.'} />
       )}
 
       {pessoasDisponiveis.length > 0 && !ehTransferencia && (
-        <Selecao rotulo="Pessoa (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhuma' }, ...pessoasDisponiveis.map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => setPessoaId(e.target.value)} disabled={Boolean(contratoSel)} ajuda={contratoSel ? 'Definida pelo contrato.' : 'Cliente ou fornecedor relacionado a este lançamento.'} />
+        <Selecao
+          rotulo={tipo === 'despesa' ? 'Fornecedor (opcional)' : 'Pessoa (opcional)'}
+          opcoes={[{ valor: '', rotulo: tipo === 'despesa' ? 'Nenhum' : 'Nenhuma' }, ...pessoasDisponiveis.map((p) => ({ valor: p.id, rotulo: p.nome }))]}
+          value={pessoaId}
+          onChange={(e) => setPessoaId(e.target.value)}
+          disabled={tipo !== 'despesa' && Boolean(contratoSel)}
+          ajuda={tipo === 'despesa'
+            ? 'Quem vendeu. O cliente da compra vai no campo Contrato, acima.'
+            : contratoSel ? 'Definida pelo contrato.' : 'Cliente ou fornecedor relacionado a este lançamento.'}
+        />
       )}
       {!ehTransferencia && !contratoSel && (
         <CriarRapido rotulo="Criar pessoa" aoCriar={async (nome) => {

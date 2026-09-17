@@ -1,8 +1,9 @@
-# Etapa 55 — Módulo Compras (proposta de arquitetura)
+# Etapa 55 — Módulo Compras
 
-> **Status: proposta.** Nada implementado. Decisão do proprietário (17/09/2026):
-> estruturar o dado pensando em time grande, para não refazer depois — mas sem a
-> burocracia de time grande na tela de hoje.
+> **Status: 55A entregue (17/09/2026).** Decisão revisada: fluxo formal SEMPRE
+> (`exige_aprovacao` = true fixo no MVP), estilo ERP grande. Aprovador é o
+> proprietário da organização — hoje só o dono. 55B (Recebimento → Nota →
+> Lançamento) fica na próxima entrega.
 
 ## 1. O princípio que resolve o dilema
 
@@ -99,6 +100,18 @@ Na tela do recebimento, três colunas lado a lado: **pedido × recebido × nota*
   despercebido.
 
 ## 7. Ordem de implementação
+
+### 55A — entregue (0092)
+
+- Tabelas `compra_requisicoes`, `compra_requisicao_itens`, `compras`, `compra_itens` com RLS e proteção de motor (status/decisão gravados só pelas funções).
+- Motor security definer: `criar_requisicao_compra`, `aprovar_requisicao_compra` (gera o pedido), `rejeitar_requisicao_compra`, `cancelar_requisicao_compra`, `cancelar_pedido_compra`. Aprovação restrita ao proprietário (`sou_proprietario`).
+- Numeração sequencial por negócio via advisory-lock (REQ-0001, PED-0001).
+- View `vw_compras_totais` (soma itens + frete − desconto).
+- Módulo `/compras` com abas Requisições e Pedidos, modal de decisão que pede valor unitário/categoria por item, fornecedor, condição e frete/desconto na aprovação.
+- Central de Relatórios: `vw_rel_compras_requisicoes_pendentes` e `vw_rel_compras_pedidos_abertos`.
+- Testes SQL: `supabase/tests/compras_requisicoes_test.sql` (7 cenários; 75/75 no `verificar_tudo.sql`).
+
+### 55B — próximo passo
 
 1. **Pedido + itens com destino** e a tela de compra (um passo só, aprovação automática).
 2. **Recebimento com "chegou tudo?"** disparando estoque / patrimônio / comodato / lançamento.

@@ -221,6 +221,20 @@ Item chegou com defeito e o fornecedor não devolve na hora? Aba **Devoluções*
 - **Troca**: a unidade nova entra no estoque pelo mesmo valor (não mexe no custo médio) e a cobrança é cancelada.
 - **Negada**: cancela a cobrança; a saída já feita fica registrada como perda.
 
+## 11b. Compras (Requisição → Aprovação → Pedido)
+
+Todo material entra no ERP por este fluxo formal (mesmo hoje, que você é o único aprovador). É o padrão de ERP grande: quem pede, quem aprova e o que foi pedido ficam registrados desde o começo.
+
+- **Nova requisição** (topo direito): descreva os itens (podem sair da lista do estoque ou serem digitados livres), a quantidade e o destino (Estoque / Despesa / Patrimônio / Comodato / Serviço). Justificativa é opcional. A requisição nasce como **REQ-0001** com status **Pendente**.
+- **Aba Requisições**: mostra tudo com o status. Clique em **Abrir** para decidir.
+  - **Aprovar e gerar pedido**: você informa o fornecedor, a condição de pagamento, previsão de entrega, frete/desconto e o **valor unitário de cada item** (aqui aparece o campo). Ao confirmar, o sistema cria automaticamente o **PED-0001**, marca a requisição como *Convertida* e amarra os dois.
+  - **Rejeitar**: exige um motivo curto e trava o fluxo (o mesmo material precisa de nova requisição).
+  - **Cancelar**: quem pediu (ou você) pode cancelar enquanto está pendente.
+- **Aba Pedidos**: os pedidos que já saíram da aprovação, com fornecedor, previsão, condição e valor total. Você pode cancelar um pedido em aberto se desistiu antes de receber.
+- **Central de Relatórios**: dois novos relatórios entram na aba Operação — *Requisições de compra pendentes* (o que espera sua aprovação) e *Pedidos de compra em aberto* (o que está a caminho).
+
+Recebimento com nota, disparo automático de entrada no estoque/patrimônio/comodato e lançamento financeiro chega na **etapa 55B**. Enquanto isso, o pedido fica "em aberto" e você continua registrando a chegada pela Nova compra do Estoque — os dois caminhos serão unificados na próxima etapa.
+
 ## 12. Ordens de Serviço (OS)
 
 ![OS Dashboard](img/16-os-dashboard.png)

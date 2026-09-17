@@ -1,4 +1,5 @@
-create extension if not exists pgcrypto; -- gen_random_bytes/digest, pra gerar e hashear o token
+create extension if not exists pgcrypto; -- no Supabase hospedado já vem instalado no schema "extensions" (por isso o
+-- search_path das funções abaixo inclui "extensions"); aqui é só garantia pra quem reaplicar do zero num banco novo.
 
 -- Etapa 56: API de consulta de cliente por CPF/CNPJ, para integrações externas
 -- (hoje: Leveduca — clube de benefícios revendido junto do plano de internet).
@@ -71,7 +72,7 @@ create function public.criar_api_token(p_negocio_id uuid, p_nome text)
 returns table (token_id uuid, token text, token_prefixo text)
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions -- pgcrypto (gen_random_bytes/digest) mora em "extensions" no Supabase hospedado
 as $$
 declare
   v_org uuid; v_token text; v_hash text; v_id uuid;

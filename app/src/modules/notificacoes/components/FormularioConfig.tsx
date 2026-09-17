@@ -79,7 +79,7 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
         <span>
           <span className="block font-medium">Bloqueio e desbloqueio automáticos</span>
           <span className="block text-ink-muted">
-            Todo dia às 04:00 o sistema confirma sozinho, sem precisar clicar em "Bloqueei/Desbloqueei na rede" em Cobrança. <b>Só ligue se a rede (ReceitaNet/OLT) já corta e libera o acesso do cliente por conta própria</b> — o ERP passa a só acompanhar o que a rede já faz, no prazo da régua "avisar depois" configurada acima.
+            Todo dia às 00:00 o sistema confirma sozinho, sem precisar clicar em "Bloqueei/Desbloqueei na rede" em Cobrança. <b>Só ligue se a rede (ReceitaNet/OLT) já corta e libera o acesso do cliente por conta própria</b> — o ERP passa a só acompanhar o que a rede já faz, no prazo da régua "avisar depois" configurada acima.
           </span>
         </span>
       </label>

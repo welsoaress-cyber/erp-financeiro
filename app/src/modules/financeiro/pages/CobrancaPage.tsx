@@ -140,7 +140,7 @@ export function CobrancaPage() {
       {(configs.data ?? []).find((c) => c.negocio_id === negocioAtual)?.bloqueio_automatico && (
         <div className="mb-4">
           <Alerta tipo="info">
-            Bloqueio automático ligado para este negócio: todo dia às 04:00 o sistema confirma sozinho — por isso a lista abaixo costuma estar vazia.
+            Bloqueio automático ligado para este negócio: todo dia às 00:00 o sistema confirma sozinho — por isso a lista abaixo costuma estar vazia.
             Histórico em <Link to="/relatorios/bloqueios" className="underline">Relatórios → Bloqueios e desbloqueios</Link>.
           </Alerta>
         </div>

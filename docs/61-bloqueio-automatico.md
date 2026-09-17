@@ -9,7 +9,7 @@ O proprietário confirmou que, no caso da Servnet, **o ReceitaNet já bloqueia e
 ## O que foi feito
 
 - **`notificacoes_config.bloqueio_automatico`** (opt-in, `false` por padrão): liga o robô diário pra esse negócio. Continua desligado por padrão porque nem todo negócio tem rede com bloqueio automático — quem não tem, segue no fluxo assistido normalmente.
-- **Robô diário** (`executar_bloqueios_automaticos`, pg_cron às 04:00 Brasília, depois do faturamento): pros negócios com o toggle ligado, gera as sugestões (mesma lógica de `gerar_bloqueios`, incluindo voto de confiança) e **já confirma sozinho** — suspende quem venceu há mais que a régua "avisar depois", reativa quem quitou.
+- **Robô diário** (`executar_bloqueios_automaticos`, pg_cron às 00:00 Brasília, depois do faturamento): pros negócios com o toggle ligado, gera as sugestões (mesma lógica de `gerar_bloqueios`, incluindo voto de confiança) e **já confirma sozinho** — suspende quem venceu há mais que a régua "avisar depois", reativa quem quitou.
 - **Auditoria**: `bloqueios.automatico` marca se foi o robô ou um clique manual; `usuario_id` fica nulo nos automáticos. Relatório **"Bloqueios e desbloqueios"** na Central de Relatórios mostra os dois tipos lado a lado.
 - Cobrança avisa quando o negócio está no modo automático (a lista "Ações na rede" tende a ficar vazia, porque o robô já tratou de madrugada).
 

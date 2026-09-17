@@ -11,4 +11,4 @@ begin
 exception when others then null;
 end $$;
 
-select cron.schedule('erp-bloqueios-automaticos', '0 7 * * *', $$select public.executar_bloqueios_automaticos()$$); -- 07:00 UTC = 04:00 Brasília, depois do faturamento (06:00 UTC)
+select cron.schedule('erp-bloqueios-automaticos', '0 3 * * *', $$select public.executar_bloqueios_automaticos()$$); -- 03:00 UTC = 00:00 Brasília (virada do dia)

@@ -104,11 +104,12 @@ do $$ declare v t7%rowtype; l record; begin
   assert l.cliente->>'numero' is null and l.cliente->>'cep' is null, 'T7 numero/cep nulos (não existem separados)';
 end $$;
 
--- T8: contrato suspenso → status_cliente Suspenso
+-- T8: contrato suspenso → status_cliente Inativo (binário: só Ativo libera o curso), status_plano continua Suspenso
 do $$ declare v t7%rowtype; l record; begin
   select * into v from t7;
   select * into l from public.api_consultar_cliente(encode(digest(v.token, 'sha256'), 'hex'), '98765432100');
-  assert l.cliente->>'status_cliente' = 'Suspenso', 'T8 status Suspenso: ' || (l.cliente->>'status_cliente');
+  assert l.cliente->>'status_cliente' = 'Inativo', 'T8 status_cliente Inativo: ' || (l.cliente->>'status_cliente');
+  assert l.cliente->>'status_plano' = 'Suspenso', 'T8 status_plano continua Suspenso: ' || (l.cliente->>'status_plano');
 end $$;
 
 -- T9: CPF que não é cliente dessa organização → não encontrado, fica auditado

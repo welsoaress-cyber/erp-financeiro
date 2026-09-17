@@ -40,6 +40,8 @@ Resposta (200):
 ```
 404 se o CPF não é cliente daquele negócio; 401 se o token for inválido/revogado.
 
+**`status_cliente` é binário de propósito** (0099): só **"Ativo"** (pessoa ativa + contrato ativo) ou **"Inativo"** — suspenso por falta de pagamento também vira "Inativo", porque é só isso que a Leveduca usa pra liberar ou não o curso. `status_plano` continua com os três valores (Ativo/Suspenso/Encerrado) pra quem quiser o detalhe.
+
 ## Premissas assumidas (avisar se algo estiver errado)
 
 1. **Chave "endereço"**: o PDF da Leveduca mostra a chave com acento (`"endereço"`); usei `endereco` sem acento na resposta pra evitar problema de encoding do lado deles — confirme com a Leveduca se o parser aceita, senão eu troco.

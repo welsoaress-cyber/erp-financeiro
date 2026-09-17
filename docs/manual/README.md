@@ -15,9 +15,10 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 
 ## Como o menu está organizado
 
-O menu lateral agora tem 4 itens raiz e 4 grupos colapsáveis:
+O menu lateral agora tem 5 itens raiz e 4 grupos colapsáveis:
 
 - **Dashboard** (raiz) — visão geral do mês.
+- **Novidades** (raiz) — quem chegou e ainda não virou cliente; o número vermelho é a contagem aguardando contato.
 - **Financeiro** (raiz) — lançamentos, cobrança, conciliação, fechamento.
 - **Cadastros** — Pessoas, Negócios, Contratos, Categorias, Centros de custo, Contas, Cartões.
 - **Operação** — Estoque, Compras, Ordens de Serviço, FTTH, Indicações.
@@ -58,6 +59,12 @@ Use o seletor "Todos os negócios" para filtrar tudo por um negócio (ex.: só S
 > **Dica — organizar o menu:** os itens do menu lateral podem ser **arrastados** para a ordem que você preferir (segure e solte no lugar desejado). A ordem fica salva no navegador; em outro computador o menu volta ao padrão até você reordenar lá também.
 
 > **Dica — cartões do dashboard:** os cartões (Avisos no WhatsApp, Estoque, Resumo financeiro, Saldo por conta, Últimas movimentações) começam **recolhidos**: clique em qualquer lugar da linha do título para expandir ou recolher. A escolha de cada cartão também fica salva no navegador.
+
+## 2b. Novidades
+
+![Novidades](img/51-novidades.png)
+
+Logo abaixo do Dashboard no menu. Mostra quem **chegou e ainda não virou cliente** — hoje isso é a fila de indicações do Indique e Ganhe aguardando conversão (nome, telefone, quem indicou). O número vermelho no menu é a contagem de quem está aguardando. Ações rápidas: **WhatsApp** (abre a conversa já com uma mensagem pronta), **Converter** (leva para Indicações, onde a pessoa vira cliente de verdade) e **descartar** (cancela a indicação). Contato vindo direto de um formulário no site ainda não existe no ERP — hoje só entra pelo WhatsApp (Indicações → Nova indicação) ou pela vitrine pública.
 
 ## 3. Financeiro
 

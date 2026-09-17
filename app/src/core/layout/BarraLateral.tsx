@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import type { DefinicaoModulo, MenuGrupo } from '../modulos/tipos'
 import { Icone } from '../ui/Icone'
+import { useIndicacoesAdmin } from '../../modules/portal/api'
 
 const MENTA = '#4ee6b8'
 const CHAVE_GRUPOS = 'erp.menu.grupos_abertos.v1'
@@ -23,6 +24,11 @@ export function BarraLateral({ modulos, grupos, raiz, aoNavegar }: {
   const porId = useMemo(() => new Map(modulos.map((m) => [m.id, m])), [modulos])
   const [abertos, setAbertos] = useState<Record<string, boolean>>(lerAbertos)
 
+  // selo de "Novidades": indicados aguardando contato — único badge do menu hoje
+  const indicacoes = useIndicacoesAdmin()
+  const pendentesNovidades = (indicacoes.data ?? []).filter((i) => i.status === 'pendente').length
+  const badges: Partial<Record<string, number>> = { novidades: pendentesNovidades }
+
   // abre automaticamente o grupo que contém a rota ativa
   const grupoAtivo = useMemo(
     () => grupos.find((g) => g.modulos.some((id) => { const m = porId.get(id); return m && pathname.startsWith(m.rota) && m.rota !== '/' })),
@@ -39,6 +45,7 @@ export function BarraLateral({ modulos, grupos, raiz, aoNavegar }: {
   const modulosRaiz = raiz.map((id) => porId.get(id)).filter(Boolean) as DefinicaoModulo[]
 
   function renderModulo(m: DefinicaoModulo, indentado = false) {
+    const contagem = badges[m.id]
     return (
       <li key={m.id}>
         <NavLink
@@ -51,7 +58,12 @@ export function BarraLateral({ modulos, grupos, raiz, aoNavegar }: {
           style={({ isActive }) => (isActive ? { backgroundColor: MENTA, color: '#08110d', boxShadow: `0 0 18px ${MENTA}66` } : undefined)}
         >
           <Icone nome={m.icone} className="size-5 shrink-0" />
-          {m.titulo}
+          <span className="flex-1">{m.titulo}</span>
+          {Boolean(contagem) && (
+            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-semibold text-white">
+              {contagem}
+            </span>
+          )}
         </NavLink>
       </li>
     )
@@ -116,6 +128,7 @@ export function BarraLateral({ modulos, grupos, raiz, aoNavegar }: {
       </div>
       <ul className="flex-1 space-y-1.5 overflow-y-auto p-3">
         {modulosRaiz.filter((m) => m.id === 'dashboard').map((m) => renderModulo(m))}
+        {modulosRaiz.filter((m) => m.id === 'novidades').map((m) => renderModulo(m))}
         {modulosRaiz.filter((m) => m.id === 'financeiro' && m.submodulos).map((m) => renderModuloComSubmenu(m))}
         {grupos.map((g) => {
           const filhos = g.modulos.map((id) => porId.get(id)).filter(Boolean) as DefinicaoModulo[]
@@ -132,7 +145,7 @@ export function BarraLateral({ modulos, grupos, raiz, aoNavegar }: {
             </li>
           )
         })}
-        {modulosRaiz.filter((m) => m.id !== 'dashboard' && m.id !== 'financeiro').map((m) => renderModulo(m))}
+        {modulosRaiz.filter((m) => m.id !== 'dashboard' && m.id !== 'novidades' && m.id !== 'financeiro').map((m) => renderModulo(m))}
       </ul>
       <div className="border-t border-white/10 px-5 py-3 text-xs text-white/50">Financeiro · v0.19</div>
     </nav>

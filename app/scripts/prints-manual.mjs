@@ -130,9 +130,14 @@ const bi = Array.from({ length: 13 }, (_, i) => {
   }
 })
 
+const indicacoes = [
+  { id: id('ic', 1), organizacao_id: ORG, negocio_id: NEG, indicador_pessoa_id: id('c', 1), nome_indicado: 'Carla Mendes', telefone_indicado: '92988884444', indicado_pessoa_id: null, status: 'pendente', beneficio_valor: 0, observacao: null, criado_em: dia(-1) + 'T10:00:00Z', convertida_em: null, presente_item_id: null, presente_custo: null, presente_entregue_em: null },
+  { id: id('ic', 2), organizacao_id: ORG, negocio_id: NEG, indicador_pessoa_id: id('c', 2), nome_indicado: 'Rafael Nunes', telefone_indicado: '92988885555', indicado_pessoa_id: null, status: 'pendente', beneficio_valor: 0, observacao: null, criado_em: dia(-3) + 'T10:00:00Z', convertida_em: null, presente_item_id: null, presente_custo: null, presente_entregue_em: null },
+]
+
 const tabelas = {
   organizacao_membros: [{ organizacao_id: ORG, usuario_id: 'u1', papel: 'proprietario', criado_em: '2026-01-01', organizacoes: { id: ORG, nome: 'Grupo Tom' } }],
-  contas, vw_saldo_contas: contas, categorias, negocios, pessoas, planos, contratos, lancamentos, tecnicos,
+  contas, vw_saldo_contas: contas, categorias, negocios, pessoas, planos, contratos, lancamentos, tecnicos, indicacoes,
   cartoes_config: [{ id: id('g', 1), organizacao_id: ORG, conta_id: id('d', 3), dia_fechamento: 16, dia_vencimento: 25, limite_total: 5000 }],
   vw_cartoes_limite: [{ config_id: id('g', 1), conta_id: id('d', 3), organizacao_id: ORG, limite_total: 5000, uso_efetivado: -830.4, comprometido: 129.8, disponivel: 5000 - 830.4 - 129.8 }],
   faturas: [],
@@ -330,6 +335,7 @@ async function capturar(page, nome, ms = 1200) {
   await espera(1500)
   const telas = [
     ['/', '02-dashboard', 1500],
+    ['/novidades', '51-novidades'],
     ['/financeiro/lancamentos', '03-financeiro-lancamentos'],
     ['/financeiro/receber', '04-contas-a-receber'],
     ['/financeiro/pagar', '05-contas-a-pagar'],

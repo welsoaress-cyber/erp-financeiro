@@ -1,5 +1,6 @@
 import type { DefinicaoModulo, MenuGrupo } from '../core/modulos/tipos'
 import { moduloDashboard } from '../modules/dashboard'
+import { moduloNovidades } from '../modules/novidades'
 import { moduloFinanceiro } from '../modules/financeiro'
 import { moduloContas } from '../modules/contas'
 import { moduloCartoes } from '../modules/cartoes'
@@ -24,6 +25,7 @@ import { moduloConfiguracoes } from '../modules/configuracoes'
 /** Registro único de módulos. A ordem no menu é definida por GRUPOS + RAIZ. */
 export const MODULOS: DefinicaoModulo[] = [
   moduloDashboard,
+  moduloNovidades,
   moduloFinanceiro,
   moduloContas,
   moduloCartoes,
@@ -47,7 +49,7 @@ export const MODULOS: DefinicaoModulo[] = [
 ]
 
 /** Módulos raiz (fora de grupos), na ordem do menu. */
-export const RAIZ: string[] = ['dashboard', 'financeiro', 'portal', 'configuracoes']
+export const RAIZ: string[] = ['dashboard', 'novidades', 'financeiro', 'portal', 'configuracoes']
 
 /** Grupos que agrupam módulos no menu lateral (colapsáveis). */
 export const GRUPOS: MenuGrupo[] = [

@@ -21,6 +21,7 @@ import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 import { AlertasEstoque } from '../components/AlertasEstoque'
 import { SaudeAvisos } from '../components/SaudeAvisos'
 import { RelatorioCobranca } from '../components/RelatorioCobranca'
+import { HeroBoasVindas } from '../components/HeroBoasVindas'
 
 function Indicador({ rotulo, valor, tom = 'neutro', detalhe }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto'; detalhe?: string }) {
   const cor = tom === 'positivo' ? 'text-green-700' : tom === 'negativo' ? 'text-red-700' : tom === 'auto' ? (valor < 0 ? 'text-red-700' : 'text-green-700') : ''
@@ -77,6 +78,8 @@ export function DashboardPage() {
 
   return (
     <>
+      <HeroBoasVindas nomeOrganizacao={organizacao.nome} />
+
       <CabecalhoPagina
         titulo="Dashboard"
         descricao={`Visão geral de ${organizacao.nome}`}

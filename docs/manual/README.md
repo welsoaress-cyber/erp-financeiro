@@ -44,7 +44,7 @@ Cada grupo expande/recolhe com um clique; o estado é lembrado no navegador. O g
 
 ![Dashboard](img/02-dashboard.png)
 
-É a primeira tela. Mostra, para o mês escolhido no canto superior direito:
+É a primeira tela (abre sozinha ao entrar). A faixa escura no topo é só a marca (saudação + "ERP Financeiro"); os dados começam logo abaixo, para o mês escolhido no canto superior direito:
 
 - **Cartões do topo**: saldo total das contas, receitas/despesas do mês (realizado e previsto) e resultado. O "previsto" inclui a **projeção dos contratos** do mês exibido (mensalidades ainda não faturadas) — por isso um mês futuro já mostra a receita esperada.
 - **Cobrança do período**: três anéis — Confirmadas (recebidas), A receber (no prazo) e Inadimplentes (vencidas, acumulado) — com filtro Dia · Semana · Mês e atalho para Contas a receber.

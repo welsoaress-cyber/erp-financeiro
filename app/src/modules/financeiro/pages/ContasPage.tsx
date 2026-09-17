@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
 import { Alerta } from '../../../core/ui/Alerta'
@@ -226,46 +227,40 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     <>
       <CabecalhoPagina titulo={receber ? 'Contas a receber' : 'Contas a pagar'} descricao={receber ? 'Faturas e receitas do mês: previsto × realizado' : 'Compromissos com fornecedores: previsto × realizado'} />
       <div className="mb-4"><PendenciasAnteriores tipo={tipo} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
-      <div className="mb-4 flex flex-wrap items-start gap-3">
+      <BarraFiltros>
         <SeletorMes mes={mes} aoMudar={setMes} />
         {(negocios.data ?? []).length > 0 && (
-          <select aria-label="Filtrar por negócio" value={filtroNegocio} onChange={(e) => setFiltroNegocio(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <SelectFiltro rotulo="Filtrar por negócio" valor={filtroNegocio} aoMudar={setFiltroNegocio}>
             <option value="">Todos os negócios</option>
             <option value="pessoal">{ROTULO_PESSOAL}</option>
             {(negocios.data ?? []).filter((n) => n.ativo).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
-          </select>
+          </SelectFiltro>
         )}
-        <select aria-label={receber ? 'Filtrar por cliente' : 'Filtrar por fornecedor'} value={filtroPessoa} onChange={(e) => setFiltroPessoa(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        <SelectFiltro rotulo={receber ? 'Filtrar por cliente' : 'Filtrar por fornecedor'} valor={filtroPessoa} aoMudar={setFiltroPessoa}>
           <option value="">{receber ? 'Todos os clientes' : 'Todos os fornecedores'}</option>
           {pessoasComLanc.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-        </select>
-        <select aria-label="Filtrar por situação" value={filtroSituacao} onChange={(e) => setFiltroSituacao(e.target.value as Situacao | '')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        </SelectFiltro>
+        <SelectFiltro rotulo="Filtrar por situação" valor={filtroSituacao} aoMudar={(v) => setFiltroSituacao(v as Situacao | '')}>
           <option value="">Todas as situações</option><option value="aberto">Em aberto</option><option value="vencido">Vencidos</option><option value="pago">{receber ? 'Recebidos' : 'Pagos'}</option>
-        </select>
-        <select aria-label="Filtrar por categoria" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        </SelectFiltro>
+        <SelectFiltro rotulo="Filtrar por categoria" valor={filtroCategoria} aoMudar={setFiltroCategoria}>
           <option value="">Todas as categorias</option>
           {(categorias.data ?? []).filter((c) => c.ativo && c.tipo === tipo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-        </select>
-        <select aria-label="Filtrar por conta" value={filtroConta} onChange={(e) => setFiltroConta(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        </SelectFiltro>
+        <SelectFiltro rotulo="Filtrar por conta" valor={filtroConta} aoMudar={setFiltroConta}>
           <option value="">Todas as contas</option>
           {(contas.data ?? []).filter((c) => c.ativo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-        </select>
-        <select aria-label="Filtrar por dias de atraso" value={filtroAtraso} onChange={(e) => setFiltroAtraso(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        </SelectFiltro>
+        <SelectFiltro rotulo="Filtrar por dias de atraso" valor={filtroAtraso} aoMudar={setFiltroAtraso}>
           <option value="">Qualquer atraso</option>
           <option value="30">Vencidos até 30 dias</option>
           <option value="60">31 a 60 dias</option>
           <option value="90">61 a 90 dias</option>
           <option value="mais">Mais de 90 dias</option>
-        </select>
-        <input
-          type="search"
-          aria-label="Pesquisar"
-          placeholder={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'}
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          className="h-10 min-w-56 flex-1 rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand-600"
-        />
-      </div>
+        </SelectFiltro>
+        <CampoBusca valor={busca} aoMudar={setBusca} rotulo={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'} />
+        <ContagemFiltro visiveis={lista.length} total={base.length} singular="lançamento" plural="lançamentos" />
+      </BarraFiltros>
       <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Indicador rotulo="Previsto" valor={formatarMoeda(previsto)} ajuda="lançamentos ainda previstos" />
         <Indicador rotulo="Realizado" valor={formatarMoeda(realizado)} tom="ok" ajuda={receber ? 'já recebido no mês' : 'já pago no mês'} />

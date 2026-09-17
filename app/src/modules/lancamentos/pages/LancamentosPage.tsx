@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
+import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
 import { Alerta } from '../../../core/ui/Alerta'
@@ -228,7 +229,7 @@ export function LancamentosPage() {
         <div className="mb-4"><Alerta tipo="info" titulo="Cadastre uma conta antes">Lançamentos precisam de uma conta. Crie sua primeira conta no menu Contas.</Alerta></div>
       )}
 
-      <div className="mb-3 flex flex-wrap items-start gap-3">
+      <BarraFiltros>
         <SeletorMes mes={mes} aoMudar={setMes} />
         {mesFechado ? (
           <span className="flex items-center gap-2 text-sm">
@@ -240,56 +241,50 @@ export function LancamentosPage() {
           <button type="button" className="text-xs font-medium text-brand-700 hover:underline"
             onClick={() => { if (window.confirm('Fechar o mês? Nada efetivado dentro dele poderá ser alterado, cancelado ou excluído (cobranças em aberto continuam baixáveis).')) fecharMes.mutate({ competencia: mes }) }}>🔒 Fechar mês</button>
         ) : null}
-        <select aria-label="Filtrar por tipo" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value as TipoLancamento | '')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        <SelectFiltro rotulo="Filtrar por tipo" valor={filtroTipo} aoMudar={(v) => setFiltroTipo(v as TipoLancamento | '')}>
           <option value="">Todos os tipos</option>
           <option value="receita">Receitas</option>
           <option value="despesa">Despesas</option>
           <option value="transferencia">Transferências</option>
-        </select>
-        <select aria-label="Filtrar por status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value as StatusLancamento | '' | 'ativos')} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        </SelectFiltro>
+        <SelectFiltro rotulo="Filtrar por status" valor={filtroStatus} aoMudar={(v) => setFiltroStatus(v as StatusLancamento | '' | 'ativos')}>
           <option value="ativos">Ativos (sem cancelados)</option>
           <option value="">Todos os status</option>
           <option value="efetivado">Efetivados</option>
           <option value="previsto">Previstos</option>
           <option value="cancelado">Cancelados</option>
-        </select>
-      </div>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+        </SelectFiltro>
+      </BarraFiltros>
+      <BarraFiltros>
         {temNegocios && (
-          <select aria-label="Filtrar por negócio" value={filtroNegocio} onChange={(e) => setFiltroNegocio(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <SelectFiltro rotulo="Filtrar por negócio" valor={filtroNegocio} aoMudar={setFiltroNegocio}>
             <option value="">Todos os negócios</option>
             <option value="pessoal">{ROTULO_PESSOAL}</option>
             {(negocios.data ?? []).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
-          </select>
+          </SelectFiltro>
         )}
-        <select aria-label="Filtrar por categoria" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        <SelectFiltro rotulo="Filtrar por categoria" valor={filtroCategoria} aoMudar={setFiltroCategoria}>
           <option value="">Todas as categorias</option>
           {(categorias.data ?? []).filter((c) => c.ativo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-        </select>
-        <select aria-label="Filtrar por conta" value={filtroConta} onChange={(e) => setFiltroConta(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+        </SelectFiltro>
+        <SelectFiltro rotulo="Filtrar por conta" valor={filtroConta} aoMudar={setFiltroConta}>
           <option value="">Todas as contas</option>
           {(contas.data ?? []).filter((c) => c.ativo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-        </select>
+        </SelectFiltro>
         {(centros.data ?? []).length > 0 && (
-          <select aria-label="Filtrar por centro de custo" value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
+          <SelectFiltro rotulo="Filtrar por centro de custo" valor={filtroCentro} aoMudar={setFiltroCentro}>
             <option value="">Todos os centros</option>
             <option value="geral">Geral (sem centro)</option>
             {(centros.data ?? []).filter((c) => c.ativo).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-          </select>
+          </SelectFiltro>
         )}
-        <input
-          type="search"
-          aria-label="Pesquisar lançamentos"
-          placeholder="Pesquisar por descrição, conta, categoria, negócio ou pessoa…"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          className="h-10 min-w-48 flex-1 rounded-md border border-line bg-white px-3 text-sm"
-        />
+        <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Pesquisar por descrição, conta, categoria, negócio ou pessoa…" />
+        <ContagemFiltro visiveis={linhasView.length} total={(lancamentos.data ?? []).length + (projecaoContratos.data ?? []).length} singular="lançamento" plural="lançamentos" />
         <span className="w-full text-sm text-ink-muted tabular-nums sm:ml-auto sm:w-auto sm:text-right">
           <span className="block">Realizado: <span className="font-medium text-green-700">{formatarMoeda(totais.receitasReal)}</span> · <span className="font-medium text-red-700">{formatarMoeda(totais.despesasReal)}</span></span>
           <span className="block text-xs">Pendente: <span className="font-medium text-green-700">{formatarMoeda(totais.receitasPend)}</span> · <span className="font-medium text-red-700">{formatarMoeda(totais.despesasPend)}</span></span>
         </span>
-      </div>
+      </BarraFiltros>
 
       {carregando && <Carregando texto="Carregando lançamentos…" />}
       {erroCarga && <Alerta tipo="erro" titulo="Não foi possível carregar">{mensagemDeErro(erroCarga)}</Alerta>}

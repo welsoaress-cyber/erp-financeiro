@@ -66,9 +66,12 @@ do $$ declare v r%rowtype; v_old uuid; novo public.comodatos%rowtype; n int; beg
   assert (select status::text from public.comodatos where id = v_old) = 'trocado', 'T2 antigo trocado';
   assert (select quantidade from public.tecnico_estoque where tecnico_id = v.tec and item_id = v.onu) = 1, 'T2 novo saiu da bolsa';
   assert (select quantidade_atual from public.estoque_itens where id = v.onu) = 7, 'T2 defeito de fábrica não volta ao central';
-  -- registro manual reutiliza a série antiga liberada (sem mexer no estoque)
-  perform public.registrar_comodato(v.neg, v.onu, 'ZTE123ABC', v.pessoa, null, 'legado');
-  assert (select quantidade_atual from public.estoque_itens where id = v.onu) = 7, 'T2 registro manual não mexe no estoque';
+  -- registro de equipamento LEGADO reutiliza a série liberada e não mexe no estoque (0091)
+  perform public.registrar_comodato(v.neg, v.onu, 'ZTE123ABC', v.pessoa, null, 'legado', false);
+  assert (select quantidade_atual from public.estoque_itens where id = v.onu) = 7, 'T2 legado não mexe no estoque';
+  -- já o registro normal (padrão) tira do estoque, como a entrega de verdade
+  perform public.registrar_comodato(v.neg, v.onu, 'ZTE777NEW', v.pessoa, null, null);
+  assert (select quantidade_atual from public.estoque_itens where id = v.onu) = 6, 'T2 registro normal baixa o estoque';
   select count(*) into n from public.comodato_historico where evento = 'troca';
   assert n = 2, 'T2 histórico da troca (saída e entrada)';
 end $$;
@@ -86,7 +89,8 @@ do $$ declare v r%rowtype; v_os uuid; os public.ordens_servico; n int; begin
   perform public.iniciar_os(v_os);
   os := public.encerrar_os(v_os, '[]'::jsonb, null, null, 'recolhido ok');
   assert (select status::text from public.comodatos where numero_serie = 'ZTE999XYZ') = 'recolhido', 'T3 comodato recolhido';
-  assert (select quantidade_atual from public.estoque_itens where id = v.onu) = 8, 'T3 voltou ao central';
+    -- 7 − 1 (registro normal do T2) + 1 (recolhimento) = 7
+  assert (select quantidade_atual from public.estoque_itens where id = v.onu) = 7, 'T3 voltou ao central';
 end $$;
 
 -- T4: perda exige justificativa; recolhimento manual com descarte não volta ao estoque

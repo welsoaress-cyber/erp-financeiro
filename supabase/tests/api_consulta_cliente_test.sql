@@ -76,5 +76,57 @@ do $$ declare v t6%rowtype; begin
   assert exists (select 1 from public.vw_rel_api_consultas where token = 'Auditoria' and documento_mascarado = '***901' and situacao = 'Encontrado'), 'T6 relatório mascara o documento';
 end $$;
 
+-- 0096: api_consultar_cliente é o único ponto de acesso da Edge Function — roda
+-- como service_role (só ele tem EXECUTE), sem grant nenhum nas tabelas por baixo.
+do $$ declare v_org uuid; v_neg uuid; v_plano uuid; v_pessoa_ativa uuid; v_pessoa_suspensa uuid; begin
+  select org, neg into v_org, v_neg from r;
+  insert into public.planos (organizacao_id, negocio_id, nome, valor_tabela) values (v_org, v_neg, 'Fibra 300 API', 99.9) returning id into v_plano;
+  insert into public.pessoas (organizacao_id, nome, documento) values (v_org, 'Cliente API Ativo', '11122233396') returning id into v_pessoa_ativa;
+  insert into public.pessoas (organizacao_id, nome, documento) values (v_org, 'Cliente API Suspenso', '98765432100') returning id into v_pessoa_suspensa;
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, codigo, valor, periodicidade, status, tipo_financeiro)
+    values (v_org, v_neg, v_pessoa_ativa, v_plano, 901, 99.9, 'mensal', 'ativo', 'receita');
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, codigo, valor, periodicidade, status, tipo_financeiro)
+    values (v_org, v_neg, v_pessoa_suspensa, v_plano, 902, 99.9, 'mensal', 'suspenso', 'receita');
+end $$;
+create temp table t7 as select g.token, g.token_id from public.criar_api_token((select neg from r), 'RPC') g;
+grant select on t7 to service_role;
+
+set local role service_role;
+
+-- T7: token válido + cliente com contrato ativo → status Ativo, plano certo
+do $$ declare v t7%rowtype; l record; begin
+  select * into v from t7;
+  select * into l from public.api_consultar_cliente(encode(digest(v.token, 'sha256'), 'hex'), '11122233396');
+  assert l.situacao = 'ok', 'T7 situação ok: ' || l.situacao;
+  assert l.cliente->>'nome_completo' = 'Cliente API Ativo', 'T7 nome bate';
+  assert l.cliente->>'status_cliente' = 'Ativo', 'T7 status Ativo: ' || (l.cliente->>'status_cliente');
+  assert l.cliente->>'plano' = 'Fibra 300 API', 'T7 plano bate';
+  assert l.cliente->>'numero' is null and l.cliente->>'cep' is null, 'T7 numero/cep nulos (não existem separados)';
+end $$;
+
+-- T8: contrato suspenso → status_cliente Suspenso
+do $$ declare v t7%rowtype; l record; begin
+  select * into v from t7;
+  select * into l from public.api_consultar_cliente(encode(digest(v.token, 'sha256'), 'hex'), '98765432100');
+  assert l.cliente->>'status_cliente' = 'Suspenso', 'T8 status Suspenso: ' || (l.cliente->>'status_cliente');
+end $$;
+
+-- T9: CPF que não é cliente dessa organização → não encontrado, fica auditado
+do $$ declare v t7%rowtype; l record; begin
+  select * into v from t7;
+  select * into l from public.api_consultar_cliente(encode(digest(v.token, 'sha256'), 'hex'), '99988877665');
+  assert l.situacao = 'nao_encontrado', 'T9 não encontrado: ' || l.situacao;
+  assert l.cliente is null, 'T9 cliente nulo';
+  assert exists (select 1 from public.api_consultas where token_id = v.token_id and documento_consultado = '99988877665' and not encontrado), 'T9 auditoria registrada';
+end $$;
+
+-- T10: token revogado/inexistente → token_invalido, nunca vaza se o CPF existe ou não
+do $$ declare l record; begin
+  select * into l from public.api_consultar_cliente('hash-que-nao-existe', '11122233396');
+  assert l.situacao = 'token_invalido', 'T10 token inválido: ' || l.situacao;
+end $$;
+
+set local role authenticated;
+
 rollback;
 \echo OK

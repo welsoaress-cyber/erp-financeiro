@@ -235,7 +235,12 @@ Todo material entra no ERP por este fluxo formal (mesmo hoje, que você é o ún
 
 **Recebimento (55B).** No detalhe do pedido aberto, clique em **Registrar recebimento**: informe a quantidade que chegou por item (pode ser parcial), a nota (número/chave/valor — opcional), a conta de pagamento e o número de parcelas. Cartão de crédito vai para a fatura como previsto; conta comum efetiva se você marcar "Já pago". Itens com destino **Estoque** entram automaticamente no estoque pelo custo unitário do pedido (com frete/desconto rateados). O pedido fica "Recebido parcial" até fechar tudo. Divergência entre o valor da nota e o valor recebido só gera um aviso — não trava. Nova aba **Recebimentos** lista o histórico; e o relatório *Recebimentos de compra* na Central marca cada linha como `confere`, `divergente` ou `sem nota`.
 
-Integração completa com Patrimônio e Comodato + unificação com a "Nova compra" do Estoque ficam para a **etapa 55C**.
+**Destino do item no recebimento (55C):**
+- **Estoque** e **Comodato**: entram no estoque normal pelo custo unitário. Comodato só vira comodato de verdade quando você aloca o equipamento a um cliente pelo módulo Estoque.
+- **Patrimônio**: cria uma linha em Patrimônio por unidade (valor de aquisição = valor unitário, localização inicial = negócio + PED-NNNN, número de série vai para o primeiro exemplar). Ajuste depois em Estoque → Patrimônio.
+- **Despesa** / **Serviço**: só o lançamento financeiro, nada físico.
+
+O botão **"Nova compra"** do Estoque virou **"Nova compra (via requisição)"** e leva direto para `/compras`. Não existe mais caminho paralelo — toda compra passa por aprovação.
 
 ## 12. Ordens de Serviço (OS)
 

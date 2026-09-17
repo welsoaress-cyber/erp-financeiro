@@ -123,19 +123,16 @@ Na tela do recebimento, três colunas lado a lado: **pedido × recebido × nota*
 - App: modal **Registrar recebimento** no detalhe do pedido (linha por item com Pedido / Já recebido / Chega agora, nota opcional, conta e pagamento). Nova aba **Recebimentos** com histórico. Alerta âmbar quando o valor da nota diverge.
 - Testes: `supabase/tests/compras_recebimento_test.sql` (parcial + total, excedente falha, imutabilidade); 76/76 no `verificar_tudo.sql`.
 
-### 55C — próximo passo
+### 55C — entregue (0094)
 
-1. **Pedido + itens com destino** e a tela de compra (um passo só, aprovação automática).
-2. **Recebimento com "chegou tudo?"** disparando estoque / patrimônio / comodato / lançamento.
-3. **Migrar a "Nova compra" do Estoque** para criar um pedido já recebido — acaba o
-   caminho paralelo.
-4. **Requisição**: lista "preciso comprar", alimentada pelo alerta de estoque baixo e
-   pelos pedidos do técnico.
-5. **Anexo da nota** — depende de autorização: Supabase Storage, gratuito até 1 GB,
-   cobra acima disso.
-6. **Relatórios** na Central: comprado por período, fornecedor, categoria, centro de
-   custo; pedidos em aberto; recebimentos com divergência.
-7. **Ligar `exige_aprovacao`** — só quando existir um segundo comprador.
+- `registrar_recebimento_compra` reescrita: item destino **patrimonio** cria uma linha em `patrimonios` por unidade recebida (nome herdado do item, valor = valor unitário do pedido, localização = negócio + PED-NNNN, número de série vai para o primeiro exemplar). Comodato e Estoque seguem por `entrada_estoque` (comodato só vira comodato quando alocado a um cliente pelo módulo Estoque). Despesa/Serviço continuam só no lançamento financeiro.
+- App: **Nova compra** do Estoque removida; o botão vira atalho **"Nova compra (via requisição)"** apontando para `/compras`. O alerta *Comprar* do Dashboard redireciona para o mesmo lugar. Não há caminho paralelo: toda compra passa pelo fluxo formal.
+- Testes: `supabase/tests/compras_patrimonio_test.sql`; 77/77 no `verificar_tudo.sql`.
+
+### 55D+ — pendências
+
+- Anexo da nota fiscal (PDF/XML) — depende de autorização para Supabase Storage.
+- Requisição automática a partir do alerta de estoque baixo e das solicitações do técnico.
 
 ## 8. Riscos e mitigações
 

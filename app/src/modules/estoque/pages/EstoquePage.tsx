@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
@@ -385,13 +385,15 @@ export function EstoquePage() {
   const [buscaParams, setBuscaParams] = useSearchParams()
   const [compraItemInicial, setCompraItemInicial] = useState<string | undefined>(undefined)
   const comprarParam = buscaParams.get('comprar')
+  const navegar = useNavigate()
   // oxlint-disable-next-line react/set-state-in-effect -- sincroniza com a URL (?comprar=), sistema externo
-  useEffect(() => { // alerta do dashboard → Nova compra com o item pré-selecionado
-    if (!comprarParam || !itens.isSuccess) return
-    const alvo = (itens.data ?? []).find((i) => i.id === comprarParam)
-    if (alvo) { setNegocioId(alvo.negocio_id); setCompraItemInicial(alvo.id); setModal('compra') }
+  useEffect(() => { // alerta do dashboard "Comprar" → redireciona pra /compras (fluxo formal)
+    if (!comprarParam) return
     setBuscaParams({}, { replace: true })
-  }, [comprarParam, itens.isSuccess, itens.data, setBuscaParams])
+    navegar('/compras')
+  }, [comprarParam, setBuscaParams, navegar])
+  // compraItemInicial mantido para código de compatibilidade abaixo (removido do fluxo principal)
+  void compraItemInicial
 
   const servnet = (negocios.data ?? []).find((n) => n.nome.toLowerCase().includes('servnet')) ?? (negocios.data ?? [])[0]
   const negocioAtual = negocioId || servnet?.id || ''
@@ -439,7 +441,7 @@ export function EstoquePage() {
   return (
     <>
       <CabecalhoPagina titulo="Estoque" descricao="Itens, movimentações e custo dos materiais"
-        acoes={<span className="flex flex-wrap gap-2"><Botao variante="secundario" onClick={() => { setItemEdicao(null); setModal('item') }}>Novo item</Botao><Botao variante="secundario" onClick={() => setModal('compra')}>Nova compra</Botao><Botao onClick={() => setModal('instalacao')}>Nova instalação</Botao></span>} />
+        acoes={<span className="flex flex-wrap gap-2"><Botao variante="secundario" onClick={() => { setItemEdicao(null); setModal('item') }}>Novo item</Botao><Link to="/compras" className="inline-flex h-10 items-center justify-center rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink hover:bg-surface/80">Nova compra (via requisição)</Link><Botao onClick={() => setModal('instalacao')}>Nova instalação</Botao></span>} />
 
       {aguardando.length > 0 && (
         <div className="mb-4"><Alerta tipo="info" titulo={`${aguardando.length} item(ns) aguardando a primeira entrada`}>

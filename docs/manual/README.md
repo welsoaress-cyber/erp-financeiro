@@ -211,6 +211,8 @@ Cada equipamento entregue ao cliente tem **número de série** e status:
 - **Recolher**: volta ao estoque central (ou **descarte** com motivo).
 - **Perda**: justificativa obrigatória. **Registrar equipamento antigo**: para o que já estava no cliente antes do sistema.
 
+**Entregar tira do estoque.** Ao registrar um comodato, a opção **"Dar baixa no estoque"** vem marcada: o equipamento sai do seu saldo naquele momento e volta quando for recolhido. Desmarque **só** para equipamento que já estava na casa do cliente antes do sistema (base antiga) — esse não sai do estoque, e o recolhimento dele também não devolve nada. Antes essa baixa não existia e todo recolhimento devolvia ao saldo, o que inflava o estoque sozinho.
+
 ### 11.2 Devoluções (RMA ao fornecedor)
 
 Item chegou com defeito e o fornecedor não devolve na hora? Aba **Devoluções**: **Abrir devolução** tira a unidade do estoque (pelo custo médio) e cria uma cobrança prevista no Contas a Receber (fornecedor, conta e categoria escolhidos na tela). Fica pendente até você resolver:

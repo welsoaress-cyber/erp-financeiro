@@ -273,7 +273,7 @@ function useRpcComodato<T extends Record<string, unknown>>(fn: string) {
   })
 }
 
-export const useRegistrarComodato = () => useRpcComodato<{ p_negocio_id: string; p_item_id: string; p_serie: string; p_pessoa_id: string; p_contrato_id?: string | null; p_observacao?: string | null }>('registrar_comodato')
+export const useRegistrarComodato = () => useRpcComodato<{ p_negocio_id: string; p_item_id: string; p_serie: string; p_pessoa_id: string; p_contrato_id?: string | null; p_observacao?: string | null; p_baixar_estoque?: boolean }>('registrar_comodato')
 export const useRecolherComodato = () => useRpcComodato<{ p_comodato_id: string; p_descartar: boolean; p_observacao?: string | null }>('recolher_comodato')
 export const useTrocarComodato = () => useRpcComodato<{ p_comodato_id: string; p_serie_nova: string; p_tecnico_id: string; p_defeito_fabrica: boolean; p_motivo: string }>('trocar_comodato')
 export const usePerdaComodato = () => useRpcComodato<{ p_comodato_id: string; p_motivo: string }>('perda_comodato')

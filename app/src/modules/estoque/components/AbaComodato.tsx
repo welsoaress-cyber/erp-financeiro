@@ -32,6 +32,8 @@ export function AbaComodato({ negocioId }: { negocioId: string }) {
   const [modal, setModal] = useState<'registrar' | null>(null)
   const [acao, setAcao] = useState<{ tipo: 'recolher' | 'trocar' | 'perda'; c: Comodato } | null>(null)
   const [itemId, setItemId] = useState(''); const [serie, setSerie] = useState(''); const [pessoaId, setPessoaId] = useState(''); const [contratoId, setContratoId] = useState('')
+  // entrega de verdade tira do estoque; desmarcar é só para equipamento que já estava na casa do cliente
+  const [baixarEstoque, setBaixarEstoque] = useState(true)
   const [motivo, setMotivo] = useState(''); const [descartar, setDescartar] = useState(false); const [defeito, setDefeito] = useState(false); const [tecnicoId, setTecnicoId] = useState(''); const [serieNova, setSerieNova] = useState('')
 
   const nomeItem = useMemo(() => new Map((itens.data ?? []).map((i) => [i.id, `${i.codigo} · ${i.nome}`])), [itens.data])
@@ -99,10 +101,21 @@ export function AbaComodato({ negocioId }: { negocioId: string }) {
             <p className="text-xs text-ink-muted">Para equipamento que já estava na casa do cliente antes do sistema. Não mexe no estoque.</p>
             <Selecao rotulo="Equipamento" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(itens.data ?? []).filter((i) => i.negocio_id === negocioId && i.ativo).map((i) => ({ valor: i.id, rotulo: `${i.codigo} · ${i.nome}` }))]} value={itemId} onChange={(e) => setItemId(e.target.value)} />
             <Campo rotulo="Número de série" value={serie} onChange={(e) => setSerie(e.target.value)} maxLength={40} />
+            <div className="rounded-md border border-line bg-surface/60 p-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input type="checkbox" checked={baixarEstoque} onChange={(e) => setBaixarEstoque(e.target.checked)} className="size-4 accent-brand-600" />
+                Dar baixa no estoque
+              </label>
+              <p className="mt-1 text-xs text-ink-muted">
+                {baixarEstoque
+                  ? 'O equipamento sai do seu estoque agora e volta quando for recolhido.'
+                  : 'Desmarcado: para equipamento que já estava na casa do cliente antes do sistema. Não sai do estoque — e o recolhimento também não devolve.'}
+              </p>
+            </div>
             <Selecao rotulo="Cliente" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(pessoas.data ?? []).filter((p) => p.ativo).map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => { setPessoaId(e.target.value); setContratoId('') }} />
             <Selecao rotulo="Contrato (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...contratosDoCliente.map((c) => ({ valor: c.id, rotulo: codigoContrato(c) }))]} value={contratoId} onChange={(e) => setContratoId(e.target.value)} disabled={!pessoaId} />
             <div className="flex justify-end"><Botao disabled={!itemId || serie.trim().length < 3 || !pessoaId} carregando={registrar.isPending}
-              onClick={() => registrar.mutate({ p_negocio_id: negocioId, p_item_id: itemId, p_serie: serie.trim(), p_pessoa_id: pessoaId, p_contrato_id: contratoId || null }, { onSuccess: () => setModal(null) })}>Registrar</Botao></div>
+              onClick={() => registrar.mutate({ p_negocio_id: negocioId, p_item_id: itemId, p_serie: serie.trim(), p_pessoa_id: pessoaId, p_contrato_id: contratoId || null, p_baixar_estoque: baixarEstoque }, { onSuccess: () => setModal(null) })}>Registrar</Botao></div>
           </div>
         )}
       </Modal>

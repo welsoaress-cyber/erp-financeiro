@@ -396,6 +396,23 @@ export const RELATORIOS: Relatorio[] = [
     agrupavel: ['pessoa', 'negocio'],
     ordem: { chave: 'dias_atraso', desc: true },
   },
+  {
+    id: 'api-consultas',
+    titulo: 'Consultas à API',
+    area: 'Comercial',
+    descricao: 'Quem consultou (token) o quê, quando e se achou o cliente — auditoria das integrações externas (ex.: Leveduca).',
+    view: 'vw_rel_api_consultas',
+    filtros: ['negocio'],
+    colunas: [
+      { chave: 'criado_em', rotulo: 'Quando', tipo: 'data' },
+      { chave: 'token', rotulo: 'Token' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+      { chave: 'documento_mascarado', rotulo: 'CPF/CNPJ' },
+      { chave: 'situacao', rotulo: 'Situação' },
+    ],
+    agrupavel: ['token', 'negocio', 'situacao'],
+    ordem: { chave: 'criado_em', desc: true },
+  },
 ]
 
 export const AREAS: Area[] = ['Financeiro', 'Clientes e contratos', 'Operação', 'Comercial']

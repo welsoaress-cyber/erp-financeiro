@@ -39,6 +39,11 @@ export function ConfiguracoesPage() {
           <p className="mb-3 text-sm text-ink-muted">Traga clientes, planos e contratos de um sistema anterior a partir de um arquivo CSV. A prévia mostra o que será criado antes de gravar.</p>
           <Link to="/configuracoes/importar" className="inline-flex h-10 items-center rounded-md bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700">Importar CSV</Link>
         </Cartao>
+        <Cartao className="md:col-span-2">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Integrações via API</h2>
+          <p className="mb-3 text-sm text-ink-muted">Gere um token para um sistema de fora (ex.: Leveduca) consultar se um CPF é cliente ativo e qual o plano.</p>
+          <Link to="/configuracoes/integracoes" className="inline-flex h-10 items-center rounded-md bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700">Gerenciar tokens</Link>
+        </Cartao>
       </div>
     </>
   )

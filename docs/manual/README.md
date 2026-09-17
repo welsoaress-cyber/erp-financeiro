@@ -348,6 +348,17 @@ Dados da conta/organização e **Importar CSV** (traz clientes, planos e contrat
 - **Cortesia** (caixa na linha): importa o contrato com valor 0 — não gera cobrança nem aparece no Contas a receber (o faturamento lista "Contrato com valor zero" como pendência informativa).
 - Arquivos com acentos misturados (UTF-8 e Windows) são lidos linha a linha; se um nome ainda vier errado, corrija na tela de Pessoas.
 
+### 17.1 Integrações via API
+
+![Integrações via API](img/52-integracoes-api.png)
+
+Configurações → **Gerenciar tokens**. Gera um token para um sistema de fora (hoje: **Leveduca**, clube de benefícios revendido junto do plano) consultar, por CPF/CNPJ, se a pessoa é cliente ativo — nome, e-mail, plano e status; nada de financeiro. O endpoint fica pronto pra copiar/colar na tela.
+
+- **O valor do token só aparece uma vez**, na hora de gerar. O banco guarda só o hash — se perder, não tem como recuperar, só **revogar** e gerar outro.
+- Cada token é preso a **um negócio**: só enxerga clientes daquele negócio.
+- Toda consulta fica registrada (quem, quando, achou ou não) — auditoria em Relatórios → **Consultas à API** (CPF mascarado, só os 3 últimos dígitos).
+- Formato de endereço: hoje o campo `endereco` de Pessoas é um texto só (rua, número, bairro); a API devolve tudo nesse campo — `numero` e `cep` vêm vazios porque não existem separados no cadastro.
+
 ---
 
 ## Rotinas do dia a dia (resumo)

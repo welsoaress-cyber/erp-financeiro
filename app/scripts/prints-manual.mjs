@@ -135,9 +135,13 @@ const indicacoes = [
   { id: id('ic', 2), organizacao_id: ORG, negocio_id: NEG, indicador_pessoa_id: id('c', 2), nome_indicado: 'Rafael Nunes', telefone_indicado: '92988885555', indicado_pessoa_id: null, status: 'pendente', beneficio_valor: 0, observacao: null, criado_em: dia(-3) + 'T10:00:00Z', convertida_em: null, presente_item_id: null, presente_custo: null, presente_entregue_em: null },
 ]
 
+const api_tokens = [
+  { id: id('at', 1), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', nome: 'Leveduca', token_prefixo: 'a1b2c3d4', ativo: true, criado_em: dia(-10), revogado_em: null, ultimo_uso_em: dia(-1), consultas: 42 },
+]
+
 const tabelas = {
   organizacao_membros: [{ organizacao_id: ORG, usuario_id: 'u1', papel: 'proprietario', criado_em: '2026-01-01', organizacoes: { id: ORG, nome: 'Grupo Tom' } }],
-  contas, vw_saldo_contas: contas, categorias, negocios, pessoas, planos, contratos, lancamentos, tecnicos, indicacoes,
+  contas, vw_saldo_contas: contas, categorias, negocios, pessoas, planos, contratos, lancamentos, tecnicos, indicacoes, vw_api_tokens: api_tokens,
   cartoes_config: [{ id: id('g', 1), organizacao_id: ORG, conta_id: id('d', 3), dia_fechamento: 16, dia_vencimento: 25, limite_total: 5000 }],
   vw_cartoes_limite: [{ config_id: id('g', 1), conta_id: id('d', 3), organizacao_id: ORG, limite_total: 5000, uso_efetivado: -830.4, comprometido: 129.8, disponivel: 5000 - 830.4 - 129.8 }],
   faturas: [],
@@ -357,6 +361,7 @@ async function capturar(page, nome, ms = 1200) {
     ['/relatorios', '45-relatorios'],
     ['/portal', '24-portal-admin'],
     ['/configuracoes', '25-configuracoes'],
+    ['/configuracoes/integracoes', '52-integracoes-api'],
   ]
   for (const [rota, nome, ms] of telas) {
     await page.goto(BASE + rota)

@@ -6,6 +6,14 @@ import type { NomeIcone } from '../ui/Icone'
  * src/modules/<nome>, exportar esta definição e registrá-la em src/app/modulos.ts.
  * Menu e rotas são gerados a partir do registro.
  */
+export interface MenuGrupo {
+  id: string
+  titulo: string
+  icone: NomeIcone
+  /** ids dos módulos filhos (referenciam MODULOS) */
+  modulos: string[]
+}
+
 export interface DefinicaoModulo {
   id: string
   titulo: string

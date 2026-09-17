@@ -1,4 +1,4 @@
-import type { DefinicaoModulo } from '../core/modulos/tipos'
+import type { DefinicaoModulo, MenuGrupo } from '../core/modulos/tipos'
 import { moduloDashboard } from '../modules/dashboard'
 import { moduloFinanceiro } from '../modules/financeiro'
 import { moduloContas } from '../modules/contas'
@@ -21,7 +21,7 @@ import { moduloPortal } from '../modules/portal'
 import { moduloIndicacoes } from '../modules/indicacoes'
 import { moduloConfiguracoes } from '../modules/configuracoes'
 
-/** Registro único de módulos. A ordem aqui é a ordem do menu. */
+/** Registro único de módulos. A ordem no menu é definida por GRUPOS + RAIZ. */
 export const MODULOS: DefinicaoModulo[] = [
   moduloDashboard,
   moduloFinanceiro,
@@ -44,4 +44,19 @@ export const MODULOS: DefinicaoModulo[] = [
   moduloDisparos,
   moduloPortal,
   moduloConfiguracoes,
+]
+
+/** Módulos raiz (fora de grupos), na ordem do menu. */
+export const RAIZ: string[] = ['dashboard', 'financeiro', 'portal', 'configuracoes']
+
+/** Grupos que agrupam módulos no menu lateral (colapsáveis). */
+export const GRUPOS: MenuGrupo[] = [
+  { id: 'cadastros', titulo: 'Cadastros', icone: 'pessoas',
+    modulos: ['pessoas', 'negocios', 'contratos', 'categorias', 'centros_custo', 'contas', 'cartoes'] },
+  { id: 'operacao', titulo: 'Operação', icone: 'estoque',
+    modulos: ['estoque', 'compras', 'os', 'ftth', 'indicacoes'] },
+  { id: 'comunicacao', titulo: 'Comunicação', icone: 'notificacoes',
+    modulos: ['notificacoes', 'disparos', 'apps'] },
+  { id: 'analise', titulo: 'Análise', icone: 'gerencial',
+    modulos: ['gerencial', 'relatorios'] },
 ]

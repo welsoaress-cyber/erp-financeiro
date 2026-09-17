@@ -13,6 +13,21 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 
 ---
 
+## Como o menu está organizado
+
+O menu lateral agora tem 4 itens raiz e 4 grupos colapsáveis:
+
+- **Dashboard** (raiz) — visão geral do mês.
+- **Financeiro** (raiz) — lançamentos, cobrança, conciliação, fechamento.
+- **Cadastros** — Pessoas, Negócios, Contratos, Categorias, Centros de custo, Contas, Cartões.
+- **Operação** — Estoque, Compras, Ordens de Serviço, FTTH, Indicações.
+- **Comunicação** — Notificações, Disparos, Apps.
+- **Análise** — Gerencial (BI), Relatórios.
+- **Portal do cliente** (raiz) — o que o cliente vê.
+- **Configurações** (raiz).
+
+Cada grupo expande/recolhe com um clique; o estado é lembrado no navegador. O grupo do módulo aberto expande sozinho.
+
 ## 1. Entrar no sistema
 
 ![Login](img/01-login.png)

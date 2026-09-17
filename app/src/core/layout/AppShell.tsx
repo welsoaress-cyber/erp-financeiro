@@ -4,11 +4,11 @@ import { BarraLateral } from './BarraLateral'
 import { BarraSuperior } from './BarraSuperior'
 import { OrganizacaoProvider } from '../organizacao/OrganizacaoProvider'
 import { ErrorBoundary } from '../erros/ErrorBoundary'
-import type { DefinicaoModulo } from '../modulos/tipos'
+import type { DefinicaoModulo, MenuGrupo } from '../modulos/tipos'
 import { useAuth } from '../auth/useAuth'
 import { useInatividade } from '../auth/useInatividade'
 
-export function AppShell({ modulos }: { modulos: DefinicaoModulo[] }) {
+export function AppShell({ modulos, grupos, raiz }: { modulos: DefinicaoModulo[]; grupos: MenuGrupo[]; raiz: string[] }) {
   const [menuAberto, setMenuAberto] = useState(false)
   const { sair } = useAuth()
   useInatividade(useCallback(() => { void sair() }, [sair]))
@@ -17,12 +17,12 @@ export function AppShell({ modulos }: { modulos: DefinicaoModulo[] }) {
     <OrganizacaoProvider>
       <div className="flex h-screen overflow-hidden">
         <aside className="hidden w-60 shrink-0 md:block">
-          <BarraLateral modulos={modulos} />
+          <BarraLateral modulos={modulos} grupos={grupos} raiz={raiz} />
         </aside>
 
         {menuAberto && (
           <div className="fixed inset-0 z-40 flex md:hidden">
-            <div className="w-60"><BarraLateral modulos={modulos} aoNavegar={() => setMenuAberto(false)} /></div>
+            <div className="w-60"><BarraLateral modulos={modulos} grupos={grupos} raiz={raiz} aoNavegar={() => setMenuAberto(false)} /></div>
             <button type="button" aria-label="Fechar menu" className="flex-1 bg-black/40" onClick={() => setMenuAberto(false)} />
           </div>
         )}

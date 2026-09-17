@@ -4,7 +4,7 @@ import { AppShell } from '../core/layout/AppShell'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { CadastroPage } from '../pages/auth/CadastroPage'
 import { NovaSenhaPage } from '../pages/auth/NovaSenhaPage'
-import { MODULOS } from './modulos'
+import { GRUPOS, MODULOS, RAIZ } from './modulos'
 import { PortalShell } from '../portal/PortalShell'
 import { PortalCadastroPage, PortalLoginEmailPage, PortalLoginPage, PortalNovaSenhaPage, PortalRecuperarPage, PortalVincularPage } from '../portal/pages/PortalAuthPages'
 import { PortalFaturaPdfPage, PortalFaturasPage, PortalIndiquePage, PortalPagamentosPage, PortalPlanoPage, PortalPromocoesPage } from '../portal/pages/PortalPages'
@@ -65,7 +65,7 @@ export const router = createBrowserRouter([
     element: <RequireAuth />,
     children: [
       {
-        element: <AppShell modulos={MODULOS} />,
+        element: <AppShell modulos={MODULOS} grupos={GRUPOS} raiz={RAIZ} />,
         children: [
           ...MODULOS.map((m) => ({ path: m.rota, element: <m.Pagina /> })),
           ...MODULOS.flatMap((m) => (m.subRotas ?? []).map((s) => ({ path: s.rota, element: <s.Pagina /> }))),

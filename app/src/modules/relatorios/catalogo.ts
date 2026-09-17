@@ -413,6 +413,26 @@ export const RELATORIOS: Relatorio[] = [
     agrupavel: ['token', 'negocio', 'situacao'],
     ordem: { chave: 'criado_em', desc: true },
   },
+  {
+    id: 'bloqueios',
+    titulo: 'Bloqueios e desbloqueios',
+    area: 'Financeiro',
+    descricao: 'Histórico do bloqueio assistido/automático: quem foi bloqueado ou desbloqueado, quando e se foi o robô ou um clique manual.',
+    view: 'vw_rel_bloqueios',
+    filtros: ['negocio', 'pessoa'],
+    colunas: [
+      { chave: 'criado_em', rotulo: 'Sugerido em', tipo: 'data' },
+      { chave: 'executado_em', rotulo: 'Executado em', tipo: 'data' },
+      { chave: 'cliente', rotulo: 'Cliente' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+      { chave: 'tipo', rotulo: 'Ação' },
+      { chave: 'status', rotulo: 'Status' },
+      { chave: 'automatico', rotulo: 'Automático' },
+      { chave: 'motivo', rotulo: 'Motivo' },
+    ],
+    agrupavel: ['negocio', 'tipo', 'status', 'automatico'],
+    ordem: { chave: 'criado_em', desc: true },
+  },
 ]
 
 export const AREAS: Area[] = ['Financeiro', 'Clientes e contratos', 'Operação', 'Comercial']

@@ -107,7 +107,7 @@ Filtros da tela: negócio, cliente/fornecedor, situação (aberto/vencido/pago),
 
 Mesma ideia para as despesas (energia, link, comissões dos técnicos etc.). Despesas de **cartão de crédito** que caem no mesmo vencimento aparecem agrupadas visualmente numa linha **"Fatura [cartão] · N item(ns)"** (clique na seta pra abrir) — os lançamentos continuam individuais no banco, cada um com sua categoria; é só a tela que agrupa. Dentro do grupo: **Editar** cada compra, dar baixa/cancelar uma por uma, ou **+ Ajuste** para lançar algo direto na fatura (anuidade, juros, estorno manual…).
 
-### 3.4 Cobrança (bloqueio assistido + Pix)
+### 3.4 Cobrança (bloqueio assistido/automático + Pix)
 
 ![Cobrança](img/06-cobranca-bloqueios.png)
 
@@ -119,6 +119,8 @@ A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do pr
 3. Embaixo, os **Pix recentes**: quem pagou pelo portal e quem está aguardando. O pagamento Pix dá baixa automática na fatura.
 4. Ao abrir esta tela, o sistema **re-verifica no Mercado Pago** os Pix aguardando há mais de 1 hora (caso algum aviso automático tenha se perdido) e dá a baixa na hora — o resultado aparece no topo da lista de Pix.
 5. Além disso, **todo minuto** o próprio banco confere no Mercado Pago cada Pix pendente e dá a baixa sozinho quando o pagamento aparece aprovado — funciona mesmo sem o aviso automático do MP e sem ninguém com a tela aberta (em até ~2 minutos após o dinheiro cair).
+
+**Bloqueio automático (opt-in):** em Notificações → configurar o negócio, ligue **"Bloqueio e desbloqueio automáticos"** — todo dia às 04:00 o sistema confirma sozinho quem bloquear/desbloquear, sem precisar clicar em nada. **Só ligue se a rede (ReceitaNet/OLT) já corta e libera o acesso do cliente por conta própria** — o ERP passa a só acompanhar o que a rede já faz, no prazo configurado na régua "avisar depois". Com isso ligado, a lista "Ações na rede" desta tela costuma ficar vazia (o robô já tratou); o histórico completo — manual e automático — fica em **Relatórios → Bloqueios e desbloqueios**.
 
 ### 3.5 Conciliação bancária
 
@@ -313,7 +315,7 @@ Relatórios disponíveis: Financeiro — resultado por negócio, gastos por cent
 
 ![Notificações](img/21-notificacoes.png)
 
-- **Notificações**: régua de cobrança no WhatsApp **configurável por negócio** — escolha em quais dias o cliente recebe aviso antes e depois do vencimento (até 5 pontos de cada lado; o aviso do dia sempre sai). Padrão enxuto: **2 antes · no dia · 3 depois**. Cada ponto manda no máximo uma mensagem por fatura — sem enxurrada de WhatsApp. Configure também número, instância Evolution e templates; acompanhe o histórico de envio. Os avisos de OS (visita agendada/concluída) e o Pix copia-e-cola pegam carona nessa mesma configuração.
+- **Notificações**: régua de cobrança no WhatsApp **configurável por negócio** — escolha em quais dias o cliente recebe aviso antes e depois do vencimento (até 5 pontos de cada lado; o aviso do dia sempre sai). Padrão enxuto: **2 antes · no dia · 3 depois**. Cada ponto manda no máximo uma mensagem por fatura — sem enxurrada de WhatsApp. Configure também número, instância Evolution, templates e o toggle **"Bloqueio e desbloqueio automáticos"** (§3.4); acompanhe o histórico de envio. Os avisos de OS (visita agendada/concluída) e o Pix copia-e-cola pegam carona nessa mesma configuração.
 - **Disparos** (![Disparos](img/22-disparos.png)): mensagens manuais em lote (ex.: aviso de manutenção) com proteção anti-bloqueio.
 - **Apps**: controle de recargas/ativações de apps com carteira de dois saldos. O **histórico da carteira** filtra por tipo (recarga/consumo) e mês; os **contratos de app**, por app, situação e busca por cliente/nº do contrato.
 - **Cobrança**: as listas de **confianças ativas** e **Pix recentes** têm busca por cliente e filtro de situação do Pix (aguardando/pago/cancelado).

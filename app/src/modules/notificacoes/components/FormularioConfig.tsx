@@ -27,6 +27,7 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
   const [instancia, setInstancia] = useState(config?.instancia ?? '')
   const [reguaAntes, setReguaAntes] = useState((config?.regua_antes ?? [2]).join(', '))
   const [reguaApos, setReguaApos] = useState((config?.regua_apos ?? [3]).join(', '))
+  const [bloqueioAutomatico, setBloqueioAutomatico] = useState(config?.bloqueio_automatico ?? false)
   const [horaInicio, setHoraInicio] = useState((config?.hora_inicio ?? '08:00').slice(0, 5))
   const [horaFim, setHoraFim] = useState((config?.hora_fim ?? '18:00').slice(0, 5))
   const [tplProximo, setTplProximo] = useState(config?.template_vencimento_proximo ?? TEMPLATES_PADRAO.template_vencimento_proximo)
@@ -49,7 +50,7 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
     if (provedor === 'evolution' && !/^[a-z0-9_-]{2,40}$/.test(inst)) { setErro('Informe o nome da instância da Evolution API (ex.: servnet).'); return }
     for (const t of [tplProximo, tplDia, tplBloqueio]) if (t.trim().length < 10 || t.length > 1000) { setErro('Cada mensagem precisa ter entre 10 e 1000 caracteres.'); return }
     setErro(null)
-    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, regua_antes: rA, regua_apos: rP, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
+    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, regua_antes: rA, regua_apos: rP, bloqueio_automatico: bloqueioAutomatico, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
   }
 
   return (
@@ -73,6 +74,15 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
         <Campo rotulo="Horário comercial: fim" type="time" value={horaFim} onChange={(e) => setHoraFim(e.target.value)} />
       </div>
       <p className="text-xs text-ink-muted">Régua padrão enxuta: 2 dias antes · no dia · 3 dias depois (o aviso do dia sempre sai). Cada ponto manda no máximo uma mensagem por fatura. Variáveis: {PLACEHOLDERS.join(' ')}. Fora do horário comercial (Brasília) os avisos ficam pendentes até a próxima execução.</p>
+      <label className="flex items-start gap-2 rounded-md border border-line p-3 text-sm">
+        <input type="checkbox" checked={bloqueioAutomatico} onChange={(e) => setBloqueioAutomatico(e.target.checked)} className="mt-0.5 size-4 accent-brand-600" />
+        <span>
+          <span className="block font-medium">Bloqueio e desbloqueio automáticos</span>
+          <span className="block text-ink-muted">
+            Todo dia às 04:00 o sistema confirma sozinho, sem precisar clicar em "Bloqueei/Desbloqueei na rede" em Cobrança. <b>Só ligue se a rede (ReceitaNet/OLT) já corta e libera o acesso do cliente por conta própria</b> — o ERP passa a só acompanhar o que a rede já faz, no prazo da régua "avisar depois" configurada acima.
+          </span>
+        </span>
+      </label>
       <Template rotulo="Mensagem: próximo ao vencimento" valor={tplProximo} aoMudar={setTplProximo} exemplo={exemplo} />
       <Template rotulo="Mensagem: no dia do vencimento" valor={tplDia} aoMudar={setTplDia} exemplo={exemplo} />
       <Template rotulo="Mensagem: bloqueio (após vencimento sem pagamento)" valor={tplBloqueio} aoMudar={setTplBloqueio} exemplo={exemplo} />

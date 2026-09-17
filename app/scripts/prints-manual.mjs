@@ -185,7 +185,7 @@ const tabelas = {
   ],
   vw_bi_mensal_negocio: bi,
   vw_resultado_mensal_negocio: [{ organizacao_id: ORG, mes: mesAtual, negocio_id: NEG, receitas: 12480.9, despesas: 6320.4, resultado: 6160.5 }],
-  notificacoes_config: [{ id: id('n', 1), organizacao_id: ORG, negocio_id: NEG, numero_whatsapp: '+5592999998888', provedor: 'evolution', instancia: 'servnet', ativo: true, dias_antes: 3, dias_apos: 3, hora_inicio: '08:00', hora_fim: '18:00' }],
+  notificacoes_config: [{ id: id('n', 1), organizacao_id: ORG, negocio_id: NEG, numero_whatsapp: '+5592999998888', provedor: 'evolution', instancia: 'servnet', ativo: true, dias_antes: 3, dias_apos: 3, regua_antes: [2], regua_apos: [3], bloqueio_automatico: true, hora_inicio: '08:00', hora_fim: '18:00' }],
   notificacoes_log: [
     { id: id('n', 5), organizacao_id: ORG, negocio_id: NEG, contrato_id: id('1', 1), pessoa_id: id('c', 1), lancamento_id: id('2', 1), os_id: null, tipo: 'proximo_vencimento', data_referencia: dia(10), numero_destino: '+5592988881111', mensagem: 'Olá Maria! Sua fatura...', status: 'enviado', provedor: 'evolution', erro: null, data_envio: dia(7) + 'T09:05:00Z', criado_em: dia(7) + 'T09:00:00Z' },
   ],

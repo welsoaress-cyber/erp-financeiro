@@ -10,9 +10,11 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../../core/formatos'
 import { supabase } from '../../../core/supabase/client'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
+import { Link } from 'react-router'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
+import { useConfigsNotificacao } from '../../notificacoes/api'
 import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { codigoContrato } from '../../contratos/tipos'
 
@@ -27,6 +29,7 @@ export function CobrancaPage() {
   const negocios = useNegocios()
   const pessoas = usePessoas()
   const contratos = useContratos()
+  const configs = useConfigsNotificacao()
   const [negocioId, setNegocioId] = useState('')
   const [buscaPix, setBuscaPix] = useState(''); const [statusPix, setStatusPix] = useState('')
   const [buscaConfianca, setBuscaConfianca] = useState('')
@@ -134,6 +137,14 @@ export function CobrancaPage() {
           </span>
         } />
       {erro != null && <div className="mb-4"><Alerta tipo="erro">{mensagemDeErro(erro)}</Alerta></div>}
+      {(configs.data ?? []).find((c) => c.negocio_id === negocioAtual)?.bloqueio_automatico && (
+        <div className="mb-4">
+          <Alerta tipo="info">
+            Bloqueio automático ligado para este negócio: todo dia às 04:00 o sistema confirma sozinho — por isso a lista abaixo costuma estar vazia.
+            Histórico em <Link to="/relatorios/bloqueios" className="underline">Relatórios → Bloqueios e desbloqueios</Link>.
+          </Alerta>
+        </div>
+      )}
 
       <div className="space-y-6">
         <Cartao className="p-0">

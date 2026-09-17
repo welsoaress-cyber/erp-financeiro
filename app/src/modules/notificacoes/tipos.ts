@@ -27,6 +27,7 @@ export interface ConfigNotificacao {
   dias_apos: number
   regua_antes: number[]
   regua_apos: number[]
+  bloqueio_automatico: boolean
   hora_inicio: string
   hora_fim: string
   template_vencimento_proximo: string
@@ -41,6 +42,7 @@ export interface DadosConfigNotificacao {
   ativo: boolean
   regua_antes: number[]
   regua_apos: number[]
+  bloqueio_automatico: boolean
   hora_inicio: string
   hora_fim: string
   template_vencimento_proximo: string

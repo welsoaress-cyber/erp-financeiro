@@ -72,3 +72,26 @@ export interface CompraTotais { compra_id: string; total_itens: number; total_re
 
 export const codigoRequisicao = (r: Pick<Requisicao, 'numero'>) => `REQ-${String(r.numero).padStart(4, '0')}`
 export const codigoPedido = (p: Pick<Pedido, 'numero'>) => `PED-${String(p.numero).padStart(4, '0')}`
+
+export interface Recebimento {
+  id: string
+  organizacao_id: string
+  compra_id: string
+  data: string
+  conferido_por: string | null
+  nota_numero: string | null
+  nota_chave: string | null
+  nota_valor: number | null
+  lancamento_id: string | null
+  observacao: string | null
+  criado_em: string
+}
+
+export interface RecebimentoItem {
+  id: string
+  recebimento_id: string
+  compra_item_id: string
+  quantidade: number
+  numero_serie: string | null
+  observacao: string | null
+}

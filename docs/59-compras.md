@@ -111,7 +111,19 @@ Na tela do recebimento, três colunas lado a lado: **pedido × recebido × nota*
 - Central de Relatórios: `vw_rel_compras_requisicoes_pendentes` e `vw_rel_compras_pedidos_abertos`.
 - Testes SQL: `supabase/tests/compras_requisicoes_test.sql` (7 cenários; 75/75 no `verificar_tudo.sql`).
 
-### 55B — próximo passo
+### 55B — entregue (0093)
+
+- Tabelas `compra_recebimentos` e `compra_recebimento_itens`, imutáveis (só INSERT pelo motor; DELETE bloqueado sempre).
+- Motor `registrar_recebimento_compra(compra_id, itens jsonb, data, nota_numero, nota_chave, nota_valor, observacao, conta_id, pago, parcelas, categoria_padrao_id)`:
+  - Valida que a quantidade recebida ≤ pedida − já recebida (recebimento parcial permitido).
+  - Cria um lançamento de despesa (à vista ou N parcelas mensais pelo motor de recorrência), com valor = soma dos itens recebidos + frete/desconto rateados pela proporção do que chegou. Cartão de crédito → previsto; demais contas → efetivado se marcado como pago.
+  - Para cada item `destino='estoque'` com `item_id`, chama `entrada_estoque` (motor de estoque) com origem `compra` e amarra ao mesmo `lancamento_id`.
+  - Atualiza `compras.status` para `recebido_parcial` ou `recebido` conforme o total.
+- View `vw_rel_compras_recebimentos` com marca `confere` / `divergente` / `sem nota`.
+- App: modal **Registrar recebimento** no detalhe do pedido (linha por item com Pedido / Já recebido / Chega agora, nota opcional, conta e pagamento). Nova aba **Recebimentos** com histórico. Alerta âmbar quando o valor da nota diverge.
+- Testes: `supabase/tests/compras_recebimento_test.sql` (parcial + total, excedente falha, imutabilidade); 76/76 no `verificar_tudo.sql`.
+
+### 55C — próximo passo
 
 1. **Pedido + itens com destino** e a tela de compra (um passo só, aprovação automática).
 2. **Recebimento com "chegou tudo?"** disparando estoque / patrimônio / comodato / lançamento.

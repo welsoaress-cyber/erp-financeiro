@@ -28,7 +28,7 @@ cd app && npx tsc --noEmit -p tsconfig.app.json && npx oxlint src && npm run bui
 E2E: Playwright com API mock (`mock.mjs`, porta 54321) e `vite preview --port 4173`; um spec por módulo. Rodar os specs dos módulos tocados.
 
 ## Produção
-- Verificação consolidada: `supabase/tests/verificar_tudo.sql` (esperado 75 de 75). Diagnóstico somente leitura: `supabase/scripts/diagnostico_contratos.sql`.
+- Verificação consolidada: `supabase/tests/verificar_tudo.sql` (esperado 76 de 76). Diagnóstico somente leitura: `supabase/scripts/diagnostico_contratos.sql`.
 - O ambiente remoto não alcança `*.supabase.co` nem `workers.dev`: o proprietário aplica SQL pelo SQL Editor e reporta o resultado.
 
 ## Estilo de resposta
@@ -68,7 +68,7 @@ Custo mínimo, sem rodeios, assertivo. Um item por vez quando o proprietário es
 - Etapa 52: `docs/53-cortesia.md` (contrato cortesia: flag + check valor 0; 0080 = fatura nasce cancelada com motivo Cortesia — aparece, não conta; importação CSV com cortesia e escolha de plano existente).
 - Etapa 50: menu próprio Indicações (módulo app/src/modules/indicacoes — métricas, converter/escolher/entregar e vitrine; Portal do cliente ficou só com aparência/promoções/acessos).
 - Manual do administrador: `docs/manual/README.md` (tela a tela com prints; regerar com `app/scripts/prints-manual.mjs`).
-- **Etapa 55A entregue** (0092): `docs/59-compras.md` — módulo Compras com fluxo formal ERP grande. 55A cobre Requisição + Aprovação/Rejeição/Cancelamento + Pedido (numeração sequencial por negócio, view de totais, dois relatórios). Aprovador = proprietário da organização. 55B (Recebimento → Nota → Lançamento) fica pendente.
+- **Etapa 55A/55B entregues** (0092/0093): `docs/59-compras.md` — módulo Compras com fluxo formal ERP grande. 55A: Requisição + Aprovação + Pedido. 55B: Recebimento (parcial/total, imutável) com nota opcional + geração do lançamento (à vista ou N parcelas mensais, cartão → fatura) + entrada automática no estoque para itens `destino=estoque`. Aprovador = proprietário. 55C (integração completa patrimônio/comodato + migrar Nova compra do Estoque para o mesmo caminho) pendente.
 - **No radar (não iniciar sem o proprietário pedir):** SVA de câmera IP — campanha de câmera em comodato para quem migra ao plano maior + mensalidade de manutenção, em `docs/58-sva-camera-ip.md` (dois produtos com contas separadas; operável hoje com estoque + comodato + plano adicional; sem guardar imagem, por LGPD).
 - **No radar (não iniciar sem o proprietário pedir):** SVA de ponto adicional/repetidor com mensalidade em vez de taxa de instalação — produto detalhado em `docs/57-sva-ponto-adicional.md` (já operável com plano + contrato adicional + comodato, sem etapa nova; falta só agrupar as duas cobranças numa fatura na visão do cliente).
 - **No radar (não iniciar sem o proprietário pedir):** integração ReceitaNet (API URA/Callcenter — consulta de cliente/faturas por CPF/telefone via Edge Function com token em secret). Aguarda: proprietário ativar o módulo de API no plano do ReceitaNet e obter o token com o suporte.

@@ -15,13 +15,14 @@ import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useCategorias } from '../../categorias/api'
 import { useEstoqueItens } from '../../estoque/api'
+import { useContas } from '../../contas/api'
 import {
   useAprovarRequisicao, useCancelarPedido, useCancelarRequisicao, useCriarRequisicao,
-  usePedidoItens, usePedidos, useRejeitarRequisicao, useRequisicaoItens, useRequisicoes, useTotaisPedido,
+  usePedidoItens, usePedidos, useRecebimentos, useRegistrarRecebimento, useRejeitarRequisicao, useRequisicaoItens, useRequisicoes, useTotaisPedido,
 } from '../api'
 import { codigoPedido, codigoRequisicao, ROTULO_DESTINO, ROTULO_STATUS_PEDIDO, ROTULO_STATUS_REQ, type DestinoCompra, type Requisicao, type Pedido } from '../tipos'
 
-type Aba = 'requisicoes' | 'pedidos'
+type Aba = 'requisicoes' | 'pedidos' | 'recebimentos'
 
 const TOM_REQ = { pendente: 'alerta', aprovada: 'ok', rejeitada: 'alerta', convertida: 'ok', cancelada: 'neutro' } as const
 const TOM_PED = { aberto: 'alerta', recebido_parcial: 'info', recebido: 'ok', cancelado: 'neutro' } as const
@@ -213,12 +214,102 @@ function DetalheRequisicao({ req, aoFechar }: { req: Requisicao; aoFechar: () =>
   )
 }
 
+interface LinhaReceb { quantidade: string; numero_serie: string }
+function FormularioRecebimento({ ped, aoFechar }: { ped: Pedido; aoFechar: () => void }) {
+  const itens = usePedidoItens(ped.id)
+  const contas = useContas()
+  const registrar = useRegistrarRecebimento()
+  const [data, setData] = useState(hojeISO())
+  const [contaId, setContaId] = useState('')
+  const [pago, setPago] = useState(false)
+  const [parcelas, setParcelas] = useState('1')
+  const [notaNumero, setNotaNumero] = useState('')
+  const [notaChave, setNotaChave] = useState('')
+  const [notaValor, setNotaValor] = useState('')
+  const [obs, setObs] = useState('')
+  const [linhas, setLinhas] = useState<Record<string, LinhaReceb>>({})
+  const [erro, setErro] = useState<string | null>(null)
+  const conta = (contas.data ?? []).find((c) => c.id === contaId)
+  const ehCartao = conta?.tipo === 'credito'
+  const pendentes = (itens.data ?? []).filter((i) => i.quantidade - i.quantidade_recebida > 0)
+  const somaRecebida = pendentes.reduce((s, i) => s + (Number((linhas[i.id]?.quantidade ?? '').replace(',', '.')) || 0) * i.valor_unitario, 0)
+  const notaValorNum = Number(notaValor.replace(',', '.')) || 0
+  const divergencia = notaValor && Math.abs(notaValorNum - somaRecebida) > 0.01
+
+  async function salvar() {
+    setErro(null)
+    if (!contaId) { setErro('Escolha a conta de pagamento.'); return }
+    const arr = pendentes.map((i) => {
+      const q = Number((linhas[i.id]?.quantidade ?? '').replace(',', '.')) || 0
+      return { compra_item_id: i.id, quantidade: q, numero_serie: (linhas[i.id]?.numero_serie ?? '').trim() || null }
+    }).filter((r) => r.quantidade > 0)
+    if (arr.length === 0) { setErro('Informe a quantidade recebida em ao menos um item.'); return }
+    const p = Math.max(1, Math.floor(Number(parcelas) || 1))
+    try {
+      await registrar.mutateAsync({
+        compra_id: ped.id, itens: arr, data, conta_id: contaId, pago: ehCartao ? false : pago, parcelas: p,
+        nota_numero: notaNumero.trim() || null, nota_chave: notaChave.trim() || null,
+        nota_valor: notaValor.trim() ? Math.round(notaValorNum * 100) / 100 : null,
+        observacao: obs.trim() || null,
+      })
+      aoFechar()
+    } catch (e) { setErro(mensagemDeErro(e)) }
+  }
+
+  return (
+    <div className="space-y-4">
+      {erro && <Alerta tipo="erro">{erro}</Alerta>}
+      <div className="grid grid-cols-3 gap-3">
+        <Campo rotulo="Data do recebimento" type="date" value={data} onChange={(e) => setData(e.target.value)} />
+        <Selecao rotulo="Conta de pagamento" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(contas.data ?? []).filter((c) => c.ativo).map((c) => ({ valor: c.id, rotulo: `${c.nome}${c.tipo === 'credito' ? ' (cartão)' : ''}` }))]} value={contaId} onChange={(e) => setContaId(e.target.value)} />
+        <Campo rotulo="Parcelas (N×)" type="number" min={1} max={60} value={parcelas} onChange={(e) => setParcelas(e.target.value)} />
+      </div>
+      {!ehCartao && Number(parcelas) === 1 && (
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={pago} onChange={(e) => setPago(e.target.checked)} className="size-4 accent-brand-600" />Já pago (efetivar agora)</label>
+      )}
+      {ehCartao && <p className="text-xs text-ink-muted">Cartão de crédito: entra na fatura como previsto (baixa na virada da fatura).</p>}
+      <div className="overflow-x-auto rounded-md border border-line">
+        <table className="w-full text-sm">
+          <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-3 py-2 font-medium">Item</th><th className="px-3 py-2 text-right font-medium">Pedido</th><th className="px-3 py-2 text-right font-medium">Já recebido</th><th className="px-3 py-2 text-right font-medium">Chega agora</th><th className="px-3 py-2 font-medium">Série (patrimônio)</th></tr></thead>
+          <tbody>
+            {pendentes.map((i) => (
+              <tr key={i.id} className="border-b border-line last:border-0">
+                <td className="px-3 py-2">{i.descricao} <span className="text-xs text-ink-muted">({ROTULO_DESTINO[i.destino]})</span></td>
+                <td className="px-3 py-2 text-right tabular-nums">{i.quantidade}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-ink-muted">{i.quantidade_recebida}</td>
+                <td className="px-3 py-2 text-right"><input type="number" step="0.01" min="0" max={i.quantidade - i.quantidade_recebida} className="h-9 w-24 rounded-md border border-line bg-white px-2 text-right text-sm" value={linhas[i.id]?.quantidade ?? ''} onChange={(e) => setLinhas((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { quantidade: '', numero_serie: '' }), quantidade: e.target.value } }))} /></td>
+                <td className="px-3 py-2"><input className="h-9 w-40 rounded-md border border-line bg-white px-2 text-sm" placeholder="Opcional" value={linhas[i.id]?.numero_serie ?? ''} onChange={(e) => setLinhas((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { quantidade: '', numero_serie: '' }), numero_serie: e.target.value } }))} /></td>
+              </tr>
+            ))}
+            {pendentes.length === 0 && <tr><td colSpan={5} className="px-3 py-6 text-center text-sm text-ink-muted">Não há itens pendentes de recebimento.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="grid grid-cols-3 gap-3 rounded-md border border-line bg-surface/60 p-3">
+        <Campo rotulo="Nota nº (opcional)" value={notaNumero} onChange={(e) => setNotaNumero(e.target.value)} maxLength={40} />
+        <Campo rotulo="Chave da nota (opcional)" value={notaChave} onChange={(e) => setNotaChave(e.target.value)} maxLength={60} />
+        <Campo rotulo="Valor da nota (opcional)" type="number" step="0.01" min="0" value={notaValor} onChange={(e) => setNotaValor(e.target.value)} />
+      </div>
+      {divergencia && <Alerta tipo="info">Valor da nota ({formatarMoeda(notaValorNum)}) diferente do recebido ({formatarMoeda(somaRecebida)}). Ainda é possível salvar — só um aviso.</Alerta>}
+      <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={300} value={obs} onChange={(e) => setObs(e.target.value)} />
+      <p className="text-xs text-ink-muted">Total do recebimento: <b>{formatarMoeda(somaRecebida)}</b> (mais frete/desconto rateados). Itens de estoque com item vinculado entram automaticamente no estoque pelo custo unitário.</p>
+      <div className="flex justify-end gap-2">
+        <Botao variante="secundario" onClick={aoFechar} disabled={registrar.isPending}>Cancelar</Botao>
+        <Botao onClick={() => void salvar()} carregando={registrar.isPending}>Registrar recebimento</Botao>
+      </div>
+    </div>
+  )
+}
+
 function DetalhePedido({ ped, aoFechar }: { ped: Pedido; aoFechar: () => void }) {
   const itens = usePedidoItens(ped.id)
   const totais = useTotaisPedido(ped.id)
+  const recebimentos = useRecebimentos(ped.id)
   const pessoas = usePessoas()
   const cancelar = useCancelarPedido()
+  const [modalReceb, setModalReceb] = useState(false)
   const fornecedor = (pessoas.data ?? []).find((p) => p.id === ped.fornecedor_id)?.nome ?? '—'
+  const podeReceber = ped.status === 'aberto' || ped.status === 'recebido_parcial'
   return (
     <div className="space-y-4">
       <div className="flex items-baseline justify-between text-sm">
@@ -244,12 +335,57 @@ function DetalhePedido({ ped, aoFechar }: { ped: Pedido; aoFechar: () => void })
       <div className="rounded-md border border-line bg-surface/60 p-3 text-sm">
         <p>Itens: <b className="tabular-nums">{formatarMoeda(totais.data?.total_itens ?? 0)}</b> · Frete: <b className="tabular-nums">{formatarMoeda(ped.valor_frete)}</b> · Desconto: <b className="tabular-nums">−{formatarMoeda(ped.valor_desconto)}</b> · <span className="text-base">Total: <b className="tabular-nums">{formatarMoeda(totais.data?.total_final ?? 0)}</b></span></p>
       </div>
-      <p className="text-xs text-ink-muted">Recebimento com nota fiscal e geração de lançamento financeiro chega na próxima etapa (55B).</p>
+      {(recebimentos.data ?? []).length > 0 && (
+        <div className="rounded-md border border-line">
+          <div className="border-b border-line px-3 py-2 text-sm font-medium">Recebimentos</div>
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-3 py-2 font-medium">Data</th><th className="px-3 py-2 font-medium">Nota</th><th className="px-3 py-2 text-right font-medium">Valor da nota</th><th className="px-3 py-2 font-medium">Obs.</th></tr></thead>
+            <tbody>
+              {(recebimentos.data ?? []).map((r) => (
+                <tr key={r.id} className="border-b border-line last:border-0"><td className="px-3 py-2 tabular-nums">{formatarData(r.data)}</td><td className="px-3 py-2 text-xs">{r.nota_numero ?? '—'}</td><td className="px-3 py-2 text-right tabular-nums">{r.nota_valor != null ? formatarMoeda(r.nota_valor) : '—'}</td><td className="max-w-56 truncate px-3 py-2 text-xs text-ink-muted" title={r.observacao ?? ''}>{r.observacao ?? '—'}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="flex justify-end gap-2 border-t border-line pt-3">
-        {ped.status === 'aberto' && <Botao variante="perigo" onClick={() => cancelar.mutate({ id: ped.id }, { onSuccess: aoFechar })} carregando={cancelar.isPending}>Cancelar pedido</Botao>}
+        {ped.status === 'aberto' && <Botao variante="secundario" onClick={() => cancelar.mutate({ id: ped.id }, { onSuccess: aoFechar })} carregando={cancelar.isPending}>Cancelar pedido</Botao>}
+        {podeReceber && <Botao onClick={() => setModalReceb(true)}>Registrar recebimento</Botao>}
         <Botao variante="secundario" onClick={aoFechar}>Fechar</Botao>
       </div>
+      <Modal aberto={modalReceb} aoFechar={() => setModalReceb(false)} largura="xl" titulo={`Recebimento · ${codigoPedido(ped)}`}>
+        {modalReceb && <FormularioRecebimento ped={ped} aoFechar={() => setModalReceb(false)} />}
+      </Modal>
     </div>
+  )
+}
+
+function ListaRecebimentos({ negocioId }: { negocioId: string }) {
+  const recebimentos = useRecebimentos()
+  const pedidos = usePedidos()
+  const pessoas = usePessoas()
+  const nomePedido = useMemo(() => new Map((pedidos.data ?? []).map((p) => [p.id, `${codigoPedido(p)}${p.fornecedor_id ? ' · ' + (pessoas.data?.find((x) => x.id === p.fornecedor_id)?.nome ?? '—') : ''}`])), [pedidos.data, pessoas.data])
+  const pedidosDoNegocio = new Set((pedidos.data ?? []).filter((p) => !negocioId || p.negocio_id === negocioId).map((p) => p.id))
+  const lista = (recebimentos.data ?? []).filter((r) => pedidosDoNegocio.has(r.compra_id))
+  return (
+    <Cartao className="p-0">
+      {lista.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">Sem recebimentos ainda.</p> : (
+        <div className="overflow-x-auto"><table className="w-full text-sm">
+          <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Data</th><th className="px-4 py-2 font-medium">Pedido / fornecedor</th><th className="px-4 py-2 font-medium">Nota</th><th className="px-4 py-2 text-right font-medium">Valor da nota</th><th className="px-4 py-2 font-medium">Obs.</th></tr></thead>
+          <tbody>
+            {lista.map((r) => (
+              <tr key={r.id} className="border-b border-line last:border-0">
+                <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatarData(r.data)}</td>
+                <td className="px-4 py-2">{nomePedido.get(r.compra_id) ?? '—'}</td>
+                <td className="px-4 py-2 text-xs">{r.nota_numero ?? '—'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.nota_valor != null ? formatarMoeda(r.nota_valor) : '—'}</td>
+                <td className="max-w-56 truncate px-4 py-2 text-xs text-ink-muted" title={r.observacao ?? ''}>{r.observacao ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table></div>
+      )}
+    </Cartao>
   )
 }
 
@@ -282,9 +418,9 @@ export function ComprasPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div role="tablist" className="flex gap-1 rounded-md border border-line p-1 text-sm">
-          {(['requisicoes', 'pedidos'] as Aba[]).map((a) => (
+          {(['requisicoes', 'pedidos', 'recebimentos'] as Aba[]).map((a) => (
             <button key={a} role="tab" aria-selected={aba === a} onClick={() => setAba(a)} className={`rounded px-3 py-1.5 ${aba === a ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>
-              {a === 'requisicoes' ? `Requisições${pendentes > 0 ? ` (${pendentes})` : ''}` : 'Pedidos'}
+              {a === 'requisicoes' ? `Requisições${pendentes > 0 ? ` (${pendentes})` : ''}` : a === 'pedidos' ? 'Pedidos' : 'Recebimentos'}
             </button>
           ))}
         </div>
@@ -339,6 +475,8 @@ export function ComprasPage() {
           )}
         </Cartao>
       )}
+
+      {aba === 'recebimentos' && <ListaRecebimentos negocioId={negocioAtual} />}
 
       <Modal aberto={modalNova} aoFechar={() => setModalNova(false)} largura="xl" titulo="Nova requisição de compra">
         {modalNova && negocioAtual && <FormularioRequisicao negocioId={negocioAtual} aoFechar={() => setModalNova(false)} />}

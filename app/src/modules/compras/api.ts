@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { CompraTotais, DestinoCompra, Pedido, PedidoItem, Requisicao, RequisicaoItem } from './tipos'
+import type { CompraTotais, DestinoCompra, Pedido, PedidoItem, Recebimento, RecebimentoItem, Requisicao, RequisicaoItem } from './tipos'
 
 const chave = (org: string) => ['compras', org] as const
 
@@ -124,6 +124,52 @@ export function useCancelarRequisicao() {
       return data as Requisicao
     },
     onSuccess: invalidar,
+  })
+}
+
+export function useRecebimentos(compraId?: string | null) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'recebimentos', compraId ?? 'todos'],
+    queryFn: async (): Promise<Recebimento[]> => {
+      let q = supabase.from('compra_recebimentos').select('*').eq('organizacao_id', organizacao.id).order('data', { ascending: false })
+      if (compraId) q = q.eq('compra_id', compraId)
+      const { data, error } = await q
+      if (error) throw error
+      return (data ?? []).map((r) => ({ ...r, nota_valor: r.nota_valor == null ? null : Number(r.nota_valor) })) as Recebimento[]
+    },
+  })
+}
+
+export function useRecebimentoItens(recebimentoId?: string | null) {
+  return useQuery({
+    queryKey: ['compras', 'receb_itens', recebimentoId ?? 'nenhum'],
+    enabled: !!recebimentoId,
+    queryFn: async (): Promise<RecebimentoItem[]> => {
+      const { data, error } = await supabase.from('compra_recebimento_itens').select('*').eq('recebimento_id', recebimentoId!).order('id')
+      if (error) throw error
+      return (data ?? []).map((i) => ({ ...i, quantidade: Number(i.quantidade) })) as RecebimentoItem[]
+    },
+  })
+}
+
+export function useRegistrarRecebimento() {
+  const invalidar = useInvalidar()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (d: { compra_id: string; itens: Array<{ compra_item_id: string; quantidade: number; numero_serie?: string | null; observacao?: string | null }>; data?: string; nota_numero?: string | null; nota_chave?: string | null; nota_valor?: number | null; observacao?: string | null; conta_id: string; pago: boolean; parcelas: number; categoria_padrao_id?: string | null }) => {
+      const { data, error } = await supabase.rpc('registrar_recebimento_compra', {
+        p_compra_id: d.compra_id, p_itens: d.itens,
+        p_data: d.data ?? undefined,
+        p_nota_numero: d.nota_numero ?? null, p_nota_chave: d.nota_chave ?? null, p_nota_valor: d.nota_valor ?? null,
+        p_observacao: d.observacao ?? null,
+        p_conta_id: d.conta_id, p_pago: d.pago, p_parcelas: d.parcelas,
+        p_categoria_padrao_id: d.categoria_padrao_id ?? null,
+      })
+      if (error) throw error
+      return data as Recebimento
+    },
+    onSuccess: () => { invalidar(); void qc.invalidateQueries({ queryKey: ['lancamentos'] }); void qc.invalidateQueries({ queryKey: ['estoque'] }) },
   })
 }
 

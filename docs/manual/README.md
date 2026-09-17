@@ -233,7 +233,9 @@ Todo material entra no ERP por este fluxo formal (mesmo hoje, que você é o ún
 - **Aba Pedidos**: os pedidos que já saíram da aprovação, com fornecedor, previsão, condição e valor total. Você pode cancelar um pedido em aberto se desistiu antes de receber.
 - **Central de Relatórios**: dois novos relatórios entram na aba Operação — *Requisições de compra pendentes* (o que espera sua aprovação) e *Pedidos de compra em aberto* (o que está a caminho).
 
-Recebimento com nota, disparo automático de entrada no estoque/patrimônio/comodato e lançamento financeiro chega na **etapa 55B**. Enquanto isso, o pedido fica "em aberto" e você continua registrando a chegada pela Nova compra do Estoque — os dois caminhos serão unificados na próxima etapa.
+**Recebimento (55B).** No detalhe do pedido aberto, clique em **Registrar recebimento**: informe a quantidade que chegou por item (pode ser parcial), a nota (número/chave/valor — opcional), a conta de pagamento e o número de parcelas. Cartão de crédito vai para a fatura como previsto; conta comum efetiva se você marcar "Já pago". Itens com destino **Estoque** entram automaticamente no estoque pelo custo unitário do pedido (com frete/desconto rateados). O pedido fica "Recebido parcial" até fechar tudo. Divergência entre o valor da nota e o valor recebido só gera um aviso — não trava. Nova aba **Recebimentos** lista o histórico; e o relatório *Recebimentos de compra* na Central marca cada linha como `confere`, `divergente` ou `sem nota`.
+
+Integração completa com Patrimônio e Comodato + unificação com a "Nova compra" do Estoque ficam para a **etapa 55C**.
 
 ## 12. Ordens de Serviço (OS)
 

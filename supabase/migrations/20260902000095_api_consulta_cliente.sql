@@ -50,6 +50,7 @@ select t.id, t.organizacao_id, t.negocio_id, n.nome as negocio, t.nome, t.token_
   from public.api_tokens t
   join public.negocios n on n.id = t.negocio_id
   left join lateral (select count(*) as consultas from public.api_consultas c where c.token_id = t.id) u on true;
+grant select on public.vw_api_tokens to authenticated;
 
 -- Relatório: quem consultou o quê (Central de Relatórios) — sem CPF completo, só os 3 últimos dígitos.
 create view public.vw_rel_api_consultas with (security_invoker = true) as
@@ -59,6 +60,7 @@ select c.id, c.organizacao_id, t.negocio_id, n.nome as negocio, t.nome as token,
   from public.api_consultas c
   join public.api_tokens t on t.id = c.token_id
   join public.negocios n on n.id = t.negocio_id;
+grant select on public.vw_rel_api_consultas to authenticated;
 
 -- Gera um token novo: devolve o valor em texto puro (única vez) + o registro criado.
 -- Coluna de saída é "token_id" (não "id") de propósito: um OUT parâmetro chamado

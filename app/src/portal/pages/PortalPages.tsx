@@ -12,7 +12,7 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePixStatus, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useTermoContrato } from '../api'
+import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePixStatus, usePontosExtrato, usePontosSaldo, usePontosVitrine, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useResgatarDescontoPontos, useResgatarPremioPontos, useTermoContrato } from '../api'
 import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
@@ -410,6 +410,84 @@ export function PortalPromocoesPage() {
           {p.como_aderir && <p className="mt-2 rounded-md bg-surface px-3 py-2 text-sm"><span className="font-medium">Como aderir:</span> {p.como_aderir}</p>}
         </Cartao>
       ))}
+    </div>
+  )
+}
+
+export function PortalPontosPage() {
+  const r = usePortal()
+  const saldo = usePontosSaldo()
+  const extrato = usePontosExtrato()
+  const [negocioId, setNegocioId] = useState(r.negocios[0]?.id ?? '')
+  const vitrine = usePontosVitrine(negocioId || null)
+  const resgatarPremio = useResgatarPremioPontos()
+  const resgatarDesconto = useResgatarDescontoPontos()
+  const [pontosDesconto, setPontosDesconto] = useState('')
+  const saldoNegocio = (saldo.data ?? []).find((s) => s.negocio_id === negocioId)?.saldo ?? 0
+  const pontosNum = Number(pontosDesconto.replace(/\D/g, '')) || 0
+  const valorDesconto = pontosNum * 0.25
+  if (saldo.isPending) return <><Titulo>Meus pontos</Titulo><Carregando /></>
+  return (
+    <div className="space-y-6">
+      <Titulo>Meus pontos</Titulo>
+      <p className="text-sm text-ink-muted">Pague suas faturas antes do vencimento e ganhe pontos — quanto mais cedo, mais pontos. Troque por prêmio ou por desconto na fatura.</p>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {(saldo.data ?? []).map((s) => (
+          <Indicador key={s.negocio_id} rotulo={r.negocios.length > 1 ? `Saldo · ${s.negocio}` : 'Seu saldo'} valor={`${s.saldo} pts`} />
+        ))}
+        {(saldo.data ?? []).length === 0 && <Indicador rotulo="Seu saldo" valor="0 pts" />}
+      </div>
+      {r.negocios.length > 1 && <Selecao rotulo="Serviço" opcoes={r.negocios.map((n) => ({ valor: n.id, rotulo: n.nome }))} value={negocioId} onChange={(e) => setNegocioId(e.target.value)} />}
+
+      <Cartao>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">🎁 Vitrine de prêmios</h2>
+        {(resgatarPremio.error) && <div className="mb-3"><Alerta tipo="erro">{mensagemDeErro(resgatarPremio.error)}</Alerta></div>}
+        {resgatarPremio.isSuccess && <div className="mb-3"><Alerta tipo="sucesso">Prêmio resgatado! O provedor confirma a entrega em breve.</Alerta></div>}
+        {vitrine.isPending ? <Carregando /> : (vitrine.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Nenhum prêmio disponível no momento.</p> : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {(vitrine.data ?? []).map((p) => (
+              <div key={p.id} className="overflow-hidden rounded-lg border border-line">
+                {p.foto ? <img src={p.foto} alt={p.nome} className="aspect-square w-full object-cover" /> : <div className="flex aspect-square w-full items-center justify-center bg-surface text-4xl">🎁</div>}
+                <div className="px-2 py-2">
+                  <p className="truncate text-sm font-medium">{p.nome}</p>
+                  <p className="text-xs text-ink-muted">{p.pontos_custo} pts</p>
+                  <Botao className="mt-1 w-full" variante="secundario" disabled={saldoNegocio < p.pontos_custo} carregando={resgatarPremio.isPending}
+                    onClick={() => { if (window.confirm(`Trocar ${p.pontos_custo} pontos por "${p.nome}"? Não é possível desfazer.`)) resgatarPremio.mutate({ premioId: p.id }) }}>
+                    {saldoNegocio < p.pontos_custo ? 'Saldo insuficiente' : 'Trocar'}
+                  </Botao>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Cartao>
+
+      <Cartao>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">💳 Desconto na próxima fatura</h2>
+        <p className="mb-3 text-sm text-ink-muted">R$ 0,25 por ponto, mínimo 4 pontos (R$ 1,00). Aplica direto na sua próxima fatura em aberto — imediato.</p>
+        {resgatarDesconto.error != null && <div className="mb-3"><Alerta tipo="erro">{mensagemDeErro(resgatarDesconto.error)}</Alerta></div>}
+        {resgatarDesconto.isSuccess && <div className="mb-3"><Alerta tipo="sucesso">Desconto aplicado na sua fatura!</Alerta></div>}
+        <div className="flex flex-wrap items-end gap-3">
+          <Campo rotulo="Pontos a trocar" inputMode="numeric" value={pontosDesconto} onChange={(e) => setPontosDesconto(e.target.value)} placeholder="ex.: 20" />
+          <p className="pb-2 text-sm text-ink-muted">= {formatarMoeda(valorDesconto)}</p>
+          <Botao disabled={pontosNum < 4 || pontosNum > saldoNegocio || !negocioId} carregando={resgatarDesconto.isPending}
+            onClick={() => resgatarDesconto.mutate({ negocioId, pontos: pontosNum }, { onSuccess: () => setPontosDesconto('') })}>
+            Trocar por desconto
+          </Botao>
+        </div>
+      </Cartao>
+
+      <Cartao className="p-0">
+        <div className="border-b border-line px-4 py-3"><h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">Extrato</h2></div>
+        {extrato.isPending ? <div className="p-6"><Carregando /></div> : (extrato.data ?? []).length === 0 ? <p className="px-4 py-8 text-center text-sm text-ink-muted">Nenhum ponto ainda — pague sua próxima fatura antes do vencimento.</p> : (
+          <ul className="divide-y divide-line">{(extrato.data ?? []).map((e, i) => (
+            <li key={i} className="flex items-center justify-between px-4 py-2 text-sm">
+              <span>{e.descricao} <span className="text-xs text-ink-muted">· {formatarData(e.quando.slice(0, 10))}</span></span>
+              <span className={`tabular-nums font-medium ${e.pontos >= 0 ? 'text-green-700' : 'text-red-700'}`}>{e.pontos >= 0 ? '+' : ''}{e.pontos} pts</span>
+            </li>
+          ))}</ul>
+        )}
+      </Cartao>
     </div>
   )
 }

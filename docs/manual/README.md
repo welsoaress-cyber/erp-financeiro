@@ -315,7 +315,7 @@ Relatórios disponíveis: Financeiro — resultado por negócio, gastos por cent
 
 ![Notificações](img/21-notificacoes.png)
 
-- **Notificações**: régua de cobrança no WhatsApp **configurável por negócio** — escolha em quais dias o cliente recebe aviso antes e depois do vencimento (até 5 pontos de cada lado; o aviso do dia sempre sai). Padrão enxuto: **2 antes · no dia · 3 depois**. Cada ponto manda no máximo uma mensagem por fatura — sem enxurrada de WhatsApp. Configure também número, instância Evolution, templates e os toggles **"Bloqueio e desbloqueio automáticos"** (§3.4) e **"Pontos por pontualidade"** — cliente que paga antes do vencimento ganha pontos (quanto mais cedo, mais pontos, sem limite; pagar no dia já vale 1, nunca é punição), campanha de 01/10/2026 a 30/09/2027; acompanhe pelo relatório **"Pontos de pontualidade"** (ainda sem vitrine de prêmios). Acompanhe o histórico de envio. Os avisos de OS (visita agendada/concluída) e o Pix copia-e-cola pegam carona nessa mesma configuração.
+- **Notificações**: régua de cobrança no WhatsApp **configurável por negócio** — escolha em quais dias o cliente recebe aviso antes e depois do vencimento (até 5 pontos de cada lado; o aviso do dia sempre sai). Padrão enxuto: **2 antes · no dia · 3 depois**. Cada ponto manda no máximo uma mensagem por fatura — sem enxurrada de WhatsApp. Configure também número, instância Evolution, templates e os toggles **"Bloqueio e desbloqueio automáticos"** (§3.4) e **"Pontos por pontualidade"** — cliente que paga antes do vencimento ganha pontos (quanto mais cedo, mais pontos, sem limite; pagar no dia já vale 1, nunca é punição), campanha de 01/10/2026 a 30/09/2027; troca por prêmio físico ou desconto em fatura em **Configurações → Programa de pontos** (cadastro) e no **Portal → Meus pontos** (o cliente resgata); acompanhe pelos relatórios **"Pontos de pontualidade"** e **"Resgates de pontos (ROI)"**. Acompanhe o histórico de envio. Os avisos de OS (visita agendada/concluída) e o Pix copia-e-cola pegam carona nessa mesma configuração.
 - **Disparos** (![Disparos](img/22-disparos.png)): mensagens manuais em lote (ex.: aviso de manutenção) com proteção anti-bloqueio.
 - **Apps**: controle de recargas/ativações de apps com carteira de dois saldos. O **histórico da carteira** filtra por tipo (recarga/consumo) e mês; os **contratos de app**, por app, situação e busca por cliente/nº do contrato.
 - **Cobrança**: as listas de **confianças ativas** e **Pix recentes** têm busca por cliente e filtro de situação do Pix (aguardando/pago/cancelado).
@@ -328,6 +328,8 @@ Relatórios disponíveis: Financeiro — resultado por negócio, gastos por cent
 | ![Início](img/41-portal-inicio.png) | ![Faturas](img/42-portal-faturas.png) | ![Chamados](img/43-portal-chamados.png) | ![Plano](img/44-portal-plano.png) |
 
 O cliente entra com **CPF + data de nascimento** e pode: ver e pagar faturas (**Pix copia-e-cola com baixa automática**), pedir **visita técnica** (vira OS de verdade), aprovar remarcação, avaliar o atendimento, acompanhar o cartão fidelidade, indicar amigos e **aceitar o contrato digitalmente** (fica registrado com data, IP e o texto exato).
+
+**Meus pontos** (aba do portal, se o negócio tiver o programa ligado): saldo do cliente, vitrine de prêmios (troca direto, sem sair da tela), formulário para converter pontos em desconto na próxima fatura (mostra o valor em R$ em tempo real) e extrato completo de ganhos e resgates.
 
 Você configura a aparência e as regras em **Portal do cliente** (menu do admin): cores, chave Pix, Pix automático + conta que recebe, texto do termo de adesão, fidelidade, promoções e conversão de indicações.
 
@@ -350,7 +352,11 @@ Dados da conta/organização e **Importar CSV** (traz clientes, planos e contrat
 - **Cortesia** (caixa na linha): importa o contrato com valor 0 — não gera cobrança nem aparece no Contas a receber (o faturamento lista "Contrato com valor zero" como pendência informativa).
 - Arquivos com acentos misturados (UTF-8 e Windows) são lidos linha a linha; se um nome ainda vier errado, corrija na tela de Pessoas.
 
-### 17.1 Integrações via API
+### 17.1 Programa de pontos
+
+Configurações → **Gerenciar prêmios**. Cadastro do catálogo de prêmios da vitrine de pontos: foto, nome, item vinculado do Estoque (categoria Brindes) e **preço em R$** — o custo em pontos é calculado sozinho (R$ 0,22 por ponto, arredondado pra cima). Abaixo do catálogo, a lista de **resgates aguardando entrega**: um clique em "Entregue" baixa o item do estoque e fecha o resgate. Desconto em fatura não tem cadastro — o cliente escolhe quantos pontos converter direto no portal.
+
+### 17.2 Integrações via API
 
 ![Integrações via API](img/52-integracoes-api.png)
 

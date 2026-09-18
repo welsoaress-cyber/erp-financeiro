@@ -453,6 +453,26 @@ export const RELATORIOS: Relatorio[] = [
     agrupavel: ['cliente', 'negocio', 'ciclo_inicio'],
     ordem: { chave: 'criado_em', desc: true },
   },
+  {
+    id: 'pontos-resgates',
+    titulo: 'Resgates de pontos (ROI)',
+    area: 'Financeiro',
+    descricao: 'Prêmios físicos e descontos trocados por pontos — quanto a campanha custou e a situação de cada resgate.',
+    view: 'vw_rel_pontos_resgates',
+    filtros: ['negocio', 'pessoa'],
+    colunas: [
+      { chave: 'criado_em', rotulo: 'Quando', tipo: 'data' },
+      { chave: 'cliente', rotulo: 'Cliente' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+      { chave: 'tipo', rotulo: 'Tipo' },
+      { chave: 'premio', rotulo: 'Prêmio' },
+      { chave: 'pontos', rotulo: 'Pontos', tipo: 'numero', totalizar: true },
+      { chave: 'valor_reais', rotulo: 'Valor', tipo: 'moeda', totalizar: true },
+      { chave: 'situacao', rotulo: 'Situação' },
+    ],
+    agrupavel: ['tipo', 'negocio', 'situacao'],
+    ordem: { chave: 'criado_em', desc: true },
+  },
 ]
 
 export const AREAS: Area[] = ['Financeiro', 'Clientes e contratos', 'Operação', 'Comercial']

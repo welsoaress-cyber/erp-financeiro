@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../core/supabase/client'
 import { useAuth } from '../core/auth/useAuth'
-import type { AvisoRede, ContratoCliente, Fatura, Fidelidade, Indicacao, Pagamento, PortalResumo, PresenteOpcao, Promocao, ProximaFatura, Solicitacao, TipoSolicitacao, VitrinePublica } from './tipos'
+import type { AvisoRede, ContratoCliente, Fatura, Fidelidade, Indicacao, Pagamento, PontoExtratoItem, PontoSaldo, PontoVitrineItem, PortalResumo, PresenteOpcao, Promocao, ProximaFatura, Solicitacao, TipoSolicitacao, VitrinePublica } from './tipos'
 
 const chave = (u: string | undefined) => ['portal', u ?? ''] as const
 const num = <T extends object>(rows: T[], campos: (keyof T)[]) => rows.map((r) => { const c = { ...r } as Record<keyof T, unknown>; for (const k of campos) c[k] = Number(c[k]); return c as T })
@@ -34,6 +34,40 @@ export const usePagamentos = () => useLista<Pagamento>('pagamentos', 'portal_pag
 export const useContratosCliente = () => useLista<ContratoCliente>('contratos', 'portal_contratos', ['valor', 'descontos_pendentes'])
 export const usePromocoesCliente = () => useLista<Promocao>('promocoes', 'portal_promocoes', [])
 export const useIndicacoesCliente = () => useLista<Indicacao>('indicacoes', 'portal_indicacoes', ['beneficio_valor'])
+export const usePontosSaldo = () => useLista<PontoSaldo>('pontos-saldo', 'portal_pontos_saldo', ['saldo'])
+export const usePontosExtrato = () => useLista<PontoExtratoItem>('pontos-extrato', 'portal_pontos_extrato', ['pontos'])
+export function usePontosVitrine(negocioId: string | null) {
+  const { usuario } = useAuth()
+  return useQuery({
+    queryKey: [...chave(usuario?.id), 'pontos-vitrine', negocioId],
+    enabled: Boolean(usuario && negocioId),
+    queryFn: async (): Promise<PontoVitrineItem[]> => {
+      const { data, error } = await supabase.rpc('portal_pontos_vitrine', { p_negocio_id: negocioId })
+      if (error) throw error
+      return num((data ?? []) as PontoVitrineItem[], ['pontos_custo'])
+    },
+  })
+}
+export function useResgatarPremioPontos() {
+  const invalidar = useInvalidarPortal()
+  return useMutation({
+    mutationFn: async (p: { premioId: string }) => {
+      const { error } = await supabase.rpc('portal_resgatar_premio_pontos', { p_premio_id: p.premioId })
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+export function useResgatarDescontoPontos() {
+  const invalidar = useInvalidarPortal()
+  return useMutation({
+    mutationFn: async (p: { negocioId: string; pontos: number }) => {
+      const { error } = await supabase.rpc('portal_resgatar_desconto_pontos', { p_negocio_id: p.negocioId, p_pontos: p.pontos })
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
 
 function useInvalidarPortal() {
   const { usuario } = useAuth(); const qc = useQueryClient()

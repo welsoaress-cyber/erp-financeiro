@@ -13,3 +13,7 @@ export interface IndicacaoFaixa { id: string; negocio_id: string; faixa: number;
 export interface DadosFaixa { negocio_id: string; faixa: number; nome: string; plano_ate: number | null; teto: number; ativo: boolean }
 export interface IndicacaoPremio { id: string; negocio_id: string; nome: string; foto: string | null; faixa: number; item_id: string; ativo: boolean }
 export interface DadosPremio { negocio_id: string; nome: string; foto: string | null; faixa: number; item_id: string; ativo: boolean }
+
+export interface PontoPremioAdmin { id: string; negocio_id: string; nome: string; foto: string | null; item_id: string; valor_reais: number; pontos_custo: number; ativo: boolean }
+export interface DadosPontoPremio { negocio_id: string; nome: string; foto: string | null; item_id: string; valor_reais: number; ativo: boolean }
+export interface PontoResgateAdmin { id: string; organizacao_id: string; negocio_id: string; negocio: string; cliente: string; tipo: string; premio: string; pontos: number; valor_reais: number; situacao: string; criado_em: string; entregue_em: string | null }

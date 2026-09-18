@@ -2,6 +2,7 @@ import type { DefinicaoModulo } from '../../core/modulos/tipos'
 import { ConfiguracoesPage } from './pages/ConfiguracoesPage'
 import { ImportarCsvPage } from './importacao/ImportarCsvPage'
 import { IntegracoesPage } from './integracoes/IntegracoesPage'
+import { PontosPage } from './pontos/PontosPage'
 
 export const moduloConfiguracoes: DefinicaoModulo = {
   id: 'configuracoes',
@@ -12,5 +13,6 @@ export const moduloConfiguracoes: DefinicaoModulo = {
   subRotas: [
     { rota: '/configuracoes/importar', Pagina: ImportarCsvPage },
     { rota: '/configuracoes/integracoes', Pagina: IntegracoesPage },
+    { rota: '/configuracoes/pontos', Pagina: PontosPage },
   ],
 }

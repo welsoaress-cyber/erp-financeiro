@@ -22,6 +22,9 @@ export interface VitrinePublica { negocio: string; cor: string; logo: string | n
 export type EstadoSelo = 'ok' | 'gratis' | 'atraso' | 'vencida' | 'aberto' | 'vazio'
 export interface SeloFidelidade { n: number; competencia: string; estado: EstadoSelo; vencimento: string | null; valor: number | null }
 export interface Fidelidade { contrato_id: string; codigo: number; negocio: string; plano: string; valor: number; ativa: boolean; inicio: string; fim: string; ciclo: number; selos: number; slots: SeloFidelidade[]; premios: { percentual: number; competencia: string; referencia: string }[] }
+export interface PontoSaldo { negocio_id: string; negocio: string; saldo: number }
+export interface PontoExtratoItem { quando: string; negocio: string; descricao: string; pontos: number }
+export interface PontoVitrineItem { id: string; nome: string; foto: string | null; pontos_custo: number }
 export type StatusRede = 'ok' | 'lentidao' | 'queda' | 'manutencao'
 export interface AvisoRede { negocio_id: string; negocio: string; status: StatusRede; titulo: string | null; descricao: string | null; atualizado_em: string }
 export type TipoSolicitacao = 'suporte' | 'fatura' | 'duvida' | 'upgrade'

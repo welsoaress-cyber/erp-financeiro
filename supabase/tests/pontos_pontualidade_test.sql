@@ -123,7 +123,7 @@ end $$;
 -- T8: saldo do cliente no negócio soma T1+T2+T4 (11+1+40=52), pelo saldo de vw_saldo_pontos
 do $$ declare v r%rowtype; begin
   select * into v from r;
-  assert (select saldo from public.vw_saldo_pontos where pessoa_id = (select id from public.pessoas where nome='Cliente Pontual') and negocio_id = v.neg_on and ciclo_inicio = '2026-10-01') = 52,
+  assert (select saldo from public.vw_saldo_pontos where pessoa_id = (select id from public.pessoas where nome='Cliente Pontual') and negocio_id = v.neg_on) = 52,
     'T8 saldo soma os contratos elegíveis do ciclo';
 end $$;
 
@@ -149,7 +149,7 @@ end $$;
 do $$ declare v r%rowtype; begin
   select * into v from r;
   update public.contratos set status = 'encerrado', data_fim = current_date where id = v.ct_principal;
-  assert not exists (select 1 from public.vw_saldo_pontos where pessoa_id = (select id from public.pessoas where nome='Cliente Pontual') and negocio_id = v.neg_on and ciclo_inicio = '2026-10-01'),
+  assert not exists (select 1 from public.vw_saldo_pontos where pessoa_id = (select id from public.pessoas where nome='Cliente Pontual') and negocio_id = v.neg_on),
     'T11 contrato encerrado zera o saldo do ciclo';
 end $$;
 

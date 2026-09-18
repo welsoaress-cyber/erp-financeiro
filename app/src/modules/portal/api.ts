@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { AcessoPortal, DadosFaixa, DadosPortalConfig, DadosPremio, DadosPromocao, IndicacaoAdmin, IndicacaoFaixa, IndicacaoPremio, PortalConfig, PromocaoAdmin, SolicitacaoAdmin, StatusRede, StatusRedeAdmin } from './tipos'
+import type { AcessoPortal, DadosFaixa, DadosPontoPremio, DadosPortalConfig, DadosPremio, DadosPromocao, IndicacaoAdmin, IndicacaoFaixa, IndicacaoPremio, PontoPremioAdmin, PontoResgateAdmin, PortalConfig, PromocaoAdmin, SolicitacaoAdmin, StatusRede, StatusRedeAdmin } from './tipos'
 
 const chave = (org: string) => ['portal-admin', org] as const
 function useInvalidar() { const { organizacao } = useOrganizacao(); const qc = useQueryClient(); return () => { void qc.invalidateQueries({ queryKey: chave(organizacao.id) }); void qc.invalidateQueries({ queryKey: ['contratos', organizacao.id] }) } }
@@ -93,6 +93,34 @@ export function useCriarPremiosLote() {
       return criados
     },
     onSuccess: () => { invalidar(); void qc.invalidateQueries({ queryKey: ['estoque', organizacao.id] }) },
+  })
+}
+export function usePontosPremiosAdmin() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({ queryKey: [...chave(organizacao.id), 'pontos-premios'], queryFn: async (): Promise<PontoPremioAdmin[]> => { const { data, error } = await supabase.from('pontos_premios').select('*').eq('organizacao_id', organizacao.id).order('nome'); if (error) throw error; return (data ?? []).map((p) => ({ ...p, valor_reais: Number(p.valor_reais), pontos_custo: Number(p.pontos_custo) })) } })
+}
+export function useSalvarPontoPremio() {
+  const { organizacao } = useOrganizacao(); const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { id?: string; dados: DadosPontoPremio }) => {
+      const q = p.id ? supabase.from('pontos_premios').update(p.dados).eq('id', p.id) : supabase.from('pontos_premios').insert({ ...p.dados, organizacao_id: organizacao.id })
+      const { error } = await q.select().single(); if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+export function usePontosResgatesAdmin() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({ queryKey: [...chave(organizacao.id), 'pontos-resgates'], queryFn: async (): Promise<PontoResgateAdmin[]> => { const { data, error } = await supabase.from('vw_rel_pontos_resgates').select('*').eq('organizacao_id', organizacao.id).order('criado_em', { ascending: false }).limit(300); if (error) throw error; return (data ?? []).map((r) => ({ ...r, pontos: Number(r.pontos), valor_reais: Number(r.valor_reais) })) } })
+}
+export function useEntregarPremioPontos() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { id: string; observacao?: string }) => {
+      const { error } = await supabase.rpc('entregar_premio_pontos', { p_resgate_id: p.id, p_observacao: p.observacao ?? null })
+      if (error) throw error
+    },
+    onSuccess: invalidar,
   })
 }
 export function useIndicacoesAdmin() {

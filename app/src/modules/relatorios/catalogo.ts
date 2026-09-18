@@ -433,6 +433,26 @@ export const RELATORIOS: Relatorio[] = [
     agrupavel: ['negocio', 'tipo', 'status', 'automatico'],
     ordem: { chave: 'criado_em', desc: true },
   },
+  {
+    id: 'pontos-pontualidade',
+    titulo: 'Pontos de pontualidade',
+    area: 'Financeiro',
+    descricao: 'Extrato de pontos ganhos por pagar antes do vencimento — fatura a fatura, por cliente. Ciclo 01/10 a 30/09.',
+    view: 'vw_rel_pontos_pontualidade',
+    filtros: ['negocio', 'pessoa'],
+    colunas: [
+      { chave: 'criado_em', rotulo: 'Concedido em', tipo: 'data' },
+      { chave: 'cliente', rotulo: 'Cliente' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+      { chave: 'fatura', rotulo: 'Fatura' },
+      { chave: 'vencimento', rotulo: 'Vencimento', tipo: 'data' },
+      { chave: 'pago_em', rotulo: 'Pago em', tipo: 'data' },
+      { chave: 'pontos', rotulo: 'Pontos', tipo: 'numero', totalizar: true },
+      { chave: 'ciclo_inicio', rotulo: 'Ciclo', tipo: 'data' },
+    ],
+    agrupavel: ['cliente', 'negocio', 'ciclo_inicio'],
+    ordem: { chave: 'criado_em', desc: true },
+  },
 ]
 
 export const AREAS: Area[] = ['Financeiro', 'Clientes e contratos', 'Operação', 'Comercial']

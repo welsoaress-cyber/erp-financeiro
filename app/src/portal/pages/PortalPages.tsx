@@ -7,13 +7,14 @@ import { Botao } from '../../core/ui/Botao'
 import { Campo } from '../../core/ui/Campo'
 import { Carregando } from '../../core/ui/Carregando'
 import { Distintivo } from '../../core/ui/Distintivo'
+import { Modal } from '../../core/ui/Modal'
 import { Selecao } from '../../core/ui/Selecao'
 import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
 import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePixStatus, usePontosExtrato, usePontosSaldo, usePontosVitrine, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useResgatarDescontoPontos, useResgatarPremioPontos, useTermoContrato } from '../api'
-import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type SituacaoFatura } from '../tipos'
+import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type PontoVitrineItem, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
 /** QR gerado no navegador a partir do copia-e-cola (funciona para cobrança nova ou reaproveitada). */
@@ -427,6 +428,7 @@ export function PortalPontosPage() {
   const resgatarPremio = useResgatarPremioPontos()
   const resgatarDesconto = useResgatarDescontoPontos()
   const [pontosDesconto, setPontosDesconto] = useState('')
+  const [premioAmpliado, setPremioAmpliado] = useState<PontoVitrineItem | null>(null)
   const saldoNegocio = (saldo.data ?? []).find((s) => s.negocio_id === negocioId)?.saldo ?? 0
   const pontosNum = Number(pontosDesconto.replace(/\D/g, '')) || 0
   const valorDesconto = pontosNum * 0.25
@@ -461,7 +463,9 @@ export function PortalPontosPage() {
               const inacessivel = saldoNegocio < p.pontos_custo
               return (
                 <div key={p.id} className={`w-32 shrink-0 snap-start overflow-hidden rounded-lg border border-line sm:w-36 ${inacessivel ? 'opacity-50 grayscale' : ''}`}>
-                  {p.foto ? <img src={p.foto} alt={p.nome} className="aspect-square w-full object-cover" /> : <div className="flex aspect-square w-full items-center justify-center bg-surface text-4xl">🎁</div>}
+                  <button type="button" onClick={() => setPremioAmpliado(p)} className="block w-full" aria-label={`Ver foto de ${p.nome}`}>
+                    {p.foto ? <img src={p.foto} alt={p.nome} className="aspect-square w-full object-cover" /> : <div className="flex aspect-square w-full items-center justify-center bg-surface text-4xl">🎁</div>}
+                  </button>
                   <div className="px-2 py-2">
                     <p className="truncate text-sm font-medium">{p.nome}</p>
                     <p className="text-xs text-ink-muted">{p.pontos_custo} pts</p>
@@ -476,6 +480,22 @@ export function PortalPontosPage() {
           </div>
         )}
       </Cartao>
+
+      <Modal aberto={premioAmpliado !== null} aoFechar={() => setPremioAmpliado(null)} titulo={premioAmpliado?.nome ?? ''}>
+        {premioAmpliado && (() => {
+          const inacessivel = saldoNegocio < premioAmpliado.pontos_custo
+          return (
+            <div className="space-y-4">
+              {premioAmpliado.foto ? <img src={premioAmpliado.foto} alt={premioAmpliado.nome} className="w-full rounded-lg object-cover" /> : <div className="flex aspect-square w-full items-center justify-center rounded-lg bg-surface text-6xl">🎁</div>}
+              <p className="text-sm text-ink-muted">{premioAmpliado.pontos_custo} pts</p>
+              <Botao className="w-full" variante="secundario" disabled={inacessivel} carregando={resgatarPremio.isPending}
+                onClick={() => { if (window.confirm(`Trocar ${premioAmpliado.pontos_custo} pontos por "${premioAmpliado.nome}"? Não é possível desfazer.`)) resgatarPremio.mutate({ premioId: premioAmpliado.id }, { onSuccess: () => setPremioAmpliado(null) }) }}>
+                {inacessivel ? 'Saldo insuficiente' : 'Trocar'}
+              </Botao>
+            </div>
+          )
+        })()}
+      </Modal>
 
       <Cartao>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">💳 Desconto na próxima fatura</h2>

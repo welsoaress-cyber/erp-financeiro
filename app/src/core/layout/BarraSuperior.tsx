@@ -24,15 +24,18 @@ export function BarraSuperior({ aoAbrirMenu }: { aoAbrirMenu: () => void }) {
           <p className="text-xs text-ink-muted">{usuario?.email}</p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={encerrar}
-        disabled={saindo}
-        className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface hover:text-ink disabled:opacity-60"
-      >
-        <Icone nome="sair" className="size-4" />
-        {saindo ? 'Saindo…' : 'Sair'}
-      </button>
+      <div className="flex items-center gap-3">
+        <span className="hidden text-xs text-ink-muted/70 sm:inline" title={`Build ${__APP_BUILD_EM__}`}>v{__APP_VERSION__}</span>
+        <button
+          type="button"
+          onClick={encerrar}
+          disabled={saindo}
+          className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface hover:text-ink disabled:opacity-60"
+        >
+          <Icone nome="sair" className="size-4" />
+          {saindo ? 'Saindo…' : 'Sair'}
+        </button>
+      </div>
     </header>
   )
 }

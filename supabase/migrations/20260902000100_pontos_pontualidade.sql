@@ -29,7 +29,10 @@
 -- 1. Vencimento original + histórico de alteração (auditoria geral, não só pontos)
 -- -----------------------------------------------------------------------------
 alter table public.lancamentos add column data_vencimento_original date;
+-- migração dos dados existentes (sem passar pelos triggers de proteção)
+alter table public.lancamentos disable trigger user;
 update public.lancamentos set data_vencimento_original = data_vencimento where data_vencimento_original is null;
+alter table public.lancamentos enable trigger user;
 alter table public.lancamentos alter column data_vencimento_original set not null;
 comment on column public.lancamentos.data_vencimento_original is 'Vencimento como a fatura nasceu, nunca muda depois — referência fixa pros pontos de pontualidade (etapa 58A).';
 

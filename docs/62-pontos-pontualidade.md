@@ -4,18 +4,18 @@
 
 Incentivar o cliente a pagar cedo, não só em dia: quanto antes a fatura é paga, mais pontos ele ganha. Depois (58B) ele troca por prêmio numa vitrine — aqui só o motor que concede os pontos e o extrato pra conferir, sem prêmio ainda.
 
-## Regra (fechada com o proprietário)
+## Regra (fechada com o proprietário — ajustada na 0101)
 
 ```
-pontos = min(30, dias_de_antecedência + 1)
+pontos = dias_de_antecedência + 1     -- sem teto
 ```
 
-- Pagar **no vencimento** já vale **1 ponto** (nunca é punido por pagar em dia).
+- Pagar **no vencimento** já vale **1 ponto** (nunca é punido por pagar em dia). 1 dia antes = 2, 10 dias antes = 11, 30 dias antes = 31, e por aí vai — **sem limite máximo**.
 - Pagar **depois** do vencimento = **0 pontos**. Isso já cobre sozinho o caso de promessa/voto de confiança — ela só existe pra fatura já vencida, então nunca dá ponto.
 - Só conta **quitação total** de contrato de **receita principal** — baixa parcial nunca gera pontos (ela não passa pela função que concede pontos); contrato adicional/SVA fica de fora por padrão (`contratos.elegivel_pontos = false`, quem decide é o proprietário por contrato).
 - **Opt-in por negócio** (`notificacoes_config.pontos_ativo`, desligado por padrão — mesmo padrão do bloqueio automático).
-- Vale **a partir de 01/10/2026**, sem retroativo.
-- **Ciclo 01/10 a 30/09.** Contrato encerrado no meio do ciclo perde o saldo daquele negócio.
+- **Campanha com prazo fixo: 01/10/2026 a 30/09/2027** (12 meses). Fora dessa janela, nenhum ponto é gerado. Não é um ciclo que se renova sozinho — é uma decisão do proprietário: "um ano pra ver se funciona, se der certo, prorroga" (extensão = nova migration mudando a data final, quando ele pedir).
+- Contrato encerrado no meio da campanha perde o saldo daquele negócio.
 - **Estorno** de um pagamento remove os pontos daquela fatura.
 - Pessoa excluída (sem histórico) com saldo não resgatado: a exclusão é permitida, mas fica um registro de alerta em `pontos_perdidos_exclusao` (base pra relatório futuro).
 
@@ -39,8 +39,11 @@ Toda alteração de `data_vencimento` fica auditada em `lancamentos_vencimento_h
 
 ## Pendente (58B, depois)
 
-Vitrine de prêmios por negócio (níveis livres, brinde físico integrado ao estoque ou desconto % na próxima fatura), resgate com débito de pontos, exibição de saldo/extrato no portal ("Meus pontos") e relatório de ROI da campanha.
+Vitrine de prêmios por negócio (brinde físico integrado ao estoque, com custo em pontos derivado do preço em R$ pela taxa de conversão — o desenho detalhado do proprietário usa R$ 0,22/ponto pra prêmio e R$ 0,25/ponto pra desconto em fatura, desconto mínimo R$ 1,00/4 pontos, máximo 100% da fatura, entrega do prêmio físico em até 15 dias úteis), resgate com débito de pontos, exibição de saldo/extrato no portal ("Meus pontos"), relatório de ROI da campanha e expiração do saldo não resgatado no fim da campanha (30/09/2027).
 
 ## Deploy (proprietário)
 
-Aplicar a migration `20260902000100_pontos_pontualidade.sql` pelo SQL Editor. Depois, em Notificações, ligar "Pontos por pontualidade" no(s) negócio(s) desejado(s).
+1. Migration `20260902000100_pontos_pontualidade.sql` (já aplicada).
+2. Migration `20260902000101_pontos_sem_teto_campanha.sql` — remove o teto de 30 pontos e troca a vigência aberta pela janela fixa da campanha (01/10/2026 a 30/09/2027).
+
+Depois, em Notificações, ligar "Pontos por pontualidade" no(s) negócio(s) desejado(s).

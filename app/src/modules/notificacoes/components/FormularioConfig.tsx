@@ -89,7 +89,7 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
         <span>
           <span className="block font-medium">Pontos por pontualidade</span>
           <span className="block text-ink-muted">
-            Cliente que paga a fatura antes do vencimento ganha pontos (quanto mais cedo, mais pontos, até 30). Vale a partir de 01/10/2026, ciclo 01/10 a 30/09. Vitrine de prêmios e resgate ainda não existem — por enquanto só o extrato em Relatórios.
+            Cliente que paga a fatura antes do vencimento ganha pontos (quanto mais cedo, mais pontos, sem limite). Campanha de 01/10/2026 a 30/09/2027. Vitrine de prêmios e resgate ainda não existem — por enquanto só o extrato em Relatórios.
           </span>
         </span>
       </label>

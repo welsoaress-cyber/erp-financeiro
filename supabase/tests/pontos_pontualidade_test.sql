@@ -1,4 +1,4 @@
--- Testes da migration 0100 (pontos por pontualidade, etapa 58A). Saída "OK".
+-- Testes das migrations 0100/0101 (pontos por pontualidade, etapa 58A — sem teto, campanha até 30/09/2027). Saída "OK".
 \set ON_ERROR_STOP on
 begin;
 set local role authenticated;
@@ -39,8 +39,11 @@ do $$ declare v_org uuid; v_neg_on uuid; v_neg_off uuid; v_p1 uuid; v_plano uuid
   -- T3: pago depois do vencimento → 0 pontos (sem registro)
   perform public.criar_lancamento('receita', 'Fatura atrasada', 100, '2026-10-01', '2026-10-20', null,
     v_conta, null, v_cat, null, v_neg_on, v_p1, v_ct_principal);
-  -- T4: pago 40 dias antes → teto de 30 pontos
+  -- T4: pago bem adiantado → sem teto, 39 dias antes = 40 pontos
   perform public.criar_lancamento('receita', 'Fatura super adiantada', 100, '2026-11-01', '2026-11-20', null,
+    v_conta, null, v_cat, null, v_neg_on, v_p1, v_ct_principal);
+  -- T12: pago adiantado mas DEPOIS do fim da campanha (30/09/2027) → sem pontos
+  perform public.criar_lancamento('receita', 'Fatura depois da campanha', 100, '2027-10-01', '2027-10-20', null,
     v_conta, null, v_cat, null, v_neg_on, v_p1, v_ct_principal);
   -- T5: contrato SVA (não elegível) pago bem adiantado → sem pontos
   perform public.criar_lancamento('receita', 'Fatura SVA adiantada', 20, '2026-10-01', '2026-10-20', null,
@@ -66,6 +69,7 @@ create temp table r as select (select org from ids) org,
   (select id from public.lancamentos where descricao = 'Fatura SVA adiantada') l_sva,
   (select id from public.lancamentos where descricao = 'Fatura negócio sem programa') l_sem_programa,
   (select id from public.lancamentos where descricao = 'Fatura antes da vigência') l_antes_vigencia,
+  (select id from public.lancamentos where descricao = 'Fatura depois da campanha') l_depois_campanha,
   (select id from public.lancamentos where descricao = 'Fatura reagendada') l_reagendada;
 
 -- efetiva cada uma na data certa pro cenário
@@ -78,6 +82,7 @@ do $$ declare v r%rowtype; begin
   perform public.efetivar_lancamento(v.l_sva, '2026-10-10');
   perform public.efetivar_lancamento(v.l_sem_programa, '2026-10-10');
   perform public.efetivar_lancamento(v.l_antes_vigencia, '2026-09-15');
+  perform public.efetivar_lancamento(v.l_depois_campanha, '2027-10-05'); -- pago adiantado (venc. 20/10), mas depois do fim da campanha
   -- reagendamento no mesmo mês não muda o vencimento original, e fica auditado
   perform public.atualizar_lancamento(v.l_reagendada, 'Fatura reagendada', 100, '2026-12-01', '2026-12-27', null);
 end $$;
@@ -100,24 +105,25 @@ do $$ declare v r%rowtype; begin
   assert not exists (select 1 from public.pontos_pontualidade where lancamento_id = v.l_atrasada), 'T3 atrasado não gera pontos';
 end $$;
 
--- T4: super adiantado → teto de 30
+-- T4: super adiantado → sem teto, 39 dias antes = 40 pontos
 do $$ declare v r%rowtype; begin
   select * into v from r;
-  assert (select pontos from public.pontos_pontualidade where lancamento_id = v.l_teto) = 30, 'T4 teto de 30 pontos';
+  assert (select pontos from public.pontos_pontualidade where lancamento_id = v.l_teto) = 40, 'T4 sem teto: 39 dias antes = 40 pontos';
 end $$;
 
--- T5/T6/T7: casos que não pontuam por regra de elegibilidade/opt-in/vigência
+-- T5/T6/T7/T12: casos que não pontuam por regra de elegibilidade/opt-in/janela da campanha
 do $$ declare v r%rowtype; begin
   select * into v from r;
   assert not exists (select 1 from public.pontos_pontualidade where lancamento_id = v.l_sva), 'T5 contrato SVA não pontua';
   assert not exists (select 1 from public.pontos_pontualidade where lancamento_id = v.l_sem_programa), 'T6 negócio sem programa não pontua';
   assert not exists (select 1 from public.pontos_pontualidade where lancamento_id = v.l_antes_vigencia), 'T7 antes de 01/10/2026 não pontua';
+  assert not exists (select 1 from public.pontos_pontualidade where lancamento_id = v.l_depois_campanha), 'T12 depois de 30/09/2027 não pontua';
 end $$;
 
--- T8: saldo do cliente no negócio soma T1+T2+T4 (11+1+30=42), pelo saldo de vw_saldo_pontos
+-- T8: saldo do cliente no negócio soma T1+T2+T4 (11+1+40=52), pelo saldo de vw_saldo_pontos
 do $$ declare v r%rowtype; begin
   select * into v from r;
-  assert (select saldo from public.vw_saldo_pontos where pessoa_id = (select id from public.pessoas where nome='Cliente Pontual') and negocio_id = v.neg_on and ciclo_inicio = '2026-10-01') = 42,
+  assert (select saldo from public.vw_saldo_pontos where pessoa_id = (select id from public.pessoas where nome='Cliente Pontual') and negocio_id = v.neg_on and ciclo_inicio = '2026-10-01') = 52,
     'T8 saldo soma os contratos elegíveis do ciclo';
 end $$;
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import QRCode from 'qrcode'
 import { Cartao } from '../../core/ui/Cartao'
@@ -419,6 +419,10 @@ export function PortalPontosPage() {
   const saldo = usePontosSaldo()
   const extrato = usePontosExtrato()
   const [negocioId, setNegocioId] = useState(r.negocios[0]?.id ?? '')
+  const vitrineRef = useRef<HTMLDivElement>(null)
+  function rolar(direcao: 1 | -1) {
+    vitrineRef.current?.scrollBy({ left: direcao * 280, behavior: 'smooth' })
+  }
   const vitrine = usePontosVitrine(negocioId || null)
   const resgatarPremio = useResgatarPremioPontos()
   const resgatarDesconto = useResgatarDescontoPontos()
@@ -440,11 +444,19 @@ export function PortalPontosPage() {
       {r.negocios.length > 1 && <Selecao rotulo="Serviço" opcoes={r.negocios.map((n) => ({ valor: n.id, rotulo: n.nome }))} value={negocioId} onChange={(e) => setNegocioId(e.target.value)} />}
 
       <Cartao>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">🎁 Vitrine de prêmios</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">🎁 Vitrine de prêmios</h2>
+          {(vitrine.data ?? []).length > 2 && (
+            <div className="flex gap-1">
+              <button type="button" onClick={() => rolar(-1)} aria-label="Prêmios anteriores" className="flex size-7 items-center justify-center rounded-full border border-line hover:bg-surface">‹</button>
+              <button type="button" onClick={() => rolar(1)} aria-label="Próximos prêmios" className="flex size-7 items-center justify-center rounded-full border border-line hover:bg-surface">›</button>
+            </div>
+          )}
+        </div>
         {(resgatarPremio.error) && <div className="mb-3"><Alerta tipo="erro">{mensagemDeErro(resgatarPremio.error)}</Alerta></div>}
         {resgatarPremio.isSuccess && <div className="mb-3"><Alerta tipo="sucesso">Prêmio resgatado! O provedor confirma a entrega em breve.</Alerta></div>}
         {vitrine.isPending ? <Carregando /> : (vitrine.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Nenhum prêmio disponível no momento.</p> : (
-          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+          <div ref={vitrineRef} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
             {(vitrine.data ?? []).map((p) => {
               const inacessivel = saldoNegocio < p.pontos_custo
               return (

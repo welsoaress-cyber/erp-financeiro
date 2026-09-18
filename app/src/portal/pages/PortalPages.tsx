@@ -444,20 +444,23 @@ export function PortalPontosPage() {
         {(resgatarPremio.error) && <div className="mb-3"><Alerta tipo="erro">{mensagemDeErro(resgatarPremio.error)}</Alerta></div>}
         {resgatarPremio.isSuccess && <div className="mb-3"><Alerta tipo="sucesso">Prêmio resgatado! O provedor confirma a entrega em breve.</Alerta></div>}
         {vitrine.isPending ? <Carregando /> : (vitrine.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">Nenhum prêmio disponível no momento.</p> : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {(vitrine.data ?? []).map((p) => (
-              <div key={p.id} className="overflow-hidden rounded-lg border border-line">
-                {p.foto ? <img src={p.foto} alt={p.nome} className="aspect-square w-full object-cover" /> : <div className="flex aspect-square w-full items-center justify-center bg-surface text-4xl">🎁</div>}
-                <div className="px-2 py-2">
-                  <p className="truncate text-sm font-medium">{p.nome}</p>
-                  <p className="text-xs text-ink-muted">{p.pontos_custo} pts</p>
-                  <Botao className="mt-1 w-full" variante="secundario" disabled={saldoNegocio < p.pontos_custo} carregando={resgatarPremio.isPending}
-                    onClick={() => { if (window.confirm(`Trocar ${p.pontos_custo} pontos por "${p.nome}"? Não é possível desfazer.`)) resgatarPremio.mutate({ premioId: p.id }) }}>
-                    {saldoNegocio < p.pontos_custo ? 'Saldo insuficiente' : 'Trocar'}
-                  </Botao>
+          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+            {(vitrine.data ?? []).map((p) => {
+              const inacessivel = saldoNegocio < p.pontos_custo
+              return (
+                <div key={p.id} className={`w-32 shrink-0 snap-start overflow-hidden rounded-lg border border-line sm:w-36 ${inacessivel ? 'opacity-50 grayscale' : ''}`}>
+                  {p.foto ? <img src={p.foto} alt={p.nome} className="aspect-square w-full object-cover" /> : <div className="flex aspect-square w-full items-center justify-center bg-surface text-4xl">🎁</div>}
+                  <div className="px-2 py-2">
+                    <p className="truncate text-sm font-medium">{p.nome}</p>
+                    <p className="text-xs text-ink-muted">{p.pontos_custo} pts</p>
+                    <Botao className="mt-1 w-full" variante="secundario" disabled={inacessivel} carregando={resgatarPremio.isPending}
+                      onClick={() => { if (window.confirm(`Trocar ${p.pontos_custo} pontos por "${p.nome}"? Não é possível desfazer.`)) resgatarPremio.mutate({ premioId: p.id }) }}>
+                      {inacessivel ? 'Saldo insuficiente' : 'Trocar'}
+                    </Botao>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </Cartao>

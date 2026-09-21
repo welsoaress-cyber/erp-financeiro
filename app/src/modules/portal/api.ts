@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
-import type { AcessoPortal, DadosFaixa, DadosPontoPremio, DadosPortalConfig, DadosPremio, DadosPromocao, IndicacaoAdmin, IndicacaoFaixa, IndicacaoPremio, PontoPremioAdmin, PontoResgateAdmin, PortalConfig, PromocaoAdmin, SolicitacaoAdmin, StatusRede, StatusRedeAdmin } from './tipos'
+import type { AcessoPortal, DadosFaixa, DadosFotosParceria, DadosParceria, DadosPontoPremio, DadosPortalConfig, DadosPremio, DadosPromocao, IndicacaoAdmin, IndicacaoFaixa, IndicacaoPremio, LinhaParceriaLeveduca, ParceriaAdmin, PontoPremioAdmin, PontoResgateAdmin, PortalConfig, PromocaoAdmin, SolicitacaoAdmin, StatusRede, StatusRedeAdmin } from './tipos'
 
 const chave = (org: string) => ['portal-admin', org] as const
 function useInvalidar() { const { organizacao } = useOrganizacao(); const qc = useQueryClient(); return () => { void qc.invalidateQueries({ queryKey: chave(organizacao.id) }); void qc.invalidateQueries({ queryKey: ['contratos', organizacao.id] }) } }
@@ -119,6 +119,45 @@ export function useEntregarPremioPontos() {
     mutationFn: async (p: { id: string; observacao?: string }) => {
       const { error } = await supabase.rpc('entregar_premio_pontos', { p_resgate_id: p.id, p_observacao: p.observacao ?? null })
       if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+export function useParceriasAdmin() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({ queryKey: [...chave(organizacao.id), 'parcerias'], queryFn: async (): Promise<ParceriaAdmin[]> => { const { data, error } = await supabase.from('parcerias').select('*').eq('organizacao_id', organizacao.id).order('origem').order('nome'); if (error) throw error; return (data ?? []) as ParceriaAdmin[] } })
+}
+export function useSalvarParceria() {
+  const { organizacao } = useOrganizacao(); const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { id?: string; dados: DadosParceria }) => {
+      const q = p.id ? supabase.from('parcerias').update(p.dados).eq('id', p.id) : supabase.from('parcerias').insert({ ...p.dados, origem: 'servnet', organizacao_id: organizacao.id })
+      const { error } = await q.select().single(); if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+export function useAlternarAtivoParceria() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { id: string; ativo: boolean }) => { const { error } = await supabase.from('parcerias').update({ ativo: p.ativo }).eq('id', p.id); if (error) throw error },
+    onSuccess: invalidar,
+  })
+}
+export function useSalvarFotosParceria() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { id: string; dados: DadosFotosParceria }) => { const { error } = await supabase.from('parcerias').update(p.dados).eq('id', p.id); if (error) throw error },
+    onSuccess: invalidar,
+  })
+}
+export function useImportarParceriasLeveduca() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: async (p: { negocioId: string; linhas: LinhaParceriaLeveduca[] }) => {
+      const { data, error } = await supabase.rpc('importar_parcerias_leveduca', { p_negocio_id: p.negocioId, p_parceiros: p.linhas })
+      if (error) throw error
+      return Number(data ?? 0)
     },
     onSuccess: invalidar,
   })

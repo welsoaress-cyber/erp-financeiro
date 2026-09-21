@@ -45,6 +45,11 @@ export function ConfiguracoesPage() {
           <Link to="/configuracoes/pontos" className="inline-flex h-10 items-center rounded-md bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700">Gerenciar prêmios</Link>
         </Cartao>
         <Cartao className="md:col-span-2">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Parcerias</h2>
+          <p className="mb-3 text-sm text-ink-muted">Clube de benefícios do Portal: importe a lista da Leveduca (CSV/XLSX) e cadastre acordos próprios da Servnet.</p>
+          <Link to="/configuracoes/parcerias" className="inline-flex h-10 items-center rounded-md bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700">Gerenciar parcerias</Link>
+        </Cartao>
+        <Cartao className="md:col-span-2">
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Integrações via API</h2>
           <p className="mb-3 text-sm text-ink-muted">Gere um token para um sistema de fora (ex.: Leveduca) consultar se um CPF é cliente ativo e qual o plano.</p>
           <Link to="/configuracoes/integracoes" className="inline-flex h-10 items-center rounded-md bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700">Gerenciar tokens</Link>

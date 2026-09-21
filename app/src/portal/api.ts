@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../core/supabase/client'
 import { useAuth } from '../core/auth/useAuth'
-import type { AvisoRede, ContratoCliente, Fatura, Fidelidade, Indicacao, Pagamento, PontoExtratoItem, PontoSaldo, PontoVitrineItem, PortalResumo, PresenteOpcao, Promocao, ProximaFatura, Solicitacao, TipoSolicitacao, VitrinePublica } from './tipos'
+import type { AvisoRede, ContratoCliente, Fatura, Fidelidade, Indicacao, Pagamento, Parceria, PontoExtratoItem, PontoSaldo, PontoVitrineItem, PortalResumo, PresenteOpcao, Promocao, ProximaFatura, Solicitacao, TipoSolicitacao, VitrinePublica } from './tipos'
 
 const chave = (u: string | undefined) => ['portal', u ?? ''] as const
 const num = <T extends object>(rows: T[], campos: (keyof T)[]) => rows.map((r) => { const c = { ...r } as Record<keyof T, unknown>; for (const k of campos) c[k] = Number(c[k]); return c as T })
@@ -45,6 +45,18 @@ export function usePontosVitrine(negocioId: string | null) {
       const { data, error } = await supabase.rpc('portal_pontos_vitrine', { p_negocio_id: negocioId })
       if (error) throw error
       return num((data ?? []) as PontoVitrineItem[], ['pontos_custo'])
+    },
+  })
+}
+export function useParcerias(negocioId: string | null) {
+  const { usuario } = useAuth()
+  return useQuery({
+    queryKey: [...chave(usuario?.id), 'parcerias', negocioId],
+    enabled: Boolean(usuario && negocioId),
+    queryFn: async (): Promise<Parceria[]> => {
+      const { data, error } = await supabase.rpc('portal_parcerias', { p_negocio_id: negocioId })
+      if (error) throw error
+      return (data ?? []) as Parceria[]
     },
   })
 }

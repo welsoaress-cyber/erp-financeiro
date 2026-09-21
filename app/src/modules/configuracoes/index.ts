@@ -3,6 +3,7 @@ import { ConfiguracoesPage } from './pages/ConfiguracoesPage'
 import { ImportarCsvPage } from './importacao/ImportarCsvPage'
 import { IntegracoesPage } from './integracoes/IntegracoesPage'
 import { PontosPage } from './pontos/PontosPage'
+import { ParceriasPage } from './parcerias/ParceriasPage'
 
 export const moduloConfiguracoes: DefinicaoModulo = {
   id: 'configuracoes',
@@ -14,5 +15,6 @@ export const moduloConfiguracoes: DefinicaoModulo = {
     { rota: '/configuracoes/importar', Pagina: ImportarCsvPage },
     { rota: '/configuracoes/integracoes', Pagina: IntegracoesPage },
     { rota: '/configuracoes/pontos', Pagina: PontosPage },
+    { rota: '/configuracoes/parcerias', Pagina: ParceriasPage },
   ],
 }

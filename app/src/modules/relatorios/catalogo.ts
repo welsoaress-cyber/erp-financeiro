@@ -473,6 +473,25 @@ export const RELATORIOS: Relatorio[] = [
     agrupavel: ['tipo', 'negocio', 'situacao'],
     ordem: { chave: 'criado_em', desc: true },
   },
+  {
+    id: 'parcerias',
+    titulo: 'Parcerias cadastradas',
+    area: 'Comercial',
+    descricao: 'Clube de benefícios do Portal: parceiros da Leveduca (importados) e próprios da Servnet, por categoria.',
+    view: 'vw_rel_parcerias',
+    filtros: ['negocio'],
+    colunas: [
+      { chave: 'nome', rotulo: 'Parceiro' },
+      { chave: 'origem', rotulo: 'Origem' },
+      { chave: 'tipo', rotulo: 'Tipo' },
+      { chave: 'categoria', rotulo: 'Categoria' },
+      { chave: 'cobertura', rotulo: 'Cobertura' },
+      { chave: 'situacao', rotulo: 'Situação' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+    ],
+    agrupavel: ['origem', 'categoria', 'situacao', 'negocio'],
+    ordem: { chave: 'nome' },
+  },
 ]
 
 export const AREAS: Area[] = ['Financeiro', 'Clientes e contratos', 'Operação', 'Comercial']

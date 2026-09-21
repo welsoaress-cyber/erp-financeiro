@@ -16,4 +16,8 @@ export interface DadosPremio { negocio_id: string; nome: string; foto: string | 
 
 export interface PontoPremioAdmin { id: string; negocio_id: string; nome: string; foto: string | null; item_id: string; valor_reais: number; pontos_custo: number; ativo: boolean }
 export interface DadosPontoPremio { negocio_id: string; nome: string; foto: string | null; item_id: string; valor_reais: number; ativo: boolean }
+export interface ParceriaAdmin { id: string; negocio_id: string; origem: 'leveduca' | 'servnet'; nome: string; tipo: string | null; beneficio: string; categoria: string | null; cobertura: string | null; foto1: string | null; foto2: string | null; foto3: string | null; ativo: boolean }
+export interface DadosParceria { negocio_id: string; nome: string; tipo: string | null; beneficio: string; categoria: string | null; cobertura: string | null; ativo: boolean }
+export interface DadosFotosParceria { foto1: string | null; foto2: string | null; foto3: string | null }
+export interface LinhaParceriaLeveduca { nome: string; tipo: string; beneficio: string; categoria: string; cobertura: string; status: string }
 export interface PontoResgateAdmin { id: string; organizacao_id: string; negocio_id: string; negocio: string; cliente: string; tipo: string; premio: string; pontos: number; valor_reais: number; situacao: string; criado_em: string; entregue_em: string | null }

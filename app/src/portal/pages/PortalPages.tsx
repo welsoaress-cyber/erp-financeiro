@@ -13,7 +13,7 @@ import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../core/formatos'
 import { formatarDocumento, formatarTelefone, somenteDigitos } from '../../modules/pessoas/tipos'
 import { usePortal } from '../contexto'
-import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, usePagamentos, usePagarComPix, usePixStatus, usePontosExtrato, usePontosSaldo, usePontosVitrine, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useResgatarDescontoPontos, useResgatarPremioPontos, useTermoContrato } from '../api'
+import { useAceitarContrato, useContratosCliente, useEscolherPresente, useFaturas, useIndicacoesCliente, useIndicar, useMeusAceites, useParcerias, usePagamentos, usePagarComPix, usePixStatus, usePontosExtrato, usePontosSaldo, usePontosVitrine, usePortalVitrine, usePresentesIndicacao, usePromocoesCliente, useProximasFaturas, useResgatarDescontoPontos, useResgatarPremioPontos, useTermoContrato } from '../api'
 import { ROTULO_INDICACAO, ROTULO_SITUACAO, ROTULO_STATUS_CONTRATO, TOM, codigoContrato, linkIndicacao, type Fatura, type PontoVitrineItem, type SituacaoFatura } from '../tipos'
 import { Indicador, Titulo } from './comum'
 
@@ -523,6 +523,48 @@ export function PortalPontosPage() {
           ))}</ul>
         )}
       </Cartao>
+    </div>
+  )
+}
+
+export function PortalParceriasPage() {
+  const r = usePortal()
+  const [negocioId, setNegocioId] = useState(r.negocios[0]?.id ?? '')
+  const parcerias = useParcerias(negocioId || null)
+  const [busca, setBusca] = useState('')
+  const [categoria, setCategoria] = useState('')
+  const categorias = useMemo(() => [...new Set((parcerias.data ?? []).map((p) => p.categoria).filter((c): c is string => Boolean(c)))].sort(), [parcerias.data])
+  const buscaNorm = busca.trim().toLowerCase()
+  const filtradas = (parcerias.data ?? []).filter((p) =>
+    (!categoria || p.categoria === categoria) &&
+    (!buscaNorm || p.nome.toLowerCase().includes(buscaNorm) || p.beneficio.toLowerCase().includes(buscaNorm)))
+  return (
+    <div className="space-y-6">
+      <Titulo>Parcerias</Titulo>
+      <p className="text-sm text-ink-muted">Descontos e benefícios pra você, cliente Servnet — parte deles vem do clube de benefícios da Leveduca.</p>
+      {r.negocios.length > 1 && <Selecao rotulo="Serviço" opcoes={r.negocios.map((n) => ({ valor: n.id, rotulo: n.nome }))} value={negocioId} onChange={(e) => setNegocioId(e.target.value)} />}
+      <div className="flex flex-wrap gap-3">
+        <div className="min-w-48 flex-1"><Campo rotulo="Buscar" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="ex.: viagem, curso, loja…" /></div>
+        {categorias.length > 0 && (
+          <Selecao rotulo="Categoria" opcoes={[{ valor: '', rotulo: 'Todas' }, ...categorias.map((c) => ({ valor: c, rotulo: c }))]} value={categoria} onChange={(e) => setCategoria(e.target.value)} />
+        )}
+      </div>
+      {parcerias.isPending ? <Carregando /> : filtradas.length === 0 ? (
+        <p className="text-sm text-ink-muted">{(parcerias.data ?? []).length === 0 ? 'Nenhuma parceria disponível no momento.' : 'Nada encontrado com esse filtro.'}</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {filtradas.map((p) => (
+            <Cartao key={p.id} className="space-y-1">
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-medium">{p.nome}</p>
+                {p.categoria && <Distintivo tom="neutro">{p.categoria}</Distintivo>}
+              </div>
+              <p className="text-sm text-ink-muted">{p.beneficio}</p>
+              <p className="text-xs text-ink-muted">{[p.tipo, p.cobertura].filter(Boolean).join(' · ')}</p>
+            </Cartao>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

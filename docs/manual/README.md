@@ -331,6 +331,8 @@ O cliente entra com **CPF + data de nascimento** e pode: ver e pagar faturas (**
 
 **Meus pontos** (aba do portal, se o negócio tiver o programa ligado): saldo do cliente, vitrine de prêmios (troca direto, sem sair da tela), formulário para converter pontos em desconto na próxima fatura (mostra o valor em R$ em tempo real) e extrato completo de ganhos e resgates.
 
+**Parcerias** (aba do portal): clube de benefícios com desconto — parceiros da Leveduca (lista grande, ~500) e acordos próprios da Servnet, com busca e filtro por categoria. Só leitura pro cliente.
+
 Você configura a aparência e as regras em **Portal do cliente** (menu do admin): cores, chave Pix, Pix automático + conta que recebe, texto do termo de adesão, fidelidade, promoções e conversão de indicações.
 
 ![Portal admin](img/24-portal-admin.png)
@@ -355,6 +357,10 @@ Dados da conta/organização e **Importar CSV** (traz clientes, planos e contrat
 ### 17.1 Programa de pontos
 
 Configurações → **Gerenciar prêmios**. Cadastro do catálogo de prêmios da vitrine de pontos: foto, nome, item vinculado do Estoque (categoria Brindes) e **preço em R$** — o custo em pontos é calculado sozinho (R$ 0,22 por ponto, arredondado pra cima). Abaixo do catálogo, a lista de **resgates aguardando entrega**: um clique em "Entregue" baixa o item do estoque e fecha o resgate. Desconto em fatura não tem cadastro — o cliente escolhe quantos pontos converter direto no portal.
+
+### 17.1b Parcerias
+
+Configurações → **Gerenciar parcerias**. Duas listas: a da **Leveduca** (importe a planilha CSV/XLSX que eles mandam — cada importação substitui a lista inteira anterior, sem duplicar) e a **própria da Servnet** (cadastro manual: nome, benefício, tipo, categoria, cobertura). Qualquer parceiro, de qualquer origem, pode ser **ativado/desativado** com um clique — some do Portal na hora. E cada parceiro tem **3 espaços de foto**: guarde ali a arte promocional pra entrar depois, baixar e compartilhar no Instagram/WhatsApp — essas fotos não aparecem pro cliente, são só pra você divulgar.
 
 ### 17.2 Integrações via API
 

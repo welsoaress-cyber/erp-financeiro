@@ -1,8 +1,14 @@
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../../../core/auth/useAuth'
+import { validarSenha } from '../../../core/auth/validarSenha'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
+import { Campo } from '../../../core/ui/Campo'
+import { Botao } from '../../../core/ui/Botao'
+import { Alerta } from '../../../core/ui/Alerta'
+import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 
 function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
@@ -10,6 +16,39 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
       <dt className="text-ink-muted">{rotulo}</dt>
       <dd className="font-medium">{valor}</dd>
     </div>
+  )
+}
+
+function AlterarSenha() {
+  const { definirSenha } = useAuth()
+  const [senha, setSenha] = useState('')
+  const [confirmacao, setConfirmacao] = useState('')
+  const [erro, setErro] = useState<string | null>(null)
+  const [ok, setOk] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+
+  async function aoEnviar(e: FormEvent) {
+    e.preventDefault()
+    setOk(false)
+    const problemas = validarSenha(senha)
+    if (problemas.length) { setErro(problemas.join(' ')); return }
+    if (senha !== confirmacao) { setErro('As senhas não são iguais.'); return }
+    setErro(null)
+    setEnviando(true)
+    try {
+      await definirSenha(senha)
+      setSenha(''); setConfirmacao(''); setOk(true)
+    } catch (err) { setErro(mensagemDeErro(err)) } finally { setEnviando(false) }
+  }
+
+  return (
+    <form onSubmit={aoEnviar} className="space-y-3" noValidate>
+      {erro && <Alerta tipo="erro">{erro}</Alerta>}
+      {ok && <Alerta tipo="sucesso">Senha alterada.</Alerta>}
+      <Campo rotulo="Nova senha" type="password" autoComplete="new-password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••••" />
+      <Campo rotulo="Confirmar nova senha" type="password" autoComplete="new-password" value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} placeholder="••••••••" />
+      <Botao type="submit" carregando={enviando}>Alterar senha</Botao>
+    </form>
   )
 }
 
@@ -33,6 +72,10 @@ export function ConfiguracoesPage() {
             <Linha rotulo="Nome" valor={organizacao.nome} />
             <Linha rotulo="Seu papel" valor={organizacao.papel === 'proprietario' ? 'Proprietário' : 'Membro'} />
           </dl>
+        </Cartao>
+        <Cartao className="md:col-span-2">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Alterar senha</h2>
+          <AlterarSenha />
         </Cartao>
         <Cartao className="md:col-span-2">
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">Importação</h2>

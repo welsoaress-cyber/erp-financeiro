@@ -87,7 +87,7 @@ do $$ declare v r%rowtype; v_id uuid; begin
 end $$;
 
 -- T4d: cobertura longa (0104 — lista de estados da planilha real da Leveduca, ~94 chars) é aceita
--- (reimporta com Canon de novo no fim pra não bagunçar as contagens dos testes seguintes)
+-- (reimporta com Canon + SemFoto de novo no fim, sem bagunçar as contagens dos testes seguintes)
 do $$ declare v r%rowtype; v_total int; begin
   select * into v from r;
   select public.importar_parcerias_leveduca(v.neg, '[
@@ -95,11 +95,19 @@ do $$ declare v r%rowtype; v_total int; begin
   ]'::jsonb) into v_total;
   assert v_total = 1, 'T4d deveria importar 1 linha com cobertura longa, veio ' || v_total;
   perform public.importar_parcerias_leveduca(v.neg, '[
-    {"nome":"Canon","tipo":"Online","beneficio":"Até 30% desconto","categoria":"Eletroeletrônico","cobertura":"Nacional","status":"Ativo"}
+    {"nome":"Canon","tipo":"Online","beneficio":"Até 30% desconto","categoria":"Eletroeletrônico","cobertura":"Nacional","status":"Ativo"},
+    {"nome":"SemFoto","tipo":"Online","beneficio":"Desconto sem arte ainda","categoria":"Outros","cobertura":"Nacional","status":"Ativo"}
   ]'::jsonb);
 end $$;
 
--- T5: portal_parcerias só traz ativos, ordenado por categoria/nome
+-- T4e: (0105) só quem tem foto aparece pro cliente — dá foto no Canon e na Academia, SemFoto fica sem
+do $$ declare v r%rowtype; begin
+  select * into v from r;
+  update public.parcerias set foto1 = 'data:image/jpeg;base64,AAAA' where negocio_id = v.neg and nome = 'Canon';
+  update public.parcerias set foto1 = 'data:image/jpeg;base64,BBBB' where negocio_id = v.neg and nome = 'Academia Parceira';
+end $$;
+
+-- T5: portal_parcerias (0105) só traz ativos COM FOTO, ordenado por categoria/nome
 -- (o id do negócio vem de r, pego ANTES de trocar de role — select direto em
 -- public.negocios sob a role do portal cairia na RLS e voltaria null)
 do $$ declare v_neg uuid; begin select neg into v_neg from r; perform set_config('erp.teste_neg', v_neg::text, false); end $$;
@@ -109,19 +117,20 @@ set local request.jwt.claim.sub = '99999999-9999-9999-9999-999999999902';
 do $$ declare v_neg uuid; v_total int; begin
   v_neg := current_setting('erp.teste_neg')::uuid;
   select count(*) into v_total from public.portal_parcerias(v_neg);
-  assert v_total = 2, 'T5 portal_parcerias deveria trazer 2 (Canon + Academia Parceira), veio ' || v_total;
-  assert exists (select 1 from public.portal_parcerias(v_neg) where nome = 'Canon'), 'T5 Canon deveria aparecer';
+  assert v_total = 2, 'T5 portal_parcerias deveria trazer 2 (Canon + Academia Parceira, os com foto), veio ' || v_total;
+  assert exists (select 1 from public.portal_parcerias(v_neg) where nome = 'Canon' and foto1 is not null), 'T5 Canon deveria aparecer com foto1';
   assert exists (select 1 from public.portal_parcerias(v_neg) where nome = 'Academia Parceira'), 'T5 Academia Parceira deveria aparecer';
+  assert not exists (select 1 from public.portal_parcerias(v_neg) where nome = 'SemFoto'), 'T5 SemFoto não tem foto — não deveria aparecer pro cliente';
 end $$;
 reset role;
 
--- T6: relatório vw_rel_parcerias enxerga tudo (leveduca + servnet)
+-- T6: relatório vw_rel_parcerias enxerga tudo (leveduca + servnet), com ou sem foto
 set local role authenticated;
 set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 do $$ declare v r%rowtype; v_total int; begin
   select * into v from r;
   select count(*) into v_total from public.vw_rel_parcerias where negocio_id = v.neg;
-  assert v_total = 2, 'T6 relatório deveria ter 2 linhas (Canon + Academia Parceira), veio ' || v_total;
+  assert v_total = 3, 'T6 relatório deveria ter 3 linhas (Canon + SemFoto + Academia Parceira), veio ' || v_total;
 end $$;
 
 rollback;

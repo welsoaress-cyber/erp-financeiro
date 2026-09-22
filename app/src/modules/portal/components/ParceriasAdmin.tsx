@@ -162,7 +162,7 @@ function FotosParceria({ parceria, aoFechar }: { parceria: ParceriaAdmin; aoFech
   return (
     <Modal aberto titulo={`Fotos — ${parceria.nome}`} aoFechar={aoFechar}>
       <div className="space-y-3">
-        <p className="text-sm text-ink-muted">Guarde aqui as artes desse parceiro pra entrar quando quiser e postar no Instagram/WhatsApp — não aparece pro cliente no Portal.</p>
+        <p className="text-sm text-ink-muted">Guarde aqui as artes desse parceiro — dá pra baixar e postar no Instagram/WhatsApp quando quiser. <b>Assim que tiver 1 foto, esse parceiro passa a aparecer no Portal do cliente</b> (parceiro sem foto fica invisível pro cliente).</p>
         {(erro || salvar.error) && <Alerta tipo="erro">{erro ?? mensagemDeErro(salvar.error)}</Alerta>}
         <div className="grid grid-cols-3 gap-3">
           <SlotFoto rotulo="Foto 1" valor={parceria.foto1} carregando={salvar.isPending} aoTrocar={(f) => void trocar('foto1', f)} aoRemover={() => remover('foto1')} />

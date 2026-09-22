@@ -542,6 +542,7 @@ export function PortalParceriasPage() {
     <div className="space-y-6">
       <Titulo>Parcerias</Titulo>
       <p className="text-sm text-ink-muted">Descontos e benefícios pra você, cliente Servnet — parte deles vem do clube de benefícios da Leveduca.</p>
+      <p className="text-xs text-ink-muted">Divulgação com foto — outras dezenas de parceiros existem sem arte ainda; procure na loja pelo nome se não achar aqui.</p>
       {r.negocios.length > 1 && <Selecao rotulo="Serviço" opcoes={r.negocios.map((n) => ({ valor: n.id, rotulo: n.nome }))} value={negocioId} onChange={(e) => setNegocioId(e.target.value)} />}
       <div className="flex flex-wrap gap-3">
         <div className="min-w-48 flex-1"><Campo rotulo="Buscar" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="ex.: viagem, curso, loja…" /></div>
@@ -552,17 +553,28 @@ export function PortalParceriasPage() {
       {parcerias.isPending ? <Carregando /> : filtradas.length === 0 ? (
         <p className="text-sm text-ink-muted">{(parcerias.data ?? []).length === 0 ? 'Nenhuma parceria disponível no momento.' : 'Nada encontrado com esse filtro.'}</p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {filtradas.map((p) => (
-            <Cartao key={p.id} className="space-y-1">
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-medium">{p.nome}</p>
-                {p.categoria && <Distintivo tom="neutro">{p.categoria}</Distintivo>}
-              </div>
-              <p className="text-sm text-ink-muted">{p.beneficio}</p>
-              <p className="text-xs text-ink-muted">{[p.tipo, p.cobertura].filter(Boolean).join(' · ')}</p>
-            </Cartao>
-          ))}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {filtradas.map((p) => {
+            const fotos = [p.foto1, p.foto2, p.foto3].filter((f): f is string => Boolean(f))
+            return (
+              <Cartao key={p.id} className="space-y-2 p-0">
+                <img src={fotos[0]} alt={p.nome} className="aspect-video w-full rounded-t-lg object-cover" />
+                {fotos.length > 1 && (
+                  <div className="flex gap-2 px-4">
+                    {fotos.slice(1).map((f, i) => <img key={i} src={f} alt={`${p.nome} ${i + 2}`} className="h-14 w-14 rounded-md object-cover" />)}
+                  </div>
+                )}
+                <div className="space-y-1 px-4 pb-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium">{p.nome}</p>
+                    {p.categoria && <Distintivo tom="neutro">{p.categoria}</Distintivo>}
+                  </div>
+                  <p className="text-sm text-ink-muted">{p.beneficio}</p>
+                  <p className="text-xs text-ink-muted">{[p.tipo, p.cobertura].filter(Boolean).join(' · ')}</p>
+                </div>
+              </Cartao>
+            )
+          })}
         </div>
       )}
     </div>

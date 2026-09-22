@@ -25,7 +25,7 @@ export interface Fidelidade { contrato_id: string; codigo: number; negocio: stri
 export interface PontoSaldo { negocio_id: string; negocio: string; saldo: number }
 export interface PontoExtratoItem { quando: string; negocio: string; descricao: string; pontos: number }
 export interface PontoVitrineItem { id: string; nome: string; foto: string | null; pontos_custo: number }
-export interface Parceria { id: string; nome: string; tipo: string | null; beneficio: string; categoria: string | null; cobertura: string | null; origem: 'leveduca' | 'servnet' }
+export interface Parceria { id: string; nome: string; tipo: string | null; beneficio: string; categoria: string | null; cobertura: string | null; origem: 'leveduca' | 'servnet'; foto1: string | null; foto2: string | null; foto3: string | null }
 export type StatusRede = 'ok' | 'lentidao' | 'queda' | 'manutencao'
 export interface AvisoRede { negocio_id: string; negocio: string; status: StatusRede; titulo: string | null; descricao: string | null; atualizado_em: string }
 export type TipoSolicitacao = 'suporte' | 'fatura' | 'duvida' | 'upgrade'

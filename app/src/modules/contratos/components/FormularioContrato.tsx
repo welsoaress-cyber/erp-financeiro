@@ -3,6 +3,7 @@ import { Alerta } from '../../../core/ui/Alerta'
 import { Botao } from '../../../core/ui/Botao'
 import { Campo } from '../../../core/ui/Campo'
 import { Selecao } from '../../../core/ui/Selecao'
+import { SelecaoBusca } from '../../../core/ui/SelecaoBusca'
 import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { formatarMoeda, hojeISO } from '../../../core/formatos'
 import type { Negocio } from '../../negocios/tipos'
@@ -78,8 +79,7 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, centros 
             className={`rounded px-2 py-1.5 text-sm ${tipoFinanceiro === t ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>{ROTULO_TIPO_FINANCEIRO[t]}</button>
         ))}
       </div>
-      <Selecao rotulo={`Pessoa (${ROTULO_PESSOA_CONTRATO[tipoFinanceiro]})`} opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...pessoas.filter((p) => p.ativo).map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => setPessoaId(e.target.value)} ajuda={`Se ainda não for ${ROTULO_PESSOA_CONTRATO[tipoFinanceiro].toLowerCase()} deste negócio, o vínculo é criado automaticamente.`} />
-      {erroCampo('pessoa')}
+      <SelecaoBusca rotulo={`Pessoa (${ROTULO_PESSOA_CONTRATO[tipoFinanceiro]})`} opcoes={pessoas.filter((p) => p.ativo).map((p) => ({ valor: p.id, rotulo: p.nome }))} value={pessoaId} onChange={setPessoaId} placeholder="Digite pra buscar…" erro={erros.pessoa} ajuda={`Se ainda não for ${ROTULO_PESSOA_CONTRATO[tipoFinanceiro].toLowerCase()} deste negócio, o vínculo é criado automaticamente.`} />
       <Selecao rotulo="Plano" opcoes={[{ valor: '', rotulo: negocioId ? (planosDoNegocio.length ? 'Selecione…' : 'Este negócio não tem planos ativos') : 'Escolha o negócio primeiro' }, ...planosDoNegocio.map((p) => ({ valor: p.id, rotulo: `${p.nome} · ${formatarMoeda(p.valor_tabela)}` }))]} value={planoId} onChange={(e) => escolherPlano(e.target.value)} disabled={!negocioId || planosDoNegocio.length === 0} />
       {erroCampo('plano')}
       <div className="grid grid-cols-2 gap-4">
@@ -87,7 +87,7 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, centros 
         <Selecao rotulo="Periodicidade" opcoes={PERIODICIDADES} value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value as Periodicidade)} />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Campo rotulo="Início" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} erro={erros.data} />
+        <Campo rotulo="Início" type="date" value={dataInicio} onChange={(e) => { const v = e.target.value; setDataInicio(v); const d = Number(v.slice(8, 10)); if (d >= 1 && d <= 31) setDia(String(d)) }} erro={erros.data} />
         <Campo rotulo="Dia de vencimento" type="number" inputMode="numeric" min={1} max={31} value={dia} onChange={(e) => setDia(e.target.value)} erro={erros.dia} />
       </div>
       {tipoFinanceiro === 'receita' && (

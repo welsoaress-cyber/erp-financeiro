@@ -86,6 +86,19 @@ do $$ declare v r%rowtype; v_id uuid; begin
   exception when check_violation then null; end;
 end $$;
 
+-- T4d: cobertura longa (0104 — lista de estados da planilha real da Leveduca, ~94 chars) é aceita
+-- (reimporta com Canon de novo no fim pra não bagunçar as contagens dos testes seguintes)
+do $$ declare v r%rowtype; v_total int; begin
+  select * into v from r;
+  select public.importar_parcerias_leveduca(v.neg, '[
+    {"nome":"Rede Nacional Estados","tipo":"Online","beneficio":"Desconto por estado","categoria":"Outros","cobertura":"AC, AL, AM, AP, BA, CE, DF, ES, GO, MA, MG, MS, MT, PA, PB, PE, PI, RJ, RN, RO, RR, SE, PS, TO","status":"Ativo"}
+  ]'::jsonb) into v_total;
+  assert v_total = 1, 'T4d deveria importar 1 linha com cobertura longa, veio ' || v_total;
+  perform public.importar_parcerias_leveduca(v.neg, '[
+    {"nome":"Canon","tipo":"Online","beneficio":"Até 30% desconto","categoria":"Eletroeletrônico","cobertura":"Nacional","status":"Ativo"}
+  ]'::jsonb);
+end $$;
+
 -- T5: portal_parcerias só traz ativos, ordenado por categoria/nome
 -- (o id do negócio vem de r, pego ANTES de trocar de role — select direto em
 -- public.negocios sob a role do portal cairia na RLS e voltaria null)

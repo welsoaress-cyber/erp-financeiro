@@ -5,7 +5,7 @@
 //
 // Link antigo (sem /painel, em qualquer domínio — workers.dev ou servnet.net.br) manda
 // direto pro endereço novo: servnet.net.br/painel + o mesmo caminho.
-const DOMINIO_NOVO = 'servnet.net.br'
+const DOMINIO_NOVO = 'www.servnet.net.br'
 
 export default {
   async fetch(request, env) {

@@ -1,3 +1,5 @@
+import { linkAbsoluto } from '../core/base'
+
 export type TemaPortal = 'escuro' | 'claro'
 export interface PortalConfigPublica { ativo: boolean; logo_url: string | null; cor_primaria: string; texto_promocional: string | null; chave_pix: string | null; instrucoes_pagamento: string | null; beneficio_indicacao: number; tema: TemaPortal; whatsapp_suporte: string | null; beneficio_tipo: 'valor' | 'mes_gratis'; fidelidade_ativa: boolean; site_url: string | null }
 export interface PortalResumo {
@@ -38,6 +40,6 @@ export const ROTULO_TIPO_SOLICITACAO: Record<TipoSolicitacao, string> = { suport
 export const ROTULO_STATUS_SOLICITACAO = { aberta: 'Aberto', em_andamento: 'Em andamento', concluida: 'Concluído' } as const
 export const codigoContrato = (n: number) => `#${String(n).padStart(3, '0')}`
 /** Link público de indicação: usa o site do provedor quando configurado (ex.: https://www.servnet.net.br), senão o próprio portal. */
-export const linkIndicacao = (codigo: string, siteUrl?: string | null) => siteUrl ? `${siteUrl.replace(/\/$/, '')}/?ref=${codigo}` : `${window.location.origin}/portal/indicacao/${codigo}`
+export const linkIndicacao = (codigo: string, siteUrl?: string | null) => siteUrl ? `${siteUrl.replace(/\/$/, '')}/?ref=${codigo}` : linkAbsoluto(`portal/indicacao/${codigo}`)
 export const linkWhatsApp = (numero: string, texto?: string) => `https://wa.me/${numero.replace(/\D/g, '')}${texto ? `?text=${encodeURIComponent(texto)}` : ''}`
 export const TOM: Record<SituacaoFatura, 'ok' | 'alerta' | 'neutro' | 'info'> = { paga: 'ok', vencida: 'alerta', pendente: 'info', cancelada: 'neutro', gratis: 'ok' }

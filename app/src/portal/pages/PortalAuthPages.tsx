@@ -4,6 +4,7 @@ import { useAuth } from '../../core/auth/useAuth'
 import { useLimiteTentativas } from '../../core/auth/useLimiteTentativas'
 import { validarSenha } from '../../core/auth/validarSenha'
 import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
+import { linkAbsoluto } from '../../core/base'
 import { Alerta } from '../../core/ui/Alerta'
 import { Botao } from '../../core/ui/Botao'
 import { Campo } from '../../core/ui/Campo'
@@ -169,7 +170,7 @@ export function PortalRecuperarPage() {
   const [email, setEmail] = useState(''); const [erro, setErro] = useState<string | null>(null); const [ok, setOk] = useState(false); const [enviando, setEnviando] = useState(false)
   async function aoEnviar(e: FormEvent) {
     e.preventDefault(); setErro(null); setEnviando(true)
-    try { await recuperarSenha(email.trim(), `${window.location.origin}/portal/nova-senha`); setOk(true) } catch (err) { setErro(mensagemDeErro(err)) } finally { setEnviando(false) }
+    try { await recuperarSenha(email.trim(), linkAbsoluto('portal/nova-senha')); setOk(true) } catch (err) { setErro(mensagemDeErro(err)) } finally { setEnviando(false) }
   }
   return (
     <Layout titulo="Recuperar senha" subtitulo="Enviamos um link para o seu e-mail">

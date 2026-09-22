@@ -11,6 +11,7 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
+import { linkAbsoluto } from '../../../core/base'
 import { useNegocios } from '../../negocios/api'
 import { useContas } from '../../contas/api'
 import { usePlanos } from '../../contratos/api'
@@ -133,7 +134,7 @@ export function PortalAdminPage() {
             {ativos.length > 1 && <select aria-label="Negócio" value={negocio.id} onChange={(e) => setNegocioSel(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">{ativos.map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}</select>}
             <span className="text-sm text-ink-muted">{negocio.nome}{config ? ` · Pix ${config.chave_pix ?? 'não informado'} · benefício ${formatarMoeda(config.beneficio_indicacao)} por indicação` : ' · portal sem configuração'}</span>
             {config && <Distintivo tom={config.ativo ? 'ok' : 'neutro'}>{config.ativo ? 'Portal ativo' : 'Portal desativado'}</Distintivo>}
-            <a href={`${window.location.origin}/portal/entrar`} target="_blank" rel="noreferrer" className="ml-auto text-sm text-brand-700 hover:underline">Abrir portal</a>
+            <a href={linkAbsoluto('portal/entrar')} target="_blank" rel="noreferrer" className="ml-auto text-sm text-brand-700 hover:underline">Abrir portal</a>
           </div>
           <div className="grid gap-6 lg:grid-cols-2">
             <Cartao>

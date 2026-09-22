@@ -8,6 +8,7 @@ function git(comando: string, fallback: string): string {
 }
 
 export default defineConfig({
+  base: '/painel/',
   plugins: [react(), tailwindcss()],
   define: {
     __APP_VERSION__: JSON.stringify(git('git rev-parse --short HEAD', 'dev')),

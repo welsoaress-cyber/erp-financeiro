@@ -4,6 +4,7 @@ import { useAuth } from '../../core/auth/useAuth'
 import { useLimiteTentativas } from '../../core/auth/useLimiteTentativas'
 import { mensagemDeErro } from '../../core/erros/mensagemDeErro'
 import { CHAVE_SESSAO_EXPIRADA } from '../../core/auth/useInatividade'
+import { linkAbsoluto } from '../../core/base'
 import { CartaoAuth, FundoAuth, MENTA } from './FundoAuth'
 
 const emailValido = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim())
@@ -69,7 +70,7 @@ export function LoginPage() {
     if (!emailValido(email)) { setErro('Informe o e-mail da conta para receber o link de nova senha.'); return }
     setRecuperando(true)
     try {
-      await recuperarSenha(email.trim(), `${window.location.origin}/nova-senha`)
+      await recuperarSenha(email.trim(), linkAbsoluto('nova-senha'))
       setAvisoRecuperacao('Se o e-mail existir, o link para definir uma nova senha chega em instantes.')
     } catch (err) {
       setErro(mensagemDeErro(err))

@@ -8,6 +8,7 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { Carregando } from '../../../core/ui/Carregando'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
+import { linkAbsoluto } from '../../../core/base'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
@@ -288,7 +289,7 @@ export function OsPage() {
             {criarLogin.error != null && <Alerta tipo="erro">{mensagemDeErro(criarLogin.error)}</Alerta>}
             <Campo rotulo="Usuário (sem e-mail)" value={loginTec} onChange={(e) => setLoginTec(e.target.value)} maxLength={30} placeholder="ex.: joao" autoCapitalize="none" />
             <Campo rotulo="Senha inicial (mín. 8)" type="text" value={senhaTec} onChange={(e) => setSenhaTec(e.target.value)} maxLength={60} />
-            <p className="text-xs text-ink-muted">O técnico entra em <b>{location.origin}/tecnico/entrar</b> com esse usuário e senha. Ele vê só os chamados dele e a bolsa — nada do financeiro.</p>
+            <p className="text-xs text-ink-muted">O técnico entra em <b>{linkAbsoluto('tecnico/entrar')}</b> com esse usuário e senha. Ele vê só os chamados dele e a bolsa — nada do financeiro.</p>
             <div className="flex justify-end">
               <Botao disabled={loginTec.trim().length < 3 || senhaTec.length < 8} carregando={criarLogin.isPending}
                 onClick={() => criarLogin.mutate({ tecnico_id: tecnicoLogin.id, login: loginTec, senha: senhaTec, nome: tecnicoLogin.nome }, { onSuccess: () => setTecnicoLogin(null) })}>Criar login</Botao>

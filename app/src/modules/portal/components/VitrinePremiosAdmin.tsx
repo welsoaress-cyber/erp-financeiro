@@ -8,6 +8,7 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarMoeda } from '../../../core/formatos'
+import { linkAbsoluto } from '../../../core/base'
 import { useEstoqueItens, useEstoqueCategorias } from '../../estoque/api'
 import { useCriarPremiosLote, useFaixasAdmin, usePremiosAdmin, useSalvarFaixa, useSalvarPremio } from '../api'
 import type { IndicacaoFaixa, IndicacaoPremio } from '../tipos'
@@ -165,7 +166,7 @@ export function VitrinePremiosAdmin({ negocioId, negocioSlug }: { negocioId: str
   const faixas = (faixasQ.data ?? []).filter((f) => f.negocio_id === negocioId)
   const premios = (premiosQ.data ?? []).filter((p) => p.negocio_id === negocioId)
   const saldoItem = useMemo(() => new Map((itens.data ?? []).map((i) => [i.id, Number(i.quantidade_atual)])), [itens.data])
-  const linkPublico = `${window.location.origin}/portal/premios/${negocioSlug}`
+  const linkPublico = linkAbsoluto(`portal/premios/${negocioSlug}`)
   const [copiado, setCopiado] = useState(false)
   async function copiar() { try { await navigator.clipboard.writeText(linkPublico); setCopiado(true); setTimeout(() => setCopiado(false), 2000) } catch { /* sem clipboard */ } }
   return (

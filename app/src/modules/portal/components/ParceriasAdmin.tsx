@@ -194,7 +194,7 @@ export function ParceriasAdmin({ negocioId }: { negocioId: string }) {
   const servnet = todas.filter((p) => p.origem === 'servnet')
   const categorias = new Set(leveduca.map((p) => p.categoria).filter(Boolean))
   const buscaNorm = normalizar(buscaLeveduca)
-  const encontrados = buscaNorm.length < 2 ? [] : leveduca.filter((p) => normalizar(p.nome).includes(buscaNorm)).slice(0, 30)
+  const encontrados = buscaNorm.length === 0 ? leveduca : leveduca.filter((p) => normalizar(p.nome).includes(buscaNorm) || normalizar(p.categoria ?? '').includes(buscaNorm))
   // usa a instância mais atual (fotos podem ter mudado após salvar)
   const fotosDeAtual = fotosDe ? (todas.find((p) => p.id === fotosDe.id) ?? fotosDe) : null
   return (
@@ -207,21 +207,19 @@ export function ParceriasAdmin({ negocioId }: { negocioId: string }) {
         </div>
         {leveduca.length === 0 ? <p className="px-6 py-6 text-sm text-ink-muted">Nenhuma lista importada ainda.</p> : (
           <div className="px-6 py-4">
-            <Campo rotulo="Buscar parceiro (pra ativar/desativar ou guardar fotos)" value={buscaLeveduca} onChange={(e) => setBuscaLeveduca(e.target.value)} placeholder="digite ao menos 2 letras…" />
-            {buscaNorm.length >= 2 && (
-              encontrados.length === 0 ? <p className="mt-3 text-sm text-ink-muted">Nada encontrado.</p> : (
-                <ul className="mt-3 divide-y divide-line">
-                  {encontrados.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                      <span>{p.nome} <span className="text-xs text-ink-muted">— {p.categoria ?? 'sem categoria'}</span></span>
-                      <div className="flex items-center gap-3">
-                        <button type="button" onClick={() => setFotosDe(p)} className="text-brand-700 hover:underline">Fotos {[p.foto1, p.foto2, p.foto3].filter(Boolean).length > 0 ? `(${[p.foto1, p.foto2, p.foto3].filter(Boolean).length})` : ''}</button>
-                        <BotaoAtivo parceria={p} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )
+            <Campo rotulo="Buscar (nome ou categoria)" value={buscaLeveduca} onChange={(e) => setBuscaLeveduca(e.target.value)} placeholder="deixe em branco pra ver todos…" />
+            {encontrados.length === 0 ? <p className="mt-3 text-sm text-ink-muted">Nada encontrado.</p> : (
+              <ul className="mt-3 max-h-[32rem] divide-y divide-line overflow-y-auto">
+                {encontrados.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <span>{p.nome} <span className="text-xs text-ink-muted">— {p.categoria ?? 'sem categoria'}</span></span>
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={() => setFotosDe(p)} className="text-brand-700 hover:underline">Fotos {[p.foto1, p.foto2, p.foto3].filter(Boolean).length > 0 ? `(${[p.foto1, p.foto2, p.foto3].filter(Boolean).length})` : ''}</button>
+                      <BotaoAtivo parceria={p} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )}

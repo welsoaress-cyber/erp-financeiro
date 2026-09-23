@@ -93,7 +93,7 @@ Todo o movimento do mês (receitas, despesas e transferências). Regras importan
 
 ![Contas a receber](img/04-contas-a-receber.png)
 
-Só as receitas previstas do mês, com atrasadas destacadas. Pesquise pelo cliente e dê baixa direto no botão da linha. O filtro **Todos os negócios** separa por empresa (Servnet, Pessoal…) — ele vale também para os quatro cartões do topo, então dá para ver *previsto, realizado, saldo e vencidos de um negócio só*. O mesmo filtro está em Contas a pagar.
+Só as receitas previstas do mês, com atrasadas destacadas. O campo de busca fica sozinho, no topo da tela; pesquise pelo cliente e dê baixa direto no botão da linha. O filtro **Todos os negócios** separa por empresa (Servnet, Pessoal…) — ele vale também para os quatro cartões do topo, então dá para ver *previsto, realizado, saldo e vencidos de um negócio só*. O mesmo filtro está em Contas a pagar.
 
 Ao clicar em **Pagar/Receber**, a janela mostra o contexto da cobrança antes de você confirmar: se é **parcela X de Y** (ou recorrente fixa, ou pagamento único), a **conta** — e, quando é cartão, **de que fatura ela é e quando essa fatura vence** —, a categoria e a observação (é ali que fica o rastro de uma **baixa parcial** anterior). Compra no cartão traz ainda o aviso de que o normal é ela baixar sozinha no fechamento da fatura: marcar como paga ali só se você pagou aquela compra por fora.
 
@@ -121,6 +121,8 @@ A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do pr
 5. Além disso, **todo minuto** o próprio banco confere no Mercado Pago cada Pix pendente e dá a baixa sozinho quando o pagamento aparece aprovado — funciona mesmo sem o aviso automático do MP e sem ninguém com a tela aberta (em até ~2 minutos após o dinheiro cair).
 
 **Bloqueio automático (opt-in):** em Notificações → configurar o negócio, ligue **"Bloqueio e desbloqueio automáticos"** — todo dia às 00:00 o sistema confirma sozinho quem bloquear/desbloquear, sem precisar clicar em nada. **Só ligue se a rede (ReceitaNet/OLT) já corta e libera o acesso do cliente por conta própria** — o ERP passa a só acompanhar o que a rede já faz, no prazo configurado na régua "avisar depois". Com isso ligado, a lista "Ações na rede" desta tela costuma ficar vazia (o robô já tratou); o histórico completo — manual e automático — fica em **Relatórios → Bloqueios e desbloqueios**.
+
+Não quer esperar virar o dia (ex.: acabou de lançar um contrato e a fatura já venceu)? Com o toggle ligado aparece o botão **"Atualizar bloqueio/desbloqueio agora"** ao lado de "Atualizar lista" — roda a mesma checagem do robô na hora, só para o negócio selecionado.
 
 ### 3.5 Conciliação bancária
 

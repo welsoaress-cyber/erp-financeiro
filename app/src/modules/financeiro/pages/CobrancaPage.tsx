@@ -69,6 +69,15 @@ export function CobrancaPage() {
     mutationFn: async (id: string) => { const { error } = await supabase.rpc('executar_bloqueio', { p_id: id }); if (error) throw error },
     onSuccess: invalidar,
   })
+  // botão manual do bloqueio automático: não esperar o robô das 00:00 — útil pra quem está lançando contratos/baixas ao longo do dia
+  const executarAgora = useMutation({
+    mutationFn: async (): Promise<{ executados: number }> => {
+      const { data, error } = await supabase.rpc('executar_bloqueios_agora', { p_negocio_id: negocioAtual })
+      if (error) throw error
+      return data as { executados: number }
+    },
+    onSuccess: invalidar,
+  })
   const descartar = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.rpc('descartar_bloqueio', { p_id: id }); if (error) throw error },
     onSuccess: invalidar,
@@ -123,7 +132,8 @@ export function CobrancaPage() {
   const confLista = confTodas.filter((c) => !termoConf
     || (nomePessoa.get(c.pessoa_id) ?? '').toLowerCase().includes(termoConf)
     || rotuloContrato(c.contrato_id).toLowerCase().includes(termoConf))
-  const erro = gerar.error ?? executar.error ?? descartar.error ?? darConfianca.error ?? cancelarConfianca.error
+  const configAtual = (configs.data ?? []).find((c) => c.negocio_id === negocioAtual)
+  const erro = gerar.error ?? executar.error ?? executarAgora.error ?? descartar.error ?? darConfianca.error ?? cancelarConfianca.error
 
   return (
     <>
@@ -134,14 +144,20 @@ export function CobrancaPage() {
               {(negocios.data ?? []).filter((n) => n.ativo).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
             </select>
             <Botao variante="secundario" onClick={() => gerar.mutate()} carregando={gerar.isPending}>Atualizar lista</Botao>
+            {configAtual?.bloqueio_automatico && (
+              <Botao onClick={() => executarAgora.mutate()} carregando={executarAgora.isPending}>Atualizar bloqueio/desbloqueio agora</Botao>
+            )}
           </span>
         } />
       {erro != null && <div className="mb-4"><Alerta tipo="erro">{mensagemDeErro(erro)}</Alerta></div>}
-      {(configs.data ?? []).find((c) => c.negocio_id === negocioAtual)?.bloqueio_automatico && (
+      {executarAgora.isSuccess && (
+        <div className="mb-4"><Alerta tipo="sucesso">{executarAgora.data.executados ? `${executarAgora.data.executados} contrato(s) atualizado(s) agora.` : 'Nada para atualizar agora — está tudo em dia.'}</Alerta></div>
+      )}
+      {configAtual?.bloqueio_automatico && (
         <div className="mb-4">
           <Alerta tipo="info">
             Bloqueio automático ligado para este negócio: todo dia às 00:00 o sistema confirma sozinho — por isso a lista abaixo costuma estar vazia.
-            Histórico em <Link to="/relatorios/bloqueios" className="underline">Relatórios → Bloqueios e desbloqueios</Link>.
+            Precisa antes disso? Use "Atualizar bloqueio/desbloqueio agora" acima. Histórico em <Link to="/relatorios/bloqueios" className="underline">Relatórios → Bloqueios e desbloqueios</Link>.
           </Alerta>
         </div>
       )}

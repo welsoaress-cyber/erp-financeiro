@@ -227,6 +227,10 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     <>
       <CabecalhoPagina titulo={receber ? 'Contas a receber' : 'Contas a pagar'} descricao={receber ? 'Faturas e receitas do mês: previsto × realizado' : 'Compromissos com fornecedores: previsto × realizado'} />
       <div className="mb-4"><PendenciasAnteriores tipo={tipo} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
+      <div className="flex flex-wrap items-center gap-2 border-b border-line bg-white px-4 py-3 text-sm sm:px-6">
+        <CampoBusca valor={busca} aoMudar={setBusca} rotulo={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'} className="max-w-none" />
+        <ContagemFiltro visiveis={lista.length} total={base.length} singular="lançamento" plural="lançamentos" />
+      </div>
       <BarraFiltros>
         <SeletorMes mes={mes} aoMudar={setMes} />
         {(negocios.data ?? []).length > 0 && (
@@ -258,8 +262,6 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
           <option value="90">61 a 90 dias</option>
           <option value="mais">Mais de 90 dias</option>
         </SelectFiltro>
-        <CampoBusca valor={busca} aoMudar={setBusca} rotulo={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'} />
-        <ContagemFiltro visiveis={lista.length} total={base.length} singular="lançamento" plural="lançamentos" />
       </BarraFiltros>
       <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Indicador rotulo="Previsto" valor={formatarMoeda(previsto)} ajuda="lançamentos ainda previstos" />

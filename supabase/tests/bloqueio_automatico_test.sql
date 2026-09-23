@@ -93,5 +93,30 @@ do $$ declare v r%rowtype; antes int; depois int; begin
   assert antes = depois, 'T5 rodar de novo não duplica: ' || antes || ' -> ' || depois;
 end $$;
 
+-- T6: executar_bloqueios_agora (botão manual) faz o mesmo que o robô, na hora, para
+-- quem já está com bloqueio_automatico ligado — sem esperar virar o dia.
+do $$ declare v r%rowtype; v_p4 uuid; v_plano uuid; v_conta uuid; v_ct4 uuid; v_cat uuid; res jsonb; begin
+  select * into v from r;
+  select plano_id, conta_id into v_plano, v_conta from public.contratos where id = v.ct1;
+  insert into public.pessoas (organizacao_id, nome, telefone) values (v.org, 'Cliente Auto Vencido 2', '92988886005') returning id into v_p4;
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento, conta_id, status)
+  values (v.org, v.neg_auto, v_p4, v_plano, 100, 'mensal', current_date - 90, 10, v_conta, 'ativo') returning id into v_ct4;
+  select id into v_cat from public.categorias where organizacao_id = v.org and tipo = 'receita' limit 1;
+  perform public.criar_lancamento('receita', 'Vencida auto 2', 100, current_date - 30, current_date - 30, null, v_conta, null, v_cat, null, v.neg_auto, v_p4, v_ct4);
+  res := public.executar_bloqueios_agora(v.neg_auto);
+  assert (res->>'executados')::int >= 1, 'T6 botão manual executou o novo vencido: ' || res;
+  assert (select status from public.contratos where id = v_ct4) = 'suspenso', 'T6 contrato suspenso na hora, via botão';
+end $$;
+
+-- T7: negócio SEM bloqueio_automatico não pode usar o botão (fluxo continua assistido, um a um)
+do $$ declare v r%rowtype; falhou boolean := false; begin
+  select * into v from r;
+  begin
+    perform public.executar_bloqueios_agora(v.neg_manual);
+  exception when check_violation then falhou := true;
+  end;
+  assert falhou, 'T7 botão recusado para negócio sem bloqueio_automatico ligado';
+end $$;
+
 rollback;
 \echo OK

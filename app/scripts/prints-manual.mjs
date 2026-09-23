@@ -313,7 +313,8 @@ async function instalarMock(context, papel) {
 // ---------------------------------------------------------------------------
 // Captura
 // ---------------------------------------------------------------------------
-const BASE = 'http://localhost:4173'
+// vite.config.ts define base: '/painel/' (app roda em servnet.net.br/painel) — o preview só serve a partir daí.
+const BASE = 'http://localhost:4173/painel'
 const preview = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { cwd: raiz, stdio: 'ignore' })
 await new Promise((r) => setTimeout(r, 2500))
 

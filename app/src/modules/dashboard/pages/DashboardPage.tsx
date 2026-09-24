@@ -19,6 +19,7 @@ import { useLancamentos, useProjecaoContratos } from '../../lancamentos/api'
 import { useResultadoPorNegocio, useSaldoInicial, useSaudeNotificacoes, useUltimosLancamentos } from '../api'
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 import { AlertasEstoque } from '../components/AlertasEstoque'
+import { AlertaBloqueados } from '../components/AlertaBloqueados'
 import { SaudeAvisos } from '../components/SaudeAvisos'
 import { RelatorioCobranca } from '../components/RelatorioCobranca'
 import { HeroBoasVindas } from '../components/HeroBoasVindas'
@@ -110,6 +111,8 @@ export function DashboardPage() {
           </div>
 
           <RelatorioCobranca bate={bate} />
+
+          <AlertaBloqueados bate={bate} nomeNegocio={nomeNegocio} />
 
           <SaudeAvisos negocios={(negocios.data ?? []).filter((n) => bate(n.id))} saude={saudeNotificacoes.data} />
 

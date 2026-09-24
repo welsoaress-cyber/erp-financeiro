@@ -64,6 +64,18 @@ export function useAtualizarPessoa() {
   })
 }
 
+export function useAlternarAtivoPessoa() {
+  const invalidar = useInvalidarPessoas()
+  return useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { data, error } = await supabase.from('pessoas').update({ ativo }).eq('id', id).select().single()
+      if (error) throw error
+      return data as Pessoa
+    },
+    onSuccess: invalidar,
+  })
+}
+
 export function useExcluirPessoa() {
   const invalidar = useInvalidarPessoas()
   return useMutation({

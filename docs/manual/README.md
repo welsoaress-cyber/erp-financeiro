@@ -49,6 +49,7 @@ Cada grupo expande/recolhe com um clique; o estado é lembrado no navegador. O g
 
 - **Cartões do topo**: saldo total das contas, receitas/despesas do mês (realizado e previsto) e resultado. O "previsto" inclui a **projeção dos contratos** do mês exibido (mensalidades ainda não faturadas) — por isso um mês futuro já mostra a receita esperada.
 - **Cobrança do período**: três anéis — Confirmadas (recebidas), A receber (no prazo) e Inadimplentes (vencidas, acumulado) — com filtro Dia · Semana · Mês e atalho para Contas a receber.
+- **Clientes bloqueados**: quantos contratos estão **suspensos por falta de pagamento** agora, com os primeiros nomes na lista. Clique em qualquer linha ou em **Ver todos** para abrir Contratos já filtrado em "Suspensos". Só aparece quando há algum.
 - **Avisos no WhatsApp**: se a régua de cobrança de cada negócio está em dia, com erro ou sem configuração.
 - **Estoque**: itens zerados ou abaixo do mínimo; o link **Comprar** de cada item abre a Nova compra já com ele selecionado.
 - **Resumo financeiro do período**: saldo inicial, previsto × realizado e resultado.
@@ -178,7 +179,9 @@ Cadastro único de clientes e fornecedores (o técnico também vira uma pessoa, 
 
 Com a lista grande, três filtros ao lado da busca: **negócio** (com a opção *Sem vínculo*, útil para achar cadastro solto), **papel** (cliente, fornecedor, parceiro, outro) e **tipo** (física ou jurídica). Eles se combinam — ex.: fornecedores pessoa jurídica da Servnet. O contador ao lado mostra quantas pessoas sobraram.
 
-Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pessoa **sem histórico** — se ela tiver contrato, lançamento, OS ou comodato, o sistema barra e o caminho é **desativar** (desmarcar "Pessoa ativa"). A exclusão remove junto o acesso dela ao portal.
+Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pessoa **sem histórico** — se ela tiver contrato, lançamento, OS ou comodato, o sistema barra e o caminho é **desativar**. A exclusão remove junto o acesso dela ao portal.
+
+**Ativar/Desativar direto na lista:** cada linha tem o botão **Ativar**/**Desativar** ao lado do status — não precisa abrir o cadastro para isso. Pessoa inativa some da lista por padrão; marque **Mostrar inativas** para vê-la de novo.
 
 ## 9. Contratos
 

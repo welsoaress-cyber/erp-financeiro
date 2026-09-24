@@ -8,7 +8,7 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { useNegocios } from '../../negocios/api'
-import { useAtualizarPessoa, useCriarPessoa, useExcluirPessoa, usePessoas, useVinculos } from '../api'
+import { useAlternarAtivoPessoa, useAtualizarPessoa, useCriarPessoa, useExcluirPessoa, usePessoas, useVinculos } from '../api'
 import { FormularioPessoa } from '../components/FormularioPessoa'
 import { VinculosPessoa } from '../components/VinculosPessoa'
 import { formatarDocumento, formatarTelefone, PAPEIS_VINCULO, ROTULO_PAPEL, somenteDigitos, TIPOS_PESSOA, type DadosPessoa, type PapelVinculo, type TipoPessoa, type Vinculo } from '../tipos'
@@ -22,6 +22,7 @@ export function PessoasPage() {
   const criar = useCriarPessoa()
   const atualizar = useAtualizarPessoa()
   const excluir = useExcluirPessoa()
+  const alternarAtivo = useAlternarAtivoPessoa()
   const [busca, setBusca] = useState('')
   const [mostrarInativas, setMostrarInativas] = useState(false)
   const [filtroNegocio, setFiltroNegocio] = useState('') // '' = todos, 'sem' = sem vínculo, ou o id
@@ -74,6 +75,7 @@ export function PessoasPage() {
       <CabecalhoPagina titulo="Pessoas" descricao="Clientes, fornecedores e contatos, com vínculos por negócio" acoes={<Botao onClick={() => setEdicao({ modo: 'nova' })}>Nova pessoa</Botao>} />
       {carregando && <Carregando texto="Carregando pessoas…" />}
       {erroCarga && <Alerta tipo="erro" titulo="Não foi possível carregar">{mensagemDeErro(erroCarga)}</Alerta>}
+      {alternarAtivo.error != null && <Alerta tipo="erro">{mensagemDeErro(alternarAtivo.error)}</Alerta>}
       {pessoas.isSuccess && vinculos.isSuccess && negocios.isSuccess && (
         <Cartao className="p-0">
           <div className="flex flex-wrap items-center gap-3 border-b border-line px-6 py-3 text-sm">
@@ -131,7 +133,16 @@ export function PessoasPage() {
                           ))}
                         </div>
                       </td>
-                      <td className="px-6 py-3"><Distintivo tom={p.ativo ? 'ok' : 'neutro'}>{p.ativo ? 'Ativa' : 'Inativa'}</Distintivo></td>
+                      <td className="px-6 py-3">
+                        <div className="flex items-center gap-2">
+                          <Distintivo tom={p.ativo ? 'ok' : 'neutro'}>{p.ativo ? 'Ativa' : 'Inativa'}</Distintivo>
+                          <button type="button" className="text-xs font-medium text-brand-700 hover:underline disabled:opacity-50"
+                            disabled={alternarAtivo.isPending}
+                            onClick={(e) => { e.stopPropagation(); alternarAtivo.mutate({ id: p.id, ativo: !p.ativo }) }}>
+                            {p.ativo ? 'Desativar' : 'Ativar'}
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

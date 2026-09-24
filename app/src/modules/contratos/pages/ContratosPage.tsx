@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
@@ -34,10 +34,14 @@ export function ContratosPage() {
   const centros = useCentrosCusto()
   const execucao = useUltimaExecucao()
   const gerar = useGerarFaturamento()
+  const [params] = useSearchParams()
+  const statusUrl = params.get('status')
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [filtroNegocio, setFiltroNegocio] = useState('')
   const [busca, setBusca] = useState('')
-  const [filtroStatus, setFiltroStatus] = useState<StatusContrato | ''>('ativo')
+  const [filtroStatus, setFiltroStatus] = useState<StatusContrato | ''>(
+    statusUrl === 'ativo' || statusUrl === 'suspenso' || statusUrl === 'encerrado' ? statusUrl : 'ativo',
+  )
 
   const nome = useMemo(() => ({
     negocio: new Map((negocios.data ?? []).map((n) => [n.id, n.nome])),

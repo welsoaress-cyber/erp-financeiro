@@ -173,6 +173,27 @@ export function useIndicacaoPublica() {
   })
 }
 
+// ---- Etapa: autoatualização de cadastro pro curso (sem login, busca por telefone) ----
+export interface CursoPessoa { encontrado: boolean; pessoa_id?: string; nome?: string; cpf?: string | null; email?: string | null; data_nascimento?: string | null }
+export function useCursoBuscarPessoa() {
+  return useMutation({
+    mutationFn: async (telefone: string) => {
+      const { data, error } = await supabase.rpc('curso_buscar_pessoa', { p_telefone: telefone })
+      if (error) throw error
+      return data as CursoPessoa
+    },
+  })
+}
+export function useCursoAtualizarCadastro() {
+  return useMutation({
+    mutationFn: async (p: { pessoaId: string; cpf: string; email: string; dataNascimento: string }) => {
+      const { data, error } = await supabase.rpc('curso_atualizar_cadastro', { p_pessoa_id: p.pessoaId, p_cpf: p.cpf, p_email: p.email, p_data_nascimento: p.dataNascimento })
+      if (error) throw error
+      return data as { ok: boolean; contrato_criado: boolean }
+    },
+  })
+}
+
 // ---- Etapa 11B: portal estilo SERVNET ----
 export const useFidelidade = () => useLista<Fidelidade>('fidelidade', 'portal_fidelidade', ['valor', 'selos', 'ciclo'])
 export const useStatusRede = () => useLista<AvisoRede>('rede', 'portal_status_rede', [])

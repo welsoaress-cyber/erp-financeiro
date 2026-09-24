@@ -11,6 +11,7 @@ import { PortalFaturaPdfPage, PortalFaturasPage, PortalIndiquePage, PortalPagame
 import { PortalChamadosPage, PortalDadosPage, PortalFidelidadePage, PortalInicioPage } from '../portal/pages/PortalServnetPages'
 import { IndicacaoPublicaPage } from '../portal/pages/IndicacaoPublicaPage'
 import { VitrinePublicaPage } from '../portal/pages/VitrinePublicaPage'
+import { CursoAtualizarPage } from '../portal/pages/CursoAtualizarPage'
 import { TecnicoShell } from '../tecnico/TecnicoShell'
 import { TecnicoLoginPage } from '../tecnico/pages/TecnicoLoginPage'
 import { TecnicoChamadosPage } from '../tecnico/pages/TecnicoChamadosPage'
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
   { path: '/portal/vincular', element: <PortalVincularPage /> },
   { path: '/portal/indicacao/:codigo', element: <IndicacaoPublicaPage /> },
   { path: '/portal/premios/:slug', element: <VitrinePublicaPage /> },
+  { path: '/curso/atualizar', element: <CursoAtualizarPage /> },
   {
     path: '/portal',
     element: <PortalShell />,

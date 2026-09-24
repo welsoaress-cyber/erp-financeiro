@@ -185,6 +185,8 @@ Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pess
 
 **Ativar/Desativar direto na lista:** cada linha tem o botão **Ativar**/**Desativar** ao lado do status — não precisa abrir o cadastro para isso. Pessoa inativa some da lista por padrão; marque **Mostrar inativas** para vê-la de novo.
 
+**Autoatualização pro curso (sem login):** `/curso/atualizar` é uma página pública — sem senha — pra quem vai fazer o curso na Leveduca confirmar telefone, CPF, e-mail e nascimento sozinho. Ao clicar **Atualizar**, o cadastro é corrigido e o contrato cortesia com a Servnet (plano com "curso" no nome, início 01/10/2026) é criado sozinho, se ainda não existir. Mande o link pra quem precisa — não aparece em nenhum menu.
+
 ## 9. Contratos
 
 ![Contratos](img/12-contratos.png)

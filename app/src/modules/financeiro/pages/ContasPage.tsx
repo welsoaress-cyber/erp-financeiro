@@ -27,6 +27,7 @@ import { useCartoesConfig } from '../../cartoes/api'
 import { vencimentoFaturaReal } from '../../cartoes/tipos'
 import { useCancelarConfianca, useConfiancasAtivas, useDarConfianca, type Confianca } from '../confiancas'
 import { BotaoAtualizarBloqueios } from '../components/BotaoAtualizarBloqueios'
+import { ConsultaCliente } from '../components/ConsultaCliente'
 
 const diasAtraso = (vencimento: string) => Math.max(0, Math.round((Date.parse(hojeISO()) - Date.parse(vencimento)) / 86400000))
 
@@ -228,6 +229,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     <>
       <CabecalhoPagina titulo={receber ? 'Contas a receber' : 'Contas a pagar'} descricao={receber ? 'Faturas e receitas do mês: previsto × realizado' : 'Compromissos com fornecedores: previsto × realizado'} />
       {receber && <BotaoAtualizarBloqueios filtroNegocio={filtroNegocio} />}
+      {receber && <ConsultaCliente />}
       <div className="mb-4"><PendenciasAnteriores tipo={tipo} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
       <BarraFiltros>
         <CampoBusca valor={busca} aoMudar={setBusca} rotulo={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'} />

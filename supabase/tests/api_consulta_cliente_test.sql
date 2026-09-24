@@ -127,6 +127,26 @@ do $$ declare l record; begin
   assert l.situacao = 'token_invalido', 'T10 token inválido: ' || l.situacao;
 end $$;
 
+-- T11 (0108): pessoa com "nome" na verdade é o login do servidor (sem espaço) — nunca vaza,
+-- vem nome_completo null; pessoa com nome de verdade (com espaço) continua normal.
+set local role authenticated;
+do $$ declare v_org uuid; v_neg uuid; v_plano uuid; v_login uuid; begin
+  select org, neg into v_org, v_neg from r;
+  select id into v_plano from public.planos where negocio_id = v_neg limit 1;
+  insert into public.pessoas (organizacao_id, nome, documento) values (v_org, 'Jhone100526', '12345678909') returning id into v_login;
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, codigo, valor, periodicidade, status, tipo_financeiro)
+    values (v_org, v_neg, v_login, v_plano, 903, 99.9, 'mensal', 'ativo', 'receita');
+end $$;
+set local role service_role;
+do $$ declare v t7%rowtype; l record; begin
+  select * into v from t7;
+  select * into l from public.api_consultar_cliente(encode(digest(v.token, 'sha256'), 'hex'), '12345678909');
+  assert l.situacao = 'ok', 'T11 encontrado: ' || l.situacao;
+  assert l.cliente->>'nome_completo' is null, 'T11 login não vaza como nome: ' || (l.cliente->>'nome_completo');
+  select * into l from public.api_consultar_cliente(encode(digest(v.token, 'sha256'), 'hex'), '11122233396');
+  assert l.cliente->>'nome_completo' = 'Cliente API Ativo', 'T11 nome de verdade continua normal';
+end $$;
+
 set local role authenticated;
 
 rollback;

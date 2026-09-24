@@ -24,6 +24,7 @@ import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCorrigirCadeiaLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, useEstornarLancamento, type ProjecaoContrato } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
+import { BotaoAtualizarBloqueios } from '../../financeiro/components/BotaoAtualizarBloqueios'
 import { ROTULO_PERIODICIDADE, ROTULO_STATUS, ROTULO_TIPO, rotuloParcela, type DadosLancamento, type Lancamento, type StatusLancamento, type TipoLancamento } from '../tipos'
 
 type Edicao = { modo: 'novo' } | { modo: 'editar'; lancamento: Lancamento } | null
@@ -228,6 +229,8 @@ export function LancamentosPage() {
       {contas.isSuccess && contas.data.length === 0 && (
         <div className="mb-4"><Alerta tipo="info" titulo="Cadastre uma conta antes">Lançamentos precisam de uma conta. Crie sua primeira conta no menu Contas.</Alerta></div>
       )}
+
+      <BotaoAtualizarBloqueios filtroNegocio={filtroNegocio} />
 
       <BarraFiltros>
         <SeletorMes mes={mes} aoMudar={setMes} />

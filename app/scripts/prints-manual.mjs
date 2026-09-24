@@ -360,7 +360,7 @@ async function capturar(page, nome, ms = 1200) {
     ['/gerencial', '23-gerencial', 1600],
     ['/centros-custo', '47-centros-custo'],
     ['/relatorios', '45-relatorios'],
-    ['/portal', '24-portal-admin'],
+    ['/portal-admin', '24-portal-admin'],
     ['/configuracoes', '25-configuracoes'],
     ['/configuracoes/integracoes', '52-integracoes-api'],
   ]

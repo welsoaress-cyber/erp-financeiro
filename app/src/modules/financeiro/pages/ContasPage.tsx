@@ -227,11 +227,9 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     <>
       <CabecalhoPagina titulo={receber ? 'Contas a receber' : 'Contas a pagar'} descricao={receber ? 'Faturas e receitas do mês: previsto × realizado' : 'Compromissos com fornecedores: previsto × realizado'} />
       <div className="mb-4"><PendenciasAnteriores tipo={tipo} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
-      <div className="flex flex-wrap items-center gap-2 border-b border-line bg-white px-4 py-3 text-sm sm:px-6">
-        <CampoBusca valor={busca} aoMudar={setBusca} rotulo={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'} className="max-w-none" />
-        <ContagemFiltro visiveis={lista.length} total={base.length} singular="lançamento" plural="lançamentos" />
-      </div>
       <BarraFiltros>
+        <CampoBusca valor={busca} aoMudar={setBusca} rotulo={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'} />
+        <ContagemFiltro visiveis={lista.length} total={base.length} singular="lançamento" plural="lançamentos" />
         <SeletorMes mes={mes} aoMudar={setMes} />
         {(negocios.data ?? []).length > 0 && (
           <SelectFiltro rotulo="Filtrar por negócio" valor={filtroNegocio} aoMudar={setFiltroNegocio}>

@@ -135,6 +135,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     setPromessa({ l, atual })
   }
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
+  const loginPessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.login_servidor])), [pessoas.data])
   const contratoPorId = useMemo(() => new Map((contratos.data ?? []).map((c) => [c.id, c])), [contratos.data])
   const contaPorId = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
@@ -176,7 +177,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
       const d = diasAtraso(l)
       return filtroAtraso === '30' ? d <= 30 : filtroAtraso === '60' ? d > 30 && d <= 60 : filtroAtraso === '90' ? d > 60 && d <= 90 : d > 90
     })
-    .filter((l) => !termo || normalizar([l.descricao, l.pessoa_id ? nomePessoa.get(l.pessoa_id) : null, l.observacao].filter(Boolean).join(' ')).includes(termo))
+    .filter((l) => !termo || normalizar([l.descricao, l.pessoa_id ? nomePessoa.get(l.pessoa_id) : null, l.pessoa_id ? loginPessoa.get(l.pessoa_id) : null, l.observacao].filter(Boolean).join(' ')).includes(termo))
     .sort((a, b) => a.data_vencimento.localeCompare(b.data_vencimento))
   // agrupamento visual por fatura de cartão (item 4 do levantamento): só na tela de despesas.
   // Só é uma "fatura" se houver 2+ lançamentos na mesma conta de crédito e vencimento — o normal

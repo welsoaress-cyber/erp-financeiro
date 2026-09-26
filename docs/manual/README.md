@@ -98,6 +98,10 @@ Só as receitas previstas do mês, com atrasadas destacadas. O campo de busca fi
 
 Se algum negócio tem **"Bloqueio e desbloqueio automáticos"** ligado (§3.4), aparece o botão **"Atualizar bloqueio/desbloqueio agora"** no topo — roda na hora a checagem que o robô faria só à meia-noite (útil ao lançar contrato ou dar baixa fora do horário). O mesmo botão existe em **Lançamentos**.
 
+**Consultar cliente (status e planos):** logo abaixo, digite o nome **ou o login do servidor** de um cliente pra ver na hora se ele está ativo/inativo e todos os planos/contratos dele (negócio, valor, status) — sem precisar abrir Pessoas nem Contratos.
+
+> **Busca por nome ou login.** Em Contas a receber, Lançamentos, Cobrança e no campo "Pessoa" de Novo contrato, a busca encontra o cliente tanto pelo nome quanto pelo login do servidor — útil pra quem só tem o login cadastrado como nome (clientes antigos importados sem nome completo, etapa 43).
+
 Ao clicar em **Pagar/Receber**, a janela mostra o contexto da cobrança antes de você confirmar: se é **parcela X de Y** (ou recorrente fixa, ou pagamento único), a **conta** — e, quando é cartão, **de que fatura ela é e quando essa fatura vence** —, a categoria e a observação (é ali que fica o rastro de uma **baixa parcial** anterior). Compra no cartão traz ainda o aviso de que o normal é ela baixar sozinha no fechamento da fatura: marcar como paga ali só se você pagou aquela compra por fora.
 
 Filtros da tela: negócio, cliente/fornecedor, situação (aberto/vencido/pago), **categoria**, **conta** e **dias de atraso** (até 30, 31–60, 61–90, mais de 90) — o aging responde "quanto está vencido há mais de 60 dias" sem sair da tela.

@@ -79,7 +79,7 @@ export function FormularioContrato({ negocios, pessoas, planos, contas, centros 
             className={`rounded px-2 py-1.5 text-sm ${tipoFinanceiro === t ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>{ROTULO_TIPO_FINANCEIRO[t]}</button>
         ))}
       </div>
-      <SelecaoBusca rotulo={`Pessoa (${ROTULO_PESSOA_CONTRATO[tipoFinanceiro]})`} opcoes={pessoas.filter((p) => p.ativo).map((p) => ({ valor: p.id, rotulo: p.nome }))} value={pessoaId} onChange={setPessoaId} placeholder="Digite pra buscar…" erro={erros.pessoa} ajuda={`Se ainda não for ${ROTULO_PESSOA_CONTRATO[tipoFinanceiro].toLowerCase()} deste negócio, o vínculo é criado automaticamente.`} />
+      <SelecaoBusca rotulo={`Pessoa (${ROTULO_PESSOA_CONTRATO[tipoFinanceiro]})`} opcoes={pessoas.filter((p) => p.ativo).map((p) => ({ valor: p.id, rotulo: p.login_servidor ? `${p.nome} · ${p.login_servidor}` : p.nome }))} value={pessoaId} onChange={setPessoaId} placeholder="Digite o nome ou o login pra buscar…" erro={erros.pessoa} ajuda={`Se ainda não for ${ROTULO_PESSOA_CONTRATO[tipoFinanceiro].toLowerCase()} deste negócio, o vínculo é criado automaticamente.`} />
       <Selecao rotulo="Plano" opcoes={[{ valor: '', rotulo: negocioId ? (planosDoNegocio.length ? 'Selecione…' : 'Este negócio não tem planos ativos') : 'Escolha o negócio primeiro' }, ...planosDoNegocio.map((p) => ({ valor: p.id, rotulo: `${p.nome} · ${formatarMoeda(p.valor_tabela)}` }))]} value={planoId} onChange={(e) => escolherPlano(e.target.value)} disabled={!negocioId || planosDoNegocio.length === 0} />
       {erroCampo('plano')}
       <div className="grid grid-cols-2 gap-4">

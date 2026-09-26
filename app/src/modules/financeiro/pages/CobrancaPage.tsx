@@ -106,22 +106,24 @@ export function CobrancaPage() {
 
   const [busca, setBusca] = useState('')
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
+  // busca (cliente/login) usa esse texto combinado; exibição continua só com o nome
+  const buscaPessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, `${p.nome} ${p.login_servidor ?? ''}`.toLowerCase()])), [pessoas.data])
   const rotuloContrato = (id: string) => { const c = (contratos.data ?? []).find((x) => x.id === id); return c ? codigoContrato(c) : '—' }
   const buscaNorm = busca.trim().toLowerCase()
   const listaTodas = (bloqueios.data ?? []).filter((b) => b.negocio_id === negocioAtual)
-  const lista = listaTodas.filter((b) => !buscaNorm || (nomePessoa.get(b.pessoa_id) ?? '').toLowerCase().includes(buscaNorm) || rotuloContrato(b.contrato_id).toLowerCase().includes(buscaNorm))
+  const lista = listaTodas.filter((b) => !buscaNorm || (buscaPessoa.get(b.pessoa_id) ?? '').includes(buscaNorm) || rotuloContrato(b.contrato_id).toLowerCase().includes(buscaNorm))
   const pixTodos = (pix.data ?? []).filter((p) => p.negocio_id === negocioAtual)
   // Pix acumula rápido: filtro de situação e busca por cliente
   const termoPix = buscaPix.trim().toLowerCase()
   const pixLista = pixTodos.filter((p) => {
     if (statusPix && p.status !== statusPix) return false
     if (!termoPix) return true
-    return (nomePessoa.get(p.pessoa_id ?? '') ?? '').toLowerCase().includes(termoPix)
+    return (buscaPessoa.get(p.pessoa_id ?? '') ?? '').includes(termoPix)
   })
   const confTodas = (confiancas.data ?? []).filter((c) => c.negocio_id === negocioAtual)
   const termoConf = buscaConfianca.trim().toLowerCase()
   const confLista = confTodas.filter((c) => !termoConf
-    || (nomePessoa.get(c.pessoa_id) ?? '').toLowerCase().includes(termoConf)
+    || (buscaPessoa.get(c.pessoa_id) ?? '').includes(termoConf)
     || rotuloContrato(c.contrato_id).toLowerCase().includes(termoConf))
   const configAtual = (configs.data ?? []).find((c) => c.negocio_id === negocioAtual)
   const erro = gerar.error ?? executar.error ?? descartar.error ?? darConfianca.error ?? cancelarConfianca.error

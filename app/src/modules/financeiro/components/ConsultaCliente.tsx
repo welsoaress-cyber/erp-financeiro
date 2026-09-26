@@ -27,15 +27,16 @@ export function ConsultaCliente() {
     <Cartao className="mb-4 space-y-3 p-4">
       <SelecaoBusca
         rotulo="Consultar cliente (status e planos)"
-        opcoes={(pessoas.data ?? []).map((p) => ({ valor: p.id, rotulo: p.nome }))}
+        opcoes={(pessoas.data ?? []).map((p) => ({ valor: p.id, rotulo: p.login_servidor ? `${p.nome} · ${p.login_servidor}` : p.nome }))}
         value={pessoaId}
         onChange={setPessoaId}
-        placeholder="Digite o nome do cliente…"
+        placeholder="Digite o nome ou o login do cliente…"
       />
       {pessoa && (
         <div className="rounded-md border border-line bg-canvas/60 p-3 text-sm">
           <div className="flex items-center gap-2">
             <span className="font-medium">{pessoa.nome}</span>
+            {pessoa.login_servidor && <span className="text-xs text-ink-muted">· login {pessoa.login_servidor}</span>}
             <Distintivo tom={pessoa.ativo ? 'ok' : 'neutro'}>{pessoa.ativo ? 'Ativa' : 'Inativa'}</Distintivo>
           </div>
           {contratosDoCliente.length === 0 ? (

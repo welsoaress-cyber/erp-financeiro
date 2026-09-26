@@ -81,14 +81,15 @@ export function LancamentosPage() {
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
   const nomeNegocio = useMemo(() => new Map((negocios.data ?? []).map((n) => [n.id, n.nome])), [negocios.data])
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
+  const loginPessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.login_servidor])), [pessoas.data])
   const contratoPorId = useMemo(() => new Map((contratos.data ?? []).map((c) => [c.id, c])), [contratos.data])
   const temNegocios = (negocios.data ?? []).length > 0
 
-  // Busca livre: descrição + conta, categoria, negócio e pessoa, sem diferenciar acento/maiúscula
+  // Busca livre: descrição + conta, categoria, negócio, pessoa e login do servidor, sem diferenciar acento/maiúscula
   const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const termo = normalizar(busca.trim())
   const combina = (x: { descricao: string; conta_id: string | null; categoria_id: string | null; negocio_id: string | null; pessoa_id: string | null }) =>
-    !termo || normalizar([x.descricao, nomeConta.get(x.conta_id ?? ''), nomeCategoria.get(x.categoria_id ?? ''), nomeNegocio.get(x.negocio_id ?? ''), nomePessoa.get(x.pessoa_id ?? '')].filter(Boolean).join(' ')).includes(termo)
+    !termo || normalizar([x.descricao, nomeConta.get(x.conta_id ?? ''), nomeCategoria.get(x.categoria_id ?? ''), nomeNegocio.get(x.negocio_id ?? ''), nomePessoa.get(x.pessoa_id ?? ''), loginPessoa.get(x.pessoa_id ?? '')].filter(Boolean).join(' ')).includes(termo)
 
   const lista = (lancamentos.data ?? []).filter((l) =>
     (!filtroTipo || l.tipo === filtroTipo)

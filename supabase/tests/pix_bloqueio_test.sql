@@ -8,7 +8,7 @@ create temp table ids as select (select organizacao_id from public.categorias li
 do $$ declare v_org uuid; v_neg uuid; v_p uuid; v_plano uuid; v_conta uuid; v_pix uuid; v_ct uuid; v_cat uuid; begin
   select org into v_org from ids;
   insert into public.negocios (organizacao_id, nome, slug, ativo) values (v_org, 'PIX T', 'pix-t', true) returning id into v_neg;
-  insert into public.notificacoes_config (organizacao_id, negocio_id, numero_whatsapp, ativo, dias_apos) values (v_org, v_neg, '+5592999990001', true, 5);
+  insert into public.notificacoes_config (organizacao_id, negocio_id, numero_whatsapp, ativo, dias_apos, bloqueio_apos_dias) values (v_org, v_neg, '+5592999990001', true, 5, 5);
   insert into public.pessoas (organizacao_id, nome, telefone) values (v_org, 'Cliente Pix', '92988884444') returning id into v_p;
   insert into public.planos (organizacao_id, negocio_id, nome, valor_tabela, periodicidade) values (v_org, v_neg, 'Plano Pix', 100, 'mensal') returning id into v_plano;
   insert into public.contas (organizacao_id, nome, tipo, negocio_id) values (v_org, 'Caixa Pix', 'dinheiro', v_neg) returning id into v_conta;

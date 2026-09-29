@@ -10,8 +10,8 @@ do $$ declare v_org uuid; v_neg_auto uuid; v_neg_manual uuid; v_p1 uuid; v_p2 uu
   select org into v_org from ids;
   insert into public.negocios (organizacao_id, nome, slug, ativo) values (v_org, 'BLQ AUTO', 'blq-auto', true) returning id into v_neg_auto;
   insert into public.negocios (organizacao_id, nome, slug, ativo) values (v_org, 'BLQ MANUAL', 'blq-manual', true) returning id into v_neg_manual;
-  insert into public.notificacoes_config (organizacao_id, negocio_id, numero_whatsapp, ativo, dias_apos, bloqueio_automatico) values (v_org, v_neg_auto, '+5592999990003', true, 5, true);
-  insert into public.notificacoes_config (organizacao_id, negocio_id, numero_whatsapp, ativo, dias_apos, bloqueio_automatico) values (v_org, v_neg_manual, '+5592999990004', true, 5, false);
+  insert into public.notificacoes_config (organizacao_id, negocio_id, numero_whatsapp, ativo, dias_apos, bloqueio_apos_dias, bloqueio_automatico) values (v_org, v_neg_auto, '+5592999990003', true, 5, 5, true);
+  insert into public.notificacoes_config (organizacao_id, negocio_id, numero_whatsapp, ativo, dias_apos, bloqueio_apos_dias, bloqueio_automatico) values (v_org, v_neg_manual, '+5592999990004', true, 5, 5, false);
 
   insert into public.pessoas (organizacao_id, nome, telefone) values (v_org, 'Cliente Auto Vencido', '92988886001') returning id into v_p1;
   insert into public.pessoas (organizacao_id, nome, telefone) values (v_org, 'Cliente Auto Em Dia', '92988886002') returning id into v_p2;

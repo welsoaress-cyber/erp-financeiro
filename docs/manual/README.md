@@ -197,7 +197,7 @@ Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pess
 
 O coração da receita recorrente. Use a **busca** para achar um contrato por nome do cliente, número (#012), CPF/CNPJ, login do servidor ou telefone.
 
-1. **Novo contrato**: cliente + plano + valor + dia de vencimento (+ conta de recebimento). Marque **Cortesia (sem cobrança)** para cliente que não paga (valor 0): a fatura do mês aparece no Contas a receber com o distintivo *Cortesia* (valor riscado, fora dos totais) e no portal como Grátis; a lista de contratos mostra *Cortesia*; dá para ligar/desligar no detalhe.
+1. **Novo contrato**: cliente + plano + valor + dia de vencimento (+ conta de recebimento). Marque **Cortesia (sem cobrança)** para cliente que não paga (valor 0): a fatura do mês aparece no Contas a receber com o distintivo *Cortesia* (valor riscado, fora dos totais) e no portal como Grátis; a lista de contratos mostra *Cortesia*; dá para ligar/desligar no detalhe. Negócio sem plano cadastrado pro tipo (ex.: nenhum plano de despesa pra um fornecedor novo)? Clique **+ Novo plano**, ao lado do campo Plano, e cadastre na hora (nome + valor de tabela) sem sair do formulário — o plano recém-criado já vem selecionado.
 2. Com **faturamento automático**, a mensalidade entra sozinha todo mês em Contas a receber.
 3. Comprou algo para um cliente específico (roteador, ONU)? Lance a despesa com **Contrato** = o dele: entra na rentabilidade, no payback e no relatório *Custo por cliente*.
 4. Clique no contrato para abrir o **detalhe**: rentabilidade, payback do cliente (instalação + comissão + despesas do contrato), custo de manutenção, equipamentos em comodato, aceite digital, alterar valor/vencimento, suspender ou encerrar.

@@ -49,7 +49,7 @@ Cada grupo expande/recolhe com um clique; o estado é lembrado no navegador. O g
 
 - **Cartões do topo**: saldo total das contas, receitas/despesas do mês (realizado e previsto) e resultado. O "previsto" inclui a **projeção dos contratos** do mês exibido (mensalidades ainda não faturadas) — por isso um mês futuro já mostra a receita esperada.
 - **Cobrança do período**: três anéis — Confirmadas (recebidas), A receber (no prazo) e Inadimplentes (vencidas, acumulado) — com filtro Dia · Semana · Mês e atalho para Contas a receber.
-- **Pessoas**: quantas pessoas estão ativas e quantas inativas — clique em qualquer um dos dois números pra abrir Pessoas já filtrado (inativas já vem com "Mostrar inativas" marcado).
+- **Clientes**: quantos contratos de receita estão bloqueados (suspensos por falta de pagamento) e quantos desbloqueados (ativos) — clique em qualquer um dos dois números pra abrir Contratos já filtrado.
 - **Clientes bloqueados**: quantos contratos estão **suspensos por falta de pagamento** agora, com os primeiros nomes na lista. Clique em qualquer linha ou em **Ver todos** para abrir Contratos já filtrado em "Suspensos". Só aparece quando há algum.
 - **Avisos no WhatsApp**: se a régua de cobrança de cada negócio está em dia, com erro ou sem configuração.
 - **Estoque**: itens zerados ou abaixo do mínimo; o link **Comprar** de cada item abre a Nova compra já com ele selecionado.

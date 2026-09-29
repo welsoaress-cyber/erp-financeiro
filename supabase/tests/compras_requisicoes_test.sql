@@ -111,5 +111,13 @@ do $$ declare v r%rowtype; req_id uuid; begin
   exception when check_violation or insufficient_privilege then null; end;
 end $$;
 
+-- T8: relatório de requisições pendentes é legível pelo próprio solicitante (0110 — bug do join direto em auth.users)
+do $$ declare v r%rowtype; req public.compra_requisicoes; sol text; begin
+  select * into v from r;
+  req := public.criar_requisicao_compra(v.neg, jsonb_build_array(jsonb_build_object('descricao', 'Item T8', 'quantidade', 1)), null);
+  select solicitante into sol from public.vw_rel_compras_requisicoes_pendentes where requisicao_id = req.id;
+  assert sol is not null and sol <> 'Solicitante', 'T8 solicitante resolvido: ' || coalesce(sol, '<null>');
+end $$;
+
 rollback;
 \echo OK

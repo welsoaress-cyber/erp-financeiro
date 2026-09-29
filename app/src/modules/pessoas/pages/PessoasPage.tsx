@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
@@ -23,8 +24,9 @@ export function PessoasPage() {
   const atualizar = useAtualizarPessoa()
   const excluir = useExcluirPessoa()
   const alternarAtivo = useAlternarAtivoPessoa()
+  const [params] = useSearchParams()
   const [busca, setBusca] = useState('')
-  const [mostrarInativas, setMostrarInativas] = useState(false)
+  const [mostrarInativas, setMostrarInativas] = useState(params.get('inativas') === '1')
   const [filtroNegocio, setFiltroNegocio] = useState('') // '' = todos, 'sem' = sem vínculo, ou o id
   const [filtroPapel, setFiltroPapel] = useState<PapelVinculo | ''>('')
   const [filtroTipo, setFiltroTipo] = useState<TipoPessoa | ''>('')

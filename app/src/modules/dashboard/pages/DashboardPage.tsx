@@ -20,6 +20,7 @@ import { useResultadoPorNegocio, useSaldoInicial, useSaudeNotificacoes, useUltim
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 import { AlertasEstoque } from '../components/AlertasEstoque'
 import { AlertaBloqueados } from '../components/AlertaBloqueados'
+import { StatusPessoas } from '../components/StatusPessoas'
 import { SaudeAvisos } from '../components/SaudeAvisos'
 import { RelatorioCobranca } from '../components/RelatorioCobranca'
 import { HeroBoasVindas } from '../components/HeroBoasVindas'
@@ -108,6 +109,10 @@ export function DashboardPage() {
             <Indicador rotulo="Receitas do mês" valor={totais.receitas} tom="positivo" detalhe={`Previsto: ${formatarMoeda(prev.receitas)}`} />
             <Indicador rotulo="Despesas do mês" valor={totais.despesas} tom="negativo" detalhe={`Previsto: ${formatarMoeda(prev.despesas)}`} />
             <Indicador rotulo="Resultado do mês" valor={totais.resultado} tom="auto" detalhe={`Projetado (com previstos): ${formatarMoeda(totais.resultado + prev.receitas - prev.despesas)}`} />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatusPessoas />
           </div>
 
           <RelatorioCobranca bate={bate} />

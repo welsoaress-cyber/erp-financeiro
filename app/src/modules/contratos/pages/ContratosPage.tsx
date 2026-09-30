@@ -17,7 +17,7 @@ import { useCentrosCusto } from '../../centros_custo/api'
 import { formatarData } from '../../../core/formatos'
 import { FormularioContrato } from '../components/FormularioContrato'
 import { DetalheContrato } from '../components/DetalheContrato'
-import { codigoContrato, ROTULO_PERIODICIDADE, ROTULO_PESSOA_CONTRATO, ROTULO_STATUS_CONTRATO, type Contrato, type StatusContrato } from '../tipos'
+import { codigoContrato, ROTULO_PERIODICIDADE, ROTULO_PESSOA_CONTRATO, ROTULO_STATUS_CONTRATO, type Contrato, type ReceitaRecorrente, type StatusContrato } from '../tipos'
 
 type Edicao = { modo: 'novo' } | { modo: 'ver'; id: string } | null
 const TOM: Record<StatusContrato, 'ok' | 'alerta' | 'neutro'> = { ativo: 'ok', suspenso: 'alerta', encerrado: 'neutro' }
@@ -52,6 +52,15 @@ export function ContratosPage() {
     plano: new Map((planos.data ?? []).map((p) => [p.id, p.nome])),
   }), [negocios.data, pessoas.data, planos.data])
   const resultadoDe = useMemo(() => new Map((resultado.data ?? []).map((r) => [r.contrato_id, r])), [resultado.data])
+  const mrrPorNegocio = useMemo(() => {
+    const m = new Map<string, { negocio: string; receita?: ReceitaRecorrente; despesa?: ReceitaRecorrente }>()
+    for (const r of mrr.data ?? []) {
+      const atual = m.get(r.negocio_id) ?? { negocio: r.negocio }
+      atual[r.tipo_financeiro] = r
+      m.set(r.negocio_id, atual)
+    }
+    return [...m.entries()].map(([negocio_id, v]) => ({ negocio_id, ...v }))
+  }, [mrr.data])
   const pessoaDe = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p])), [pessoas.data])
 
   const termo = busca.trim().toLowerCase()
@@ -96,13 +105,21 @@ export function ContratosPage() {
           )}
           {!temPlanos && <Alerta tipo="info" titulo="Cadastre planos antes">Contratos precisam de um plano. Abra o negócio em <Link to="/negocios" className="font-medium text-brand-600 hover:underline">Negócios</Link> e cadastre seus planos.</Alerta>}
 
-          {(mrr.data ?? []).length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {(mrr.data ?? []).map((m) => (
-                <Cartao key={`${m.negocio_id}-${m.tipo_financeiro}`} className="p-5">
-                  <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{m.negocio} · {m.tipo_financeiro === 'receita' ? 'receita recorrente' : 'despesa recorrente'}</p>
-                  <p className={`mt-2 text-2xl font-semibold tabular-nums ${m.tipo_financeiro === 'receita' ? 'text-green-700' : 'text-red-700'}`}>{formatarMoeda(m.mrr)}<span className="text-sm font-normal text-ink-muted">/mês</span></p>
-                  <p className="mt-1 text-xs text-ink-muted">{m.contratos_ativos} ativo(s){m.contratos_suspensos ? ` · ${m.contratos_suspensos} suspenso(s)` : ''}</p>
+          {mrrPorNegocio.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {mrrPorNegocio.map((m) => (
+                <Cartao key={m.negocio_id} className="p-4">
+                  <p className="truncate text-xs font-medium uppercase tracking-wide text-ink-muted" title={m.negocio}>{m.negocio}</p>
+                  <div className="mt-2 flex items-center gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-lg font-semibold tabular-nums text-green-700">{formatarMoeda(m.receita?.mrr ?? 0)}</p>
+                      <p className="truncate text-xs text-ink-muted">receita · {m.receita?.contratos_ativos ?? 0} ativo(s)</p>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-lg font-semibold tabular-nums text-red-700">{formatarMoeda(m.despesa?.mrr ?? 0)}</p>
+                      <p className="truncate text-xs text-ink-muted">despesa · {m.despesa?.contratos_ativos ?? 0} ativo(s)</p>
+                    </div>
+                  </div>
                 </Cartao>
               ))}
             </div>

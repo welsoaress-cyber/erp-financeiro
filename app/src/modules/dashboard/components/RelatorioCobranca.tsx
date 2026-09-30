@@ -4,12 +4,17 @@ import { formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useCobranca } from '../api'
 import { Link } from 'react-router'
 
-type Periodo = 'dia' | 'semana' | 'mes'
-const ROTULO: Record<Periodo, string> = { dia: 'Dia', semana: 'Semana', mes: 'Mês' }
+type Periodo = 'dia' | 'semana' | 'mes' | 'acumulado'
+const ROTULO: Record<Periodo, string> = { dia: 'Dia', semana: 'Semana', mes: 'Mês', acumulado: 'Acumulado' }
+// "Acumulado" não tem início real — cobre desde sempre até um horizonte bem distante, pra pegar
+// tudo que já foi confirmado e tudo que ainda está previsto, sem cortar por data.
+const DESDE_SEMPRE = '1900-01-01'
+const ATE_SEMPRE = '2999-12-31'
 
 function intervalo(p: Periodo): { inicio: string; fim: string } {
   const hoje = new Date()
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  if (p === 'acumulado') return { inicio: DESDE_SEMPRE, fim: ATE_SEMPRE }
   if (p === 'dia') return { inicio: iso(hoje), fim: iso(hoje) }
   if (p === 'semana') {
     const dia = (hoje.getDay() + 6) % 7 // segunda = 0
@@ -66,7 +71,7 @@ export function RelatorioCobranca({ bate }: { bate: (negocioId: string | null) =
     >
       <div className="px-6 pt-3">
         <div role="radiogroup" aria-label="Período" className="inline-flex gap-1 rounded-md border border-line p-1">
-          {(['dia', 'semana', 'mes'] as Periodo[]).map((p) => (
+          {(['dia', 'semana', 'mes', 'acumulado'] as Periodo[]).map((p) => (
             <button key={p} type="button" role="radio" aria-checked={periodo === p} onClick={() => setPeriodo(p)}
               className={`rounded px-3 py-1 text-sm ${periodo === p ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>{ROTULO[p]}</button>
           ))}
@@ -81,7 +86,11 @@ export function RelatorioCobranca({ bate }: { bate: (negocioId: string | null) =
           <Anel rotulo="Inadimplentes" quantidade={vencidas.length} valor={vV} fracao={total > 0 ? vV / total : 0} cor="#dc2626" />
         </div>
       )}
-      <p className="border-t border-line px-6 py-2 text-xs text-ink-muted">Confirmadas = receitas recebidas no período · A receber = previstas ainda no prazo · Inadimplentes = previstas já vencidas (acumulado).</p>
+      <p className="border-t border-line px-6 py-2 text-xs text-ink-muted">
+        {periodo === 'acumulado'
+          ? 'Acumulado = tudo, desde sempre: Confirmadas (já recebido), A receber (previsto ainda no prazo) e Inadimplentes (previsto vencido).'
+          : 'Confirmadas = receitas recebidas no período · A receber = previstas ainda no prazo · Inadimplentes = previstas já vencidas (acumulado, independe do período).'}
+      </p>
     </CartaoRecolhivel>
   )
 }

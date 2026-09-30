@@ -48,7 +48,7 @@ Cada grupo expande/recolhe com um clique; o estado é lembrado no navegador. O g
 É a primeira tela (abre sozinha ao entrar). A faixa escura no topo é só a marca (saudação + "ERP Financeiro"); os dados começam logo abaixo, para o mês escolhido no canto superior direito:
 
 - **Cartões do topo**: saldo total das contas, receitas/despesas do mês (realizado e previsto) e resultado. O "previsto" inclui a **projeção dos contratos** do mês exibido (mensalidades ainda não faturadas) — por isso um mês futuro já mostra a receita esperada.
-- **Cobrança do período**: três anéis — Confirmadas (recebidas), A receber (no prazo) e Inadimplentes (vencidas, acumulado) — com filtro Dia · Semana · Mês e atalho para Contas a receber.
+- **Cobrança do período**: três anéis — Confirmadas (recebidas), A receber (no prazo) e Inadimplentes (vencidas) — com filtro Dia · Semana · Mês · **Acumulado** (desde sempre, sem cortar por data — pra ver o total histórico previsto × realizado) e atalho para Contas a receber.
 - **Clientes**: quantos contratos de receita estão bloqueados (suspensos por falta de pagamento) e quantos desbloqueados (ativos) — clique em qualquer um dos dois números pra abrir Contratos já filtrado.
 - **Clientes bloqueados**: quantos contratos estão **suspensos por falta de pagamento** agora, com os primeiros nomes na lista. Clique em qualquer linha ou em **Ver todos** para abrir Contratos já filtrado em "Suspensos". Só aparece quando há algum.
 - **Avisos no WhatsApp**: se a régua de cobrança de cada negócio está em dia, com erro ou sem configuração.

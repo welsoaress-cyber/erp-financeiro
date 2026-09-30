@@ -135,6 +135,19 @@ const indicacoes = [
   { id: id('ic', 2), organizacao_id: ORG, negocio_id: NEG, indicador_pessoa_id: id('c', 2), nome_indicado: 'Rafael Nunes', telefone_indicado: '92988885555', indicado_pessoa_id: null, status: 'pendente', beneficio_valor: 0, observacao: null, criado_em: dia(-3) + 'T10:00:00Z', convertida_em: null, presente_item_id: null, presente_custo: null, presente_entregue_em: null },
 ]
 
+const funcionarios = [
+  { id: id('fu', 1), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 1), cargo: 'Atendente', departamento: 'Administrativo', salario_base: 2200, data_admissao: '2026-03-01', data_demissao: null, ativo: true, criado_em: '2026-03-01', atualizado_em: '2026-03-01' },
+]
+const funcionarioPonto = [
+  { id: id('fp', 1), funcionario_id: id('fu', 1), data: dia(1), entrada: '08:00', saida_almoco: '12:00', volta_almoco: '13:00', saida: '17:00', observacao: null, criado_em: dia(1), atualizado_em: dia(1) },
+]
+const funcionarioFerias = [
+  { id: id('fe', 1), funcionario_id: id('fu', 1), periodo_aquisitivo_inicio: '2025-03-01', periodo_aquisitivo_fim: '2026-03-01', data_inicio: null, data_fim: null, status: 'programada', observacao: null, criado_em: dia(1), atualizado_em: dia(1) },
+]
+const funcionarioFolha = [
+  { id: id('ff', 1), organizacao_id: ORG, funcionario_id: id('fu', 1), mes: mesAtual + '-01', valor: 2200, lancamento_id: id('2', 1), observacao: 'salário de ' + mesAtual, criado_em: dia(1) },
+]
+
 const leads = [
   { id: id('l', 1), organizacao_id: ORG, negocio_id: NEG, nome: 'Carlos Andrade', telefone: '92988886666', email: null, endereco: 'Rua Nova, 200', origem: 'site', plano_interesse_id: id('f', 1), status: 'novo', observacao: null, convertido_pessoa_id: null, convertido_em: null, criado_em: dia(1) + 'T10:00:00Z', atualizado_em: dia(1) + 'T10:00:00Z' },
   { id: id('l', 2), organizacao_id: ORG, negocio_id: NEG, nome: 'Beatriz Lopes', telefone: '92988887777', email: 'beatriz@email.com', endereco: null, origem: 'whatsapp', plano_interesse_id: id('f', 2), status: 'negociando', observacao: 'Pediu desconto no primeiro mês', convertido_pessoa_id: null, convertido_em: null, criado_em: dia(-3) + 'T10:00:00Z', atualizado_em: dia(1) + 'T10:00:00Z' },
@@ -152,6 +165,7 @@ const tabelas = {
   organizacao_membros: [{ organizacao_id: ORG, usuario_id: 'u1', papel: 'proprietario', criado_em: '2026-01-01', organizacoes: { id: ORG, nome: 'Grupo Tom' } }],
   contas, vw_saldo_contas: contas, categorias, negocios, pessoas, planos, contratos, lancamentos, tecnicos, indicacoes, vw_api_tokens: api_tokens,
   leads, lead_eventos,
+  funcionarios, funcionario_ponto: funcionarioPonto, funcionario_ferias: funcionarioFerias, funcionario_folha: funcionarioFolha,
   cartoes_config: [{ id: id('g', 1), organizacao_id: ORG, conta_id: id('d', 3), dia_fechamento: 16, dia_vencimento: 25, limite_total: 5000 }],
   vw_cartoes_limite: [{ config_id: id('g', 1), conta_id: id('d', 3), organizacao_id: ORG, limite_total: 5000, uso_efetivado: -830.4, comprometido: 129.8, disponivel: 5000 - 830.4 - 129.8 }],
   faturas: [],
@@ -368,6 +382,7 @@ async function capturar(page, nome, ms = 1200) {
     ['/ftth', '13-ftth-mapa', 2500],
     ['/estoque', '14-estoque-dashboard'],
     ['/os', '16-os-dashboard'],
+    ['/rh', '54-rh'],
     ['/apps', '20-apps'],
     ['/notificacoes', '21-notificacoes'],
     ['/disparos', '22-disparos'],

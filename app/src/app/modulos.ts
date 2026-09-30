@@ -10,6 +10,7 @@ import { moduloCentrosCusto } from '../modules/centros_custo'
 import { moduloPessoas } from '../modules/pessoas'
 import { moduloLeads } from '../modules/leads'
 import { moduloContratos } from '../modules/contratos'
+import { moduloRh } from '../modules/rh'
 import { moduloApps } from '../modules/apps'
 import { moduloNotificacoes } from '../modules/notificacoes'
 import { moduloDisparos } from '../modules/disparos'
@@ -36,6 +37,7 @@ export const MODULOS: DefinicaoModulo[] = [
   moduloPessoas,
   moduloLeads,
   moduloContratos,
+  moduloRh,
   moduloIndicacoes,
   moduloFtth,
   moduloEstoque,
@@ -58,7 +60,7 @@ export const GRUPOS: MenuGrupo[] = [
   { id: 'cadastros', titulo: 'Cadastros', icone: 'pessoas',
     modulos: ['pessoas', 'leads', 'negocios', 'contratos', 'categorias', 'centros_custo', 'contas', 'cartoes'] },
   { id: 'operacao', titulo: 'Operação', icone: 'estoque',
-    modulos: ['estoque', 'compras', 'os', 'ftth', 'indicacoes'] },
+    modulos: ['estoque', 'compras', 'os', 'ftth', 'indicacoes', 'rh'] },
   { id: 'comunicacao', titulo: 'Comunicação', icone: 'notificacoes',
     modulos: ['notificacoes', 'disparos', 'apps'] },
   { id: 'analise', titulo: 'Análise', icone: 'gerencial',

@@ -21,7 +21,7 @@ O menu lateral agora tem 5 itens raiz e 4 grupos colapsáveis:
 - **Novidades** (raiz) — quem chegou e ainda não virou cliente; o número vermelho é a contagem aguardando contato.
 - **Financeiro** (raiz) — lançamentos, cobrança, conciliação, fechamento.
 - **Cadastros** — Pessoas, Leads, Negócios, Contratos, Categorias, Centros de custo, Contas, Cartões.
-- **Operação** — Estoque, Compras, Ordens de Serviço, FTTH, Indicações.
+- **Operação** — Estoque, Compras, Ordens de Serviço, FTTH, Indicações, RH.
 - **Comunicação** — Notificações, Disparos, Apps.
 - **Análise** — Gerencial (BI), Relatórios.
 - **Portal do cliente** (raiz) — o que o cliente vê.
@@ -319,6 +319,19 @@ Agenda dos próximos 7 dias, por técnico e hora — confira antes de atribuir c
 ![Técnicos](img/19-os-tecnicos.png)
 
 Cadastre o técnico (**Novo técnico**), depois **Criar login** (usuário e senha — ele entra em `/tecnico/entrar`). Em **Bolsa**: abastecer do estoque central, devolver, registrar perda/avaria e definir mínimos. Pedido de reposição do técnico aparece como alerta e some quando você abastece.
+
+## 12b. RH
+
+![RH](img/54-rh.png)
+
+Cadastro de funcionários, ponto informal, férias e folha simplificada. **Só cálculo de INSS/IRRF/FGTS/13º/rescisão, eSocial e ponto com valor jurídico pleno (REP-P) ficam de fora — de propósito, sempre**: isso é risco trabalhista de verdade, fica com o contador.
+
+1. **Novo funcionário**: escolha a pessoa (precisa já estar cadastrada em Pessoas — funcionário não duplica o cadastro), negócio, cargo, departamento e salário base. Mudança de cargo/salário fica no histórico automaticamente (auditoria).
+2. Clique no funcionário pra abrir o detalhe com 3 abas:
+   - **Ponto**: registra entrada, saída de almoço, volta e saída do dia — horas trabalhadas calculadas na hora. É controle interno, não substitui ponto eletrônico homologado.
+   - **Férias**: programa o período aquisitivo e o de gozo, move entre programada/em gozo/concluída — sem calcular 1/3 constitucional ou abono.
+   - **Folha**: lança a despesa do mês (salário + comissões − descontos, valor final que você/contador já calculou), escolhe conta e centro de custo — vira um lançamento normal em Contas a Pagar. Uma folha por funcionário por mês.
+3. Comissão de técnico continua exatamente como já era — gerada no chamado de OS.
 
 ## 13. Gerencial (BI)
 

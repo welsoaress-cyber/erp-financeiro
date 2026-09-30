@@ -204,7 +204,10 @@ const tabelas = {
   aceites_contrato: [{ id: id('t', 1), organizacao_id: ORG, contrato_id: id('1', 1), pessoa_id: id('c', 1), data_aceite: '2026-02-10T14:22:00Z', ip: '187.10.20.30' }],
   portal_config: [{ id: id('p', 1), organizacao_id: ORG, negocio_id: NEG, ativo: true, logo_url: null, cor_primaria: '#1e3a8a', texto_promocional: 'Indique um amigo e ganhe 1 mês grátis!', chave_pix: 'pix@servnet.net.br', instrucoes_pagamento: null, beneficio_indicacao: 0, tema: 'escuro', whatsapp_suporte: '5592999998888', beneficio_tipo: 'mes_gratis', fidelidade_ativa: true, site_url: null, pix_automatico: true, conta_pix_id: id('d', 2), contrato_modelo: 'TERMO…' }],
   vw_resultado_por_contrato: contratos.map((c) => ({ contrato_id: c.id, organizacao_id: ORG, receitas: 599.4, despesas: 350.5, resultado: 248.9, lancamentos: 6, primeiro_lancamento: c.data_inicio, ultimo_lancamento: dia(9) })),
-  vw_receita_recorrente: [{ negocio_id: NEG, organizacao_id: ORG, negocio: 'Servnet', contratos_ativos: 2, contratos_suspensos: 1, mrr: 229.8 }],
+  vw_receita_recorrente: [
+    { negocio_id: NEG, organizacao_id: ORG, negocio: 'Servnet', tipo_financeiro: 'receita', contratos_ativos: 2, contratos_suspensos: 1, mrr: 229.8 },
+    { negocio_id: NEG, organizacao_id: ORG, negocio: 'Servnet', tipo_financeiro: 'despesa', contratos_ativos: 1, contratos_suspensos: 0, mrr: 1500 },
+  ],
   // Central de Relatórios (etapa 53A)
   vw_centro_custo_mensal: [
     { organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', mes: mesAtual + '-01', tipo: 'receita', status: 'efetivado', categoria_id: id('e', 1), categoria: 'Mensalidades', natureza: 'operacional', valor: 12480.9, lancamentos: 118 },

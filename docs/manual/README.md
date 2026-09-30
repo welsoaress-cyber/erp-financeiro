@@ -209,7 +209,7 @@ Fora do escopo desta etapa (ficam para depois): follow-up automático e captura 
 
 ![Contratos](img/12-contratos.png)
 
-O coração da receita recorrente. Use a **busca** para achar um contrato por nome do cliente, número (#012), CPF/CNPJ, login do servidor ou telefone.
+O coração da receita recorrente. Os cartões do topo mostram, por negócio, **receita recorrente** (verde) e **despesa recorrente** (vermelho) separadas — um negócio com só contrato de fornecedor (ex.: aluguel) aparece corretamente como despesa, não como receita. Use a **busca** para achar um contrato por nome do cliente, número (#012), CPF/CNPJ, login do servidor ou telefone.
 
 1. **Novo contrato**: cliente + plano + valor + dia de vencimento (+ conta de recebimento). Marque **Cortesia (sem cobrança)** para cliente que não paga (valor 0): a fatura do mês aparece no Contas a receber com o distintivo *Cortesia* (valor riscado, fora dos totais) e no portal como Grátis; a lista de contratos mostra *Cortesia*; dá para ligar/desligar no detalhe. Negócio sem plano cadastrado pro tipo (ex.: nenhum plano de despesa pra um fornecedor novo)? Clique **+ Novo plano**, ao lado do campo Plano, e cadastre na hora (nome + valor de tabela) sem sair do formulário — o plano recém-criado já vem selecionado.
 2. Com **faturamento automático**, a mensalidade entra sozinha todo mês em Contas a receber.

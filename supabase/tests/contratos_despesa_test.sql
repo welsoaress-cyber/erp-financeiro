@@ -47,6 +47,16 @@ do $$ declare v r%rowtype; c public.contratos%rowtype; l public.lancamentos%rowt
   assert (select papel from public.pessoa_negocio_vinculos where pessoa_id = v.joao and negocio_id = v.servnet) = 'cliente', 'T3 vínculo cliente (comportamento anterior mantido)';
 end $$;
 
+-- T3b: vw_receita_recorrente (0112) separa por tipo_financeiro — negócio com despesa E receita
+-- gera duas linhas, cada uma com seu próprio rótulo/valor (não mistura despesa como se fosse receita)
+do $$ declare v r%rowtype; m_receita numeric; m_despesa numeric; begin
+  select * into v from r;
+  select mrr into m_receita from public.vw_receita_recorrente where negocio_id = v.servnet and tipo_financeiro = 'receita';
+  select mrr into m_despesa from public.vw_receita_recorrente where negocio_id = v.servnet and tipo_financeiro = 'despesa';
+  assert m_receita = 99.90, 'T3b mrr de receita não inclui despesa: ' || m_receita;
+  assert m_despesa = 1000, 'T3b mrr de despesa separado (500 + 500 dos dois contratos de despesa): ' || m_despesa;
+end $$;
+
 -- T4: categoria de despesa precisa ser do tipo despesa
 do $$ declare v r%rowtype; begin
   select * into v from r;

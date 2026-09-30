@@ -47,7 +47,7 @@ export function useReceitaRecorrente() {
   return useQuery({
     queryKey: [...chaveContratos(organizacao.id), 'mrr'],
     queryFn: async (): Promise<ReceitaRecorrente[]> => {
-      const { data, error } = await supabase.from('vw_receita_recorrente').select('negocio_id, negocio, contratos_ativos, contratos_suspensos, mrr').eq('organizacao_id', organizacao.id).order('negocio')
+      const { data, error } = await supabase.from('vw_receita_recorrente').select('negocio_id, negocio, tipo_financeiro, contratos_ativos, contratos_suspensos, mrr').eq('organizacao_id', organizacao.id).order('negocio')
       if (error) throw error
       return (data ?? []).map((r) => ({ ...r, mrr: Number(r.mrr), contratos_ativos: Number(r.contratos_ativos), contratos_suspensos: Number(r.contratos_suspensos) }))
     },

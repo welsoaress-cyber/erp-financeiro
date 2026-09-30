@@ -86,6 +86,7 @@ export interface ResultadoContrato {
 export interface ReceitaRecorrente {
   negocio_id: string
   negocio: string
+  tipo_financeiro: TipoFinanceiroContrato
   contratos_ativos: number
   contratos_suspensos: number
   mrr: number

@@ -99,9 +99,9 @@ export function ContratosPage() {
           {(mrr.data ?? []).length > 0 && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {(mrr.data ?? []).map((m) => (
-                <Cartao key={m.negocio_id} className="p-5">
-                  <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{m.negocio} · receita recorrente</p>
-                  <p className="mt-2 text-2xl font-semibold tabular-nums text-green-700">{formatarMoeda(m.mrr)}<span className="text-sm font-normal text-ink-muted">/mês</span></p>
+                <Cartao key={`${m.negocio_id}-${m.tipo_financeiro}`} className="p-5">
+                  <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{m.negocio} · {m.tipo_financeiro === 'receita' ? 'receita recorrente' : 'despesa recorrente'}</p>
+                  <p className={`mt-2 text-2xl font-semibold tabular-nums ${m.tipo_financeiro === 'receita' ? 'text-green-700' : 'text-red-700'}`}>{formatarMoeda(m.mrr)}<span className="text-sm font-normal text-ink-muted">/mês</span></p>
                   <p className="mt-1 text-xs text-ink-muted">{m.contratos_ativos} ativo(s){m.contratos_suspensos ? ` · ${m.contratos_suspensos} suspenso(s)` : ''}</p>
                 </Cartao>
               ))}

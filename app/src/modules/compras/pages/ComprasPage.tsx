@@ -12,7 +12,8 @@ import { Carregando } from '../../../core/ui/Carregando'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useNegocios } from '../../negocios/api'
-import { usePessoas } from '../../pessoas/api'
+import { usePessoas, useCriarPessoa } from '../../pessoas/api'
+import { CriarRapido } from '../../../core/ui/CriarRapido'
 import { useCategorias } from '../../categorias/api'
 import { useEstoqueItens } from '../../estoque/api'
 import { useContas } from '../../contas/api'
@@ -83,6 +84,7 @@ function FormularioRequisicao({ negocioId, aoFechar }: { negocioId: string; aoFe
 function DetalheRequisicao({ req, aoFechar }: { req: Requisicao; aoFechar: () => void }) {
   const itens = useRequisicaoItens(req.id)
   const pessoas = usePessoas()
+  const criarPessoa = useCriarPessoa()
   const categorias = useCategorias()
   const aprovar = useAprovarRequisicao()
   const rejeitar = useRejeitarRequisicao()
@@ -171,7 +173,15 @@ function DetalheRequisicao({ req, aoFechar }: { req: Requisicao; aoFechar: () =>
       {modo === 'aprovar' && (
         <div className="space-y-3 rounded-md border border-line bg-surface/60 p-3">
           <div className="grid grid-cols-2 gap-3">
-            <Selecao rotulo="Fornecedor" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(pessoas.data ?? []).map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={fornecedorId} onChange={(e) => setFornecedorId(e.target.value)} />
+            <div>
+              <Selecao rotulo="Fornecedor" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(pessoas.data ?? []).map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={fornecedorId} onChange={(e) => setFornecedorId(e.target.value)} />
+              <div className="mt-1">
+                <CriarRapido rotulo="Criar fornecedor" aoCriar={async (nome) => {
+                  const p = await criarPessoa.mutateAsync({ tipo: 'juridica', nome, documento: null, email: null, telefone: null, data_nascimento: null, observacao: null, ativo: true, receber_avisos: true })
+                  setFornecedorId(p.id)
+                }} />
+              </div>
+            </div>
             <Campo rotulo="Data do pedido" type="date" value={dataPedido} onChange={(e) => setDataPedido(e.target.value)} />
           </div>
           <div className="grid grid-cols-3 gap-3">

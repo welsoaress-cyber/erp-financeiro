@@ -20,7 +20,7 @@ O menu lateral agora tem 5 itens raiz e 4 grupos colapsáveis:
 - **Dashboard** (raiz) — visão geral do mês.
 - **Novidades** (raiz) — quem chegou e ainda não virou cliente; o número vermelho é a contagem aguardando contato.
 - **Financeiro** (raiz) — lançamentos, cobrança, conciliação, fechamento.
-- **Cadastros** — Pessoas, Negócios, Contratos, Categorias, Centros de custo, Contas, Cartões.
+- **Cadastros** — Pessoas, Leads, Negócios, Contratos, Categorias, Centros de custo, Contas, Cartões.
 - **Operação** — Estoque, Compras, Ordens de Serviço, FTTH, Indicações.
 - **Comunicação** — Notificações, Disparos, Apps.
 - **Análise** — Gerencial (BI), Relatórios.
@@ -191,6 +191,19 @@ Ao editar uma pessoa há o botão **Excluir** (vermelho): só funciona para pess
 **Ativar/Desativar direto na lista:** cada linha tem o botão **Ativar**/**Desativar** ao lado do status — não precisa abrir o cadastro para isso. Pessoa inativa some da lista por padrão; marque **Mostrar inativas** para vê-la de novo.
 
 **Autoatualização pro curso (sem login):** `/curso/atualizar` é uma página pública — sem senha — pra quem vai fazer o curso na Leveduca confirmar telefone, CPF, e-mail e nascimento sozinho. Ao clicar **Atualizar**, o cadastro é corrigido e o contrato cortesia com a Servnet (plano com "curso" no nome, início 01/10/2026) é criado sozinho, se ainda não existir. Mande o link pra quem precisa — não aparece em nenhum menu.
+
+## 8b. Leads (CRM)
+
+![Leads](img/53-leads.png)
+
+Captação e acompanhamento de quem ainda não é cliente. Quatro cartões no topo resumem o funil: quantos leads em cada etapa, taxa de conversão, tempo médio até virar cliente e de onde vieram (site, WhatsApp, indicação, manual).
+
+1. **Novo lead**: nome, telefone, negócio, e-mail/plano de interesse/endereço (opcionais). Sem CPF — lead não é cadastro de pessoa, é só até virar um.
+2. Clique num lead para abrir o **detalhe**: mover para a próxima etapa (Novo → Contatado → Qualificado → Negociando → Fechado/Perdido), registrar interações (ligação, WhatsApp, e-mail, visita) e o histórico delas.
+3. **Converter em cliente**: cria a pessoa e o vínculo de cliente no negócio do lead, e já abre o formulário de **Novo contrato** com pessoa e plano pré-preenchidos — a conversão nunca cria o contrato sozinha, você revisa e confirma (conta de recebimento, dia de vencimento etc.).
+4. **Captura pelo site**: existe uma função pública (sem login) para plugar num formulário do seu site — quem cadastrar o site chama essa função com nome, telefone, negócio e plano de interesse; o lead nasce com origem "Site".
+
+Fora do escopo desta etapa (ficam para depois): follow-up automático e captura direto pelo WhatsApp.
 
 ## 9. Contratos
 

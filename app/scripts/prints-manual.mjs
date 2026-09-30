@@ -135,6 +135,15 @@ const indicacoes = [
   { id: id('ic', 2), organizacao_id: ORG, negocio_id: NEG, indicador_pessoa_id: id('c', 2), nome_indicado: 'Rafael Nunes', telefone_indicado: '92988885555', indicado_pessoa_id: null, status: 'pendente', beneficio_valor: 0, observacao: null, criado_em: dia(-3) + 'T10:00:00Z', convertida_em: null, presente_item_id: null, presente_custo: null, presente_entregue_em: null },
 ]
 
+const leads = [
+  { id: id('l', 1), organizacao_id: ORG, negocio_id: NEG, nome: 'Carlos Andrade', telefone: '92988886666', email: null, endereco: 'Rua Nova, 200', origem: 'site', plano_interesse_id: id('f', 1), status: 'novo', observacao: null, convertido_pessoa_id: null, convertido_em: null, criado_em: dia(1) + 'T10:00:00Z', atualizado_em: dia(1) + 'T10:00:00Z' },
+  { id: id('l', 2), organizacao_id: ORG, negocio_id: NEG, nome: 'Beatriz Lopes', telefone: '92988887777', email: 'beatriz@email.com', endereco: null, origem: 'whatsapp', plano_interesse_id: id('f', 2), status: 'negociando', observacao: 'Pediu desconto no primeiro mês', convertido_pessoa_id: null, convertido_em: null, criado_em: dia(-3) + 'T10:00:00Z', atualizado_em: dia(1) + 'T10:00:00Z' },
+  { id: id('l', 3), organizacao_id: ORG, negocio_id: NEG, nome: 'Diego Farias', telefone: '92988888888', email: null, endereco: null, origem: 'indicacao', plano_interesse_id: null, status: 'fechado', observacao: null, convertido_pessoa_id: id('c', 2), convertido_em: dia(-1) + 'T12:00:00Z', criado_em: dia(-8) + 'T10:00:00Z', atualizado_em: dia(-1) + 'T12:00:00Z' },
+]
+const lead_eventos = [
+  { id: id('le', 1), lead_id: id('l', 2), tipo: 'ligacao', descricao: 'Explicado o plano, vai decidir até sexta', usuario_id: 'u1', criado_em: dia(1) + 'T11:00:00Z' },
+]
+
 const api_tokens = [
   { id: id('at', 1), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', nome: 'Leveduca', token_prefixo: 'a1b2c3d4', ativo: true, criado_em: dia(-10), revogado_em: null, ultimo_uso_em: dia(-1), consultas: 42 },
 ]
@@ -142,6 +151,7 @@ const api_tokens = [
 const tabelas = {
   organizacao_membros: [{ organizacao_id: ORG, usuario_id: 'u1', papel: 'proprietario', criado_em: '2026-01-01', organizacoes: { id: ORG, nome: 'Grupo Tom' } }],
   contas, vw_saldo_contas: contas, categorias, negocios, pessoas, planos, contratos, lancamentos, tecnicos, indicacoes, vw_api_tokens: api_tokens,
+  leads, lead_eventos,
   cartoes_config: [{ id: id('g', 1), organizacao_id: ORG, conta_id: id('d', 3), dia_fechamento: 16, dia_vencimento: 25, limite_total: 5000 }],
   vw_cartoes_limite: [{ config_id: id('g', 1), conta_id: id('d', 3), organizacao_id: ORG, limite_total: 5000, uso_efetivado: -830.4, comprometido: 129.8, disponivel: 5000 - 830.4 - 129.8 }],
   faturas: [],
@@ -350,6 +360,7 @@ async function capturar(page, nome, ms = 1200) {
     ['/categorias', '09-categorias'],
     ['/negocios', '10-negocios'],
     ['/pessoas', '11-pessoas'],
+    ['/leads', '53-leads'],
     ['/contratos', '12-contratos'],
     ['/ftth', '13-ftth-mapa', 2500],
     ['/estoque', '14-estoque-dashboard'],

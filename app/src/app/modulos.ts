@@ -8,6 +8,7 @@ import { moduloCategorias } from '../modules/categorias'
 import { moduloNegocios } from '../modules/negocios'
 import { moduloCentrosCusto } from '../modules/centros_custo'
 import { moduloPessoas } from '../modules/pessoas'
+import { moduloLeads } from '../modules/leads'
 import { moduloContratos } from '../modules/contratos'
 import { moduloApps } from '../modules/apps'
 import { moduloNotificacoes } from '../modules/notificacoes'
@@ -33,6 +34,7 @@ export const MODULOS: DefinicaoModulo[] = [
   moduloNegocios,
   moduloCentrosCusto,
   moduloPessoas,
+  moduloLeads,
   moduloContratos,
   moduloIndicacoes,
   moduloFtth,
@@ -54,7 +56,7 @@ export const RAIZ: string[] = ['dashboard', 'novidades', 'financeiro', 'portal',
 /** Grupos que agrupam módulos no menu lateral (colapsáveis). */
 export const GRUPOS: MenuGrupo[] = [
   { id: 'cadastros', titulo: 'Cadastros', icone: 'pessoas',
-    modulos: ['pessoas', 'negocios', 'contratos', 'categorias', 'centros_custo', 'contas', 'cartoes'] },
+    modulos: ['pessoas', 'leads', 'negocios', 'contratos', 'categorias', 'centros_custo', 'contas', 'cartoes'] },
   { id: 'operacao', titulo: 'Operação', icone: 'estoque',
     modulos: ['estoque', 'compras', 'os', 'ftth', 'indicacoes'] },
   { id: 'comunicacao', titulo: 'Comunicação', icone: 'notificacoes',

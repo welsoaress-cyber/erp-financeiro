@@ -24,16 +24,19 @@ interface Props {
   erro: string | null
   aoSalvar: (d: DadosNovoContrato) => void
   aoCancelar: () => void
+  /** Pré-preenchimento (ex.: vindo da conversão de um lead) — nunca cria contrato sozinho, só abre com os campos já escolhidos pra revisão. */
+  inicial?: { negocioId?: string; pessoaId?: string; planoId?: string }
 }
 
-export function FormularioContrato({ negocios, pessoas, planos, contas, centros = [], salvando, erro, aoSalvar, aoCancelar }: Props) {
+export function FormularioContrato({ negocios, pessoas, planos, contas, centros = [], salvando, erro, aoSalvar, aoCancelar, inicial }: Props) {
   const negociosAtivos = negocios.filter((n) => n.ativo)
-  const [negocioId, setNegocioId] = useState(negociosAtivos.length === 1 ? negociosAtivos[0].id : '')
+  const [negocioId, setNegocioId] = useState(inicial?.negocioId ?? (negociosAtivos.length === 1 ? negociosAtivos[0].id : ''))
   const [tipoFinanceiro, setTipoFinanceiro] = useState<TipoFinanceiroContrato>('receita')
-  const [pessoaId, setPessoaId] = useState('')
-  const [planoId, setPlanoId] = useState('')
-  const [valor, setValor] = useState('')
-  const [periodicidade, setPeriodicidade] = useState<Periodicidade>('mensal')
+  const [pessoaId, setPessoaId] = useState(inicial?.pessoaId ?? '')
+  const planoInicial = inicial?.planoId ? planos.find((p) => p.id === inicial.planoId) : undefined
+  const [planoId, setPlanoId] = useState(planoInicial?.id ?? '')
+  const [valor, setValor] = useState(planoInicial ? String(planoInicial.valor_tabela) : '')
+  const [periodicidade, setPeriodicidade] = useState<Periodicidade>(planoInicial?.periodicidade ?? 'mensal')
   const [dataInicio, setDataInicio] = useState(hojeISO())
   const [dia, setDia] = useState('10')
   const [observacao, setObservacao] = useState('')

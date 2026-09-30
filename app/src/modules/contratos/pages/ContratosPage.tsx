@@ -36,7 +36,10 @@ export function ContratosPage() {
   const gerar = useGerarFaturamento()
   const [params] = useSearchParams()
   const statusUrl = params.get('status')
-  const [edicao, setEdicao] = useState<Edicao>(null)
+  const inicialNovo = params.get('novo') === '1'
+    ? { negocioId: params.get('negocio') ?? undefined, pessoaId: params.get('pessoa') ?? undefined, planoId: params.get('plano') ?? undefined }
+    : undefined
+  const [edicao, setEdicao] = useState<Edicao>(inicialNovo ? { modo: 'novo' } : null)
   const [filtroNegocio, setFiltroNegocio] = useState('')
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState<StatusContrato | ''>(
@@ -164,7 +167,7 @@ export function ContratosPage() {
 
       <Modal aberto={edicao !== null} aoFechar={fechar} titulo={edicao?.modo === 'novo' ? 'Novo contrato' : contratoVisto ? `Contrato ${codigoContrato(contratoVisto)}` : 'Contrato'}>
         {edicao?.modo === 'novo' && (
-          <FormularioContrato negocios={negocios.data ?? []} pessoas={pessoas.data ?? []} planos={planos.data ?? []} contas={contas.data ?? []} centros={centros.data ?? []} salvando={criar.isPending} erro={criar.error ? mensagemDeErro(criar.error) : null} aoSalvar={(d) => criar.mutate(d, { onSuccess: fechar })} aoCancelar={fechar} />
+          <FormularioContrato negocios={negocios.data ?? []} pessoas={pessoas.data ?? []} planos={planos.data ?? []} contas={contas.data ?? []} centros={centros.data ?? []} salvando={criar.isPending} erro={criar.error ? mensagemDeErro(criar.error) : null} aoSalvar={(d) => criar.mutate(d, { onSuccess: fechar })} aoCancelar={fechar} inicial={inicialNovo} />
         )}
         {contratoVisto && (
           <DetalheContrato key={contratoVisto.id + contratoVisto.status} contrato={contratoVisto} nomes={{ negocio: nome.negocio.get(contratoVisto.negocio_id) ?? '—', pessoa: nome.pessoa.get(contratoVisto.pessoa_id) ?? '—', plano: nome.plano.get(contratoVisto.plano_id) ?? '—' }} resultado={resultadoDe.get(contratoVisto.id)} contas={contas.data ?? []} aoFechar={fechar} />

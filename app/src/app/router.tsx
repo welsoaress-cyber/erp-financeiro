@@ -8,6 +8,7 @@ import { GRUPOS, MODULOS, RAIZ } from './modulos'
 import { PortalShell } from '../portal/PortalShell'
 import { PortalCadastroPage, PortalLoginEmailPage, PortalLoginPage, PortalNovaSenhaPage, PortalRecuperarPage, PortalVincularPage } from '../portal/pages/PortalAuthPages'
 import { PortalFaturaPdfPage, PortalFaturasPage, PortalIndiquePage, PortalPagamentosPage, PortalParceriasPage, PortalPlanoPage, PortalPontosPage, PortalPromocoesPage } from '../portal/pages/PortalPages'
+import { PortalGravacoesPage } from '../portal/pages/PortalGravacoesPage'
 import { PortalChamadosPage, PortalDadosPage, PortalFidelidadePage, PortalInicioPage } from '../portal/pages/PortalServnetPages'
 import { IndicacaoPublicaPage } from '../portal/pages/IndicacaoPublicaPage'
 import { VitrinePublicaPage } from '../portal/pages/VitrinePublicaPage'
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
       { path: 'indique', element: <PortalIndiquePage /> },
       { path: 'pontos', element: <PortalPontosPage /> },
       { path: 'parcerias', element: <PortalParceriasPage /> },
+      { path: 'gravacoes', element: <PortalGravacoesPage /> },
       { path: 'promocoes', element: <PortalPromocoesPage /> },
       { path: 'fidelidade', element: <PortalFidelidadePage /> },
       { path: 'chamados', element: <PortalChamadosPage /> },

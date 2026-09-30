@@ -19,6 +19,7 @@ const MENU = [
   { rota: '/portal/indique', rotulo: 'Indique e ganhe' },
   { rota: '/portal/pontos', rotulo: 'Meus pontos' },
   { rota: '/portal/parcerias', rotulo: 'Parcerias' },
+  { rota: '/portal/gravacoes', rotulo: 'Minhas gravações' },
   { rota: '/portal/promocoes', rotulo: 'Promoções' },
   { rota: '/portal/chamados', rotulo: 'Chamados' },
   { rota: '/portal/dados', rotulo: 'Meus dados' },

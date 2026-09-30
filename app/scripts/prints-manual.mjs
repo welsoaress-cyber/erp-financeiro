@@ -450,7 +450,7 @@ async function capturar(page, nome, ms = 1200) {
   await page.fill('input[type="password"]', 'senha-demo').catch(() => undefined)
   await page.click('button[type="submit"]').catch(() => undefined)
   await espera(1600)
-  for (const [rota, nome] of [['/portal', '41-portal-inicio'], ['/portal/faturas', '42-portal-faturas'], ['/portal/chamados', '43-portal-chamados'], ['/portal/plano', '44-portal-plano']]) {
+  for (const [rota, nome] of [['/portal', '41-portal-inicio'], ['/portal/faturas', '42-portal-faturas'], ['/portal/chamados', '43-portal-chamados'], ['/portal/plano', '44-portal-plano'], ['/portal/gravacoes', '56-portal-gravacoes']]) {
     await page.goto(BASE + rota)
     await capturar(page, nome, 1500)
   }

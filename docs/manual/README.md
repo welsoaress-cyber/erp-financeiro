@@ -373,6 +373,8 @@ O cliente entra com **CPF + data de nascimento** e pode: ver e pagar faturas (**
 
 **Parcerias** (aba do portal): clube de benefícios com desconto — parceiros da Leveduca (lista grande, ~500) e acordos próprios da Servnet, com busca e filtro por categoria. Só leitura pro cliente.
 
+**Minhas gravações** (aba do portal): banner "Em breve" pro futuro serviço de câmera de segurança alugada com 30 dias de gravação — ainda em teste técnico (RTSP/ONVIF + upload de movimento pra nuvem), sem contratação disponível ainda. Página estática, nenhum dado real por trás.
+
 Você configura a aparência e as regras em **Portal do cliente** (menu do admin): cores, chave Pix, Pix automático + conta que recebe, texto do termo de adesão, fidelidade, promoções e conversão de indicações.
 
 ![Portal admin](img/24-portal-admin.png)

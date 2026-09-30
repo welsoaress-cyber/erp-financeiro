@@ -15,9 +15,9 @@ import {
   useMeusChamados, useMinhaBolsa, usePausar, useRetomar, useSolicitarRemarcacaoTec,
 } from '../api'
 
-const TOM_STATUS = { aberto: 'info', em_atendimento: 'ok', pausado: 'alerta', encerrado: 'neutro', cancelado: 'neutro' } as const
+export const TOM_STATUS = { aberto: 'info', em_atendimento: 'ok', pausado: 'alerta', encerrado: 'neutro', cancelado: 'neutro' } as const
 
-function DetalheTecnico({ os, aoFechar }: { os: OrdemServico; aoFechar: () => void }) {
+export function DetalheTecnico({ os, aoFechar }: { os: OrdemServico; aoFechar: () => void }) {
   const info = useInfoCliente(os.id)
   const bolsa = useMinhaBolsa()
   const itens = useItensDoNegocio()

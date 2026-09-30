@@ -15,6 +15,7 @@ import { CursoAtualizarPage } from '../portal/pages/CursoAtualizarPage'
 import { TecnicoShell } from '../tecnico/TecnicoShell'
 import { TecnicoLoginPage } from '../tecnico/pages/TecnicoLoginPage'
 import { TecnicoChamadosPage } from '../tecnico/pages/TecnicoChamadosPage'
+import { TecnicoAgendaPage } from '../tecnico/pages/TecnicoAgendaPage'
 import { TecnicoBolsaPage } from '../tecnico/pages/TecnicoBolsaPage'
 
 export const router = createBrowserRouter([
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
     element: <TecnicoShell />,
     children: [
       { index: true, element: <TecnicoChamadosPage /> },
+      { path: 'agenda', element: <TecnicoAgendaPage /> },
       { path: 'bolsa', element: <TecnicoBolsaPage /> },
     ],
   },

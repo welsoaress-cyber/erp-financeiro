@@ -379,11 +379,15 @@ Você configura a aparência e as regras em **Portal do cliente** (menu do admin
 
 ## 16. Área do técnico (o que o técnico vê)
 
-| Login | Meus chamados | Minha bolsa |
-|---|---|---|
-| ![Login](img/30-tecnico-login.png) | ![Chamados](img/31-tecnico-chamados.png) | ![Bolsa](img/32-tecnico-bolsa.png) |
+| Login | Meus chamados | Agenda | Minha bolsa |
+|---|---|---|---|
+| ![Login](img/30-tecnico-login.png) | ![Chamados](img/31-tecnico-chamados.png) | ![Agenda](img/55-tecnico-agenda.png) | ![Bolsa](img/32-tecnico-bolsa.png) |
 
 No celular, o técnico: dá ciência, **agenda a visita** (o cliente recebe no WhatsApp), inicia, pausa (com motivo), **encerra** informando materiais, série do equipamento, diagnóstico, sinal dBm e fotos. Na bolsa: saldo dos materiais, **pedir reposição** e registrar perda. Ele **não vê** tempos, financeiro nem outros clientes.
+
+**Agenda** (etapa 63): terceira aba, grade da semana (‹ › pra trocar de semana) com os chamados já agendados, um dia embaixo do outro — toca num chamado pra abrir o mesmo detalhe de "Meus chamados".
+
+**Instalável no celular** (etapa 63): a área do técnico é um PWA — no Android, o Chrome oferece "Instalar app"/"Adicionar à tela inicial" sozinho depois de visitar `/tecnico` algumas vezes; abre em tela cheia, sem barra de endereço, com ícone próprio. Funciona só com cache de leitura (telas e chamados já abertos ficam disponíveis com sinal fraco) — **ações exigem internet**, não há fila de sincronização offline (decisão deliberada: evitar ação duplicada ou perdida se o técnico mexer sem sinal).
 
 ## 17. Configurações
 

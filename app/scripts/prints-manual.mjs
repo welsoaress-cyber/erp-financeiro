@@ -430,6 +430,8 @@ async function capturar(page, nome, ms = 1200) {
   await espera(1500)
   await page.goto(BASE + '/tecnico')
   await capturar(page, '31-tecnico-chamados', 1500)
+  await page.goto(BASE + '/tecnico/agenda')
+  await capturar(page, '55-tecnico-agenda', 1200)
   await page.goto(BASE + '/tecnico/bolsa')
   await capturar(page, '32-tecnico-bolsa')
   await ctx.close()

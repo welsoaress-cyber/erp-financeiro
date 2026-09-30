@@ -35,6 +35,7 @@ export function TecnicoShell() {
       </main>
       <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-lg border-t border-line bg-white">
         <NavLink to="/tecnico" end className={({ isActive }) => `${aba} ${isActive ? 'text-brand-700' : 'text-ink-muted'}`}>Meus chamados</NavLink>
+        <NavLink to="/tecnico/agenda" className={({ isActive }) => `${aba} ${isActive ? 'text-brand-700' : 'text-ink-muted'}`}>Agenda</NavLink>
         <NavLink to="/tecnico/bolsa" className={({ isActive }) => `${aba} ${isActive ? 'text-brand-700' : 'text-ink-muted'}`}>Minha bolsa</NavLink>
       </nav>
     </div>

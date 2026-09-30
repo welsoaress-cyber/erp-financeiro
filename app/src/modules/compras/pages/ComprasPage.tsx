@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
@@ -399,8 +400,14 @@ function ListaRecebimentos({ negocioId }: { negocioId: string }) {
   )
 }
 
+const ABA_POR_SEGMENTO: Record<string, Aba> = { requisicoes: 'requisicoes', pedidos: 'pedidos', recebimento: 'recebimentos' }
+const SEGMENTO_POR_ABA: Record<Aba, string> = { requisicoes: 'requisicoes', pedidos: 'pedidos', recebimentos: 'recebimento' }
+
 export function ComprasPage() {
-  const [aba, setAba] = useState<Aba>('requisicoes')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const segmento = location.pathname.split('/')[2] ?? ''
+  const aba = ABA_POR_SEGMENTO[segmento] ?? 'requisicoes'
   const [modalNova, setModalNova] = useState(false)
   const [reqAberta, setReqAberta] = useState<Requisicao | null>(null)
   const [pedAberto, setPedAberto] = useState<Pedido | null>(null)
@@ -429,8 +436,8 @@ export function ComprasPage() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div role="tablist" className="flex gap-1 rounded-md border border-line p-1 text-sm">
           {(['requisicoes', 'pedidos', 'recebimentos'] as Aba[]).map((a) => (
-            <button key={a} role="tab" aria-selected={aba === a} onClick={() => setAba(a)} className={`rounded px-3 py-1.5 ${aba === a ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>
-              {a === 'requisicoes' ? `Requisições${pendentes > 0 ? ` (${pendentes})` : ''}` : a === 'pedidos' ? 'Pedidos' : 'Recebimentos'}
+            <button key={a} role="tab" aria-selected={aba === a} onClick={() => navigate(`/compras/${SEGMENTO_POR_ABA[a]}`)} className={`rounded px-3 py-1.5 ${aba === a ? 'bg-brand-600 text-white' : 'text-ink-muted hover:text-ink'}`}>
+              {a === 'requisicoes' ? `Requisições${pendentes > 0 ? ` (${pendentes})` : ''}` : a === 'pedidos' ? 'Pedidos' : 'Recebimento'}
             </button>
           ))}
         </div>

@@ -383,6 +383,8 @@ async function capturar(page, nome, ms = 1200) {
     ['/estoque', '14-estoque-dashboard'],
     ['/os', '16-os-dashboard'],
     ['/rh', '54-rh'],
+    ['/rh/ponto', '57-rh-ponto'],
+    ['/rh/ferias', '58-rh-ferias'],
     ['/apps', '20-apps'],
     ['/notificacoes', '21-notificacoes'],
     ['/disparos', '22-disparos'],

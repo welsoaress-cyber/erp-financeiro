@@ -116,6 +116,32 @@ export function useAtualizarFerias() {
   })
 }
 
+/** Ponto de todos os funcionários da organização — RLS já restringe ao vínculo com funcionarios. */
+export function usePontoGeral() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chavePonto(organizacao.id), 'geral'],
+    queryFn: async (): Promise<Ponto[]> => {
+      const { data, error } = await supabase.from('funcionario_ponto').select('*').order('data', { ascending: false }).limit(500)
+      if (error) throw error
+      return data ?? []
+    },
+  })
+}
+
+/** Férias de todos os funcionários da organização — RLS já restringe ao vínculo com funcionarios. */
+export function useFeriasGeral() {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chaveFerias(organizacao.id), 'geral'],
+    queryFn: async (): Promise<Ferias[]> => {
+      const { data, error } = await supabase.from('funcionario_ferias').select('*').order('periodo_aquisitivo_inicio', { ascending: false })
+      if (error) throw error
+      return data ?? []
+    },
+  })
+}
+
 export function useFolha(funcionarioId: string | null) {
   const { organizacao } = useOrganizacao()
   return useQuery({

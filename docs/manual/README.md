@@ -15,17 +15,24 @@ Guia completo para um novo administrador operar o sistema, tela a tela. As image
 
 ## Como o menu está organizado
 
-O menu lateral agora tem 5 itens raiz e 4 grupos colapsáveis:
+O menu lateral tem 5 itens raiz e 6 grupos colapsáveis:
 
 - **Dashboard** (raiz) — visão geral do mês.
 - **Novidades** (raiz) — quem chegou e ainda não virou cliente; o número vermelho é a contagem aguardando contato.
-- **Financeiro** (raiz) — lançamentos, cobrança, conciliação, fechamento.
+- **Financeiro** (raiz) — Lançamentos, Contas a receber, Contas a pagar, Cobrança, Conciliação.
 - **Cadastros** — Pessoas, Leads, Negócios, Contratos, Categorias, Centros de custo, Contas, Cartões.
-- **Operação** — Estoque, Compras, Ordens de Serviço, FTTH, Indicações, RH.
+- **Suprimentos** — Estoque, Requisições, Pedidos de Compra, Recebimento, Fornecedores.
+- **Operação** — Ordens de Serviço, Rede FTTH, Indicações.
+- **RH** — Funcionários, Ponto, Férias.
 - **Comunicação** — Notificações, Disparos, Apps.
 - **Análise** — Gerencial (BI), Relatórios.
 - **Portal do cliente** (raiz) — o que o cliente vê.
 - **Configurações** (raiz).
+
+> **Requisições / Pedidos de Compra / Recebimento** são as três etapas do
+> mesmo fluxo de Compras (item 11b) — viraram três itens de menu em vez de
+> abas dentro de uma tela só. **Fornecedores** é um atalho: abre a mesma
+> tela de Pessoas (item 8), não é um cadastro separado.
 
 Cada grupo expande/recolhe com um clique; o estado é lembrado no navegador. O grupo do módulo aberto expande sozinho.
 
@@ -276,22 +283,25 @@ Item chegou com defeito e o fornecedor não devolve na hora? Aba **Devoluções*
 
 Todo material entra no ERP por este fluxo formal (mesmo hoje, que você é o único aprovador). É o padrão de ERP grande: quem pede, quem aprova e o que foi pedido ficam registrados desde o começo.
 
-- **Nova requisição** (topo direito): descreva os itens (podem sair da lista do estoque ou serem digitados livres), a quantidade e o destino (Estoque / Despesa / Patrimônio / Comodato / Serviço). Justificativa é opcional. A requisição nasce como **REQ-0001** com status **Pendente**.
-- **Aba Requisições**: mostra tudo com o status. Clique em **Abrir** para decidir.
-  - **Aprovar e gerar pedido**: você informa o fornecedor, a condição de pagamento, previsão de entrega, frete/desconto e o **valor unitário de cada item** (aqui aparece o campo). Ao confirmar, o sistema cria automaticamente o **PED-0001**, marca a requisição como *Convertida* e amarra os dois.
+As três etapas são três itens do menu **Suprimentos** — Requisições, Pedidos de Compra e Recebimento —, mas continuam a mesma tela (`/compras/...`), só trocam o que aparece em destaque.
+
+- **Nova requisição** (topo direito, em qualquer uma das três telas): descreva os itens (podem sair da lista do estoque ou serem digitados livres), a quantidade e o destino (Estoque / Despesa / Patrimônio / Comodato / Serviço). Justificativa é opcional. A requisição nasce como **REQ-0001** com status **Pendente**.
+- **Suprimentos → Requisições**: mostra tudo com o status. Clique em **Abrir** para decidir.
+  - **Aprovar e gerar pedido**: você informa o fornecedor, a condição de pagamento, previsão de entrega, frete/desconto e o **valor unitário de cada item** (aqui aparece o campo — e o link **"+ Criar fornecedor"** cadastra um fornecedor novo sem sair da tela). Ao confirmar, o sistema cria automaticamente o **PED-0001**, marca a requisição como *Convertida* e amarra os dois.
   - **Rejeitar**: exige um motivo curto e trava o fluxo (o mesmo material precisa de nova requisição).
   - **Cancelar**: quem pediu (ou você) pode cancelar enquanto está pendente.
-- **Aba Pedidos**: os pedidos que já saíram da aprovação, com fornecedor, previsão, condição e valor total. Você pode cancelar um pedido em aberto se desistiu antes de receber.
-- **Central de Relatórios**: dois novos relatórios entram na aba Operação — *Requisições de compra pendentes* (o que espera sua aprovação) e *Pedidos de compra em aberto* (o que está a caminho).
+- **Suprimentos → Pedidos de Compra**: os pedidos que já saíram da aprovação, com fornecedor, previsão, condição e valor total. Você pode cancelar um pedido em aberto se desistiu antes de receber.
+- **Suprimentos → Fornecedores**: atalho — abre a mesma tela de Pessoas (item 8); fornecedor não tem cadastro próprio, é uma pessoa como outra qualquer.
+- **Central de Relatórios**: dois relatórios entram na aba Operação — *Requisições de compra pendentes* (o que espera sua aprovação) e *Pedidos de compra em aberto* (o que está a caminho).
 
-**Recebimento (55B).** No detalhe do pedido aberto, clique em **Registrar recebimento**: informe a quantidade que chegou por item (pode ser parcial), a nota (número/chave/valor — opcional), a conta de pagamento e o número de parcelas. Cartão de crédito vai para a fatura como previsto; conta comum efetiva se você marcar "Já pago". Itens com destino **Estoque** entram automaticamente no estoque pelo custo unitário do pedido (com frete/desconto rateados). O pedido fica "Recebido parcial" até fechar tudo. Divergência entre o valor da nota e o valor recebido só gera um aviso — não trava. Nova aba **Recebimentos** lista o histórico; e o relatório *Recebimentos de compra* na Central marca cada linha como `confere`, `divergente` ou `sem nota`.
+**Recebimento (55B).** No detalhe do pedido aberto, clique em **Registrar recebimento**: informe a quantidade que chegou por item (pode ser parcial), a nota (número/chave/valor — opcional), a conta de pagamento e o número de parcelas. Cartão de crédito vai para a fatura como previsto; conta comum efetiva se você marcar "Já pago". Itens com destino **Estoque** entram automaticamente no estoque pelo custo unitário do pedido (com frete/desconto rateados). O pedido fica "Recebido parcial" até fechar tudo. Divergência entre o valor da nota e o valor recebido só gera um aviso — não trava. **Suprimentos → Recebimento** lista o histórico; e o relatório *Recebimentos de compra* na Central marca cada linha como `confere`, `divergente` ou `sem nota`.
 
 **Destino do item no recebimento (55C):**
 - **Estoque** e **Comodato**: entram no estoque normal pelo custo unitário. Comodato só vira comodato de verdade quando você aloca o equipamento a um cliente pelo módulo Estoque.
 - **Patrimônio**: cria uma linha em Patrimônio por unidade (valor de aquisição = valor unitário, localização inicial = negócio + PED-NNNN, número de série vai para o primeiro exemplar). Ajuste depois em Estoque → Patrimônio.
 - **Despesa** / **Serviço**: só o lançamento financeiro, nada físico.
 
-O botão **"Nova compra"** do Estoque virou **"Nova compra (via requisição)"** e leva direto para `/compras`. Não existe mais caminho paralelo — toda compra passa por aprovação.
+O botão **"Nova compra"** do Estoque virou **"Nova compra (via requisição)"** e leva direto para Suprimentos → Requisições. Não existe mais caminho paralelo — toda compra passa por aprovação.
 
 ## 12. Ordens de Serviço (OS)
 
@@ -324,14 +334,19 @@ Cadastre o técnico (**Novo técnico**), depois **Criar login** (usuário e senh
 
 ![RH](img/54-rh.png)
 
-Cadastro de funcionários, ponto informal, férias e folha simplificada. **Só cálculo de INSS/IRRF/FGTS/13º/rescisão, eSocial e ponto com valor jurídico pleno (REP-P) ficam de fora — de propósito, sempre**: isso é risco trabalhista de verdade, fica com o contador.
+O grupo **RH** tem três itens de menu: **Funcionários** (cadastro), **Ponto** e **Férias** (visão de todo mundo, sem precisar abrir um funcionário por vez). **Só cálculo de INSS/IRRF/FGTS/13º/rescisão, eSocial e ponto com valor jurídico pleno (REP-P) ficam de fora — de propósito, sempre**: isso é risco trabalhista de verdade, fica com o contador.
 
-1. **Novo funcionário**: escolha a pessoa (precisa já estar cadastrada em Pessoas — funcionário não duplica o cadastro), negócio, cargo, departamento e salário base. Mudança de cargo/salário fica no histórico automaticamente (auditoria).
+1. **RH → Funcionários → Novo funcionário**: escolha a pessoa (precisa já estar cadastrada em Pessoas — funcionário não duplica o cadastro), negócio, cargo, departamento e salário base. Mudança de cargo/salário fica no histórico automaticamente (auditoria).
 2. Clique no funcionário pra abrir o detalhe com 3 abas:
    - **Ponto**: registra entrada, saída de almoço, volta e saída do dia — horas trabalhadas calculadas na hora. É controle interno, não substitui ponto eletrônico homologado.
    - **Férias**: programa o período aquisitivo e o de gozo, move entre programada/em gozo/concluída — sem calcular 1/3 constitucional ou abono.
    - **Folha**: lança a despesa do mês (salário + comissões − descontos, valor final que você/contador já calculou), escolhe conta e centro de custo — vira um lançamento normal em Contas a Pagar. Uma folha por funcionário por mês.
-3. Comissão de técnico continua exatamente como já era — gerada no chamado de OS.
+3. **RH → Ponto** e **RH → Férias**: as mesmas listas de cima, só que de **todos os funcionários juntos** — pra conferir de uma vez, sem abrir um por um. Registro em si continua sempre pelo detalhe do funcionário (item 2).
+4. Comissão de técnico continua exatamente como já era — gerada no chamado de OS.
+
+![Ponto](img/57-rh-ponto.png)
+
+![Férias](img/58-rh-ferias.png)
 
 ## 13. Gerencial (BI)
 

@@ -8,3 +8,12 @@ export const moduloPessoas: DefinicaoModulo = {
   icone: 'pessoas',
   Pagina: PessoasPage,
 }
+
+/** Atalho: mesma tela de Pessoas, acessível também por Suprimentos → Fornecedores. */
+export const moduloFornecedores: DefinicaoModulo = {
+  id: 'fornecedores',
+  titulo: 'Fornecedores',
+  rota: '/fornecedores',
+  icone: 'pessoas',
+  Pagina: PessoasPage,
+}

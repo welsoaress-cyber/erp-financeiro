@@ -184,7 +184,7 @@ export function LancamentosPage() {
     if (l) {
       return {
         chave: linha.chave,
-        data: l.data_competencia,
+        data: l.data_vencimento,
         titulo: l.descricao,
         marca: l.origem === 'faturamento' ? { tom: 'info' as const, texto: 'Automático', titulo: undefined as string | undefined } : null,
         recorrencia: l.recorrente
@@ -204,7 +204,7 @@ export function LancamentosPage() {
     const p = linha.proj!
     return {
       chave: linha.chave,
-      data: p.data_competencia,
+      data: p.data_vencimento,
       titulo: p.descricao,
       marca: { tom: 'neutro' as const, texto: 'Contrato · projetado', titulo: undefined as string | undefined },
       recorrencia: null,
@@ -328,7 +328,7 @@ export function LancamentosPage() {
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs uppercase tracking-wide text-ink-muted">
                     <tr className="border-b border-line">
-                      <th className="px-6 py-3 font-medium">Data</th>
+                      <th className="px-6 py-3 font-medium">Vencimento</th>
                       <th className="w-full px-6 py-3 font-medium">Descrição</th>
                       <th className="px-6 py-3 font-medium">Tipo</th>
                       <th className="px-6 py-3 text-right font-medium">Valor</th>

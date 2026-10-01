@@ -151,3 +151,18 @@ export function useAtualizarContrato() {
     onSuccess: invalidar,
   })
 }
+
+/** Encerrar contrato: opcionalmente cancela as cobranças "previsto" já geradas.
+ * As ainda não vencidas na data do encerramento cancelam normal; as já vencidas
+ * entram como perda (motivo distinto) — não mexe em saldo nem no que já foi pago. */
+export function useEncerrarContrato() {
+  const invalidar = useInvalidarContratos()
+  return useMutation({
+    mutationFn: async ({ id, data_fim, cancelar_pendencias }: { id: string; data_fim: string; cancelar_pendencias: boolean }) => {
+      const { data, error } = await supabase.rpc('encerrar_contrato', { p_id: id, p_data_fim: data_fim, p_cancelar_pendencias: cancelar_pendencias })
+      if (error) throw error
+      return data as Contrato
+    },
+    onSuccess: invalidar,
+  })
+}

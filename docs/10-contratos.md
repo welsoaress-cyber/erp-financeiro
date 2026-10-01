@@ -56,3 +56,21 @@ Status: **CONCLUÍDA E VALIDADA EM PRODUÇÃO (02/09/2026).** Migration 0008 apl
 1. SQL Editor → `supabase/migrations/20260902000008_planos_contratos.sql` → Run.
 2. SQL Editor → `supabase/tests/verificar_contratos.sql` → esperado `7 de 7 verificações OK`.
 3. Site: Negócios → SERVNET → novo plano; Contratos → novo contrato para a pessoa cadastrada; Lançamentos → receita com o contrato; Contratos → conferir resultado e receita recorrente.
+
+## 5. Adendo (migration 0117) — encerrar contrato pode cancelar as cobranças em aberto
+Contrato encerrado parava de gerar faturamento novo (já exigia `status = 'ativo'`), mas o que
+já tinha sido gerado antes do encerramento (`previsto`) ficava órfão, aparecendo pra sempre em
+Contas a Receber/Pagar mesmo sem mais sentido de cobrar.
+
+`encerrar_contrato(p_id, p_data_fim, p_cancelar_pendencias)` — chamada pelo botão "Confirmar
+encerramento" em Contratos. Com a opção marcada:
+- Cobrança `previsto` que ainda não tinha vencido na data do encerramento → cancelada normal.
+- Cobrança `previsto` já vencida na data do encerramento → cancelada como **perda** (motivo
+  distinto no lançamento, pra não parecer uma cobrança que nunca existiu).
+- O que já foi pago (`efetivado`) nunca é tocado.
+
+**Suspender contrato não muda** — é bloqueio por inadimplência; cancelar a cobrança apagaria a
+dívida que motivou o próprio bloqueio.
+
+### Aplicar em produção
+SQL Editor → `supabase/migrations/20260902000117_encerrar_contrato_pendencias.sql` → Run.

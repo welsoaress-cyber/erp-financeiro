@@ -6,7 +6,7 @@ import { Distintivo } from '../../../core/ui/Distintivo'
 import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
-import { useAtualizarContrato } from '../api'
+import { useAtualizarContrato, useEncerrarContrato } from '../api'
 import { usePaybackContratos } from '../../estoque/api'
 import { useOsCustoContratos } from '../../os/api'
 import { useComodatos, useEstoqueItens } from '../../estoque/api'
@@ -31,6 +31,7 @@ const TOM: Record<Contrato['status'], 'ok' | 'alerta' | 'neutro'> = { ativo: 'ok
 /** Detalhe do contrato: dados, rentabilidade, edição de valor/vencimento e ciclo de vida. */
 export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }: Props) {
   const atualizar = useAtualizarContrato()
+  const encerrar = useEncerrarContrato()
   const paybacks = usePaybackContratos()
   const payback = (paybacks.data ?? []).find((p) => p.contrato_id === contrato.id)
   const custosOs = useOsCustoContratos()
@@ -57,6 +58,7 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   // Encerramento nunca pode ser antes do início do contrato (check do banco)
   const dataFimMinima = contrato.data_inicio > hojeISO() ? contrato.data_inicio : hojeISO()
   const [dataFim, setDataFim] = useState(dataFimMinima)
+  const [cancelarPendencias, setCancelarPendencias] = useState(false)
 
   function salvar() {
     const v = cortesia ? 0 : Number(valor.replace(',', '.')); const d = Number(dia)
@@ -102,7 +104,7 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
         <p className="text-xs text-ink-muted">Manutenção: {formatarMoeda(custoManutencao.custo_material)} em material ({custoManutencao.chamados} chamado(s)).</p>
       )}
 
-      {atualizar.error && <Alerta tipo="erro">{mensagemDeErro(atualizar.error)}</Alerta>}
+      {(atualizar.error ?? encerrar.error) && <Alerta tipo="erro">{mensagemDeErro(atualizar.error ?? encerrar.error)}</Alerta>}
 
       {encerrado ? (
         <Alerta tipo="info">Contrato encerrado. Não pode ser alterado; o histórico permanece na rentabilidade.</Alerta>
@@ -131,9 +133,16 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
           {modo === 'encerrar' && (
             <div className="space-y-2 rounded-md border border-red-200 bg-red-50 p-3">
               {dataFim < contrato.data_inicio && <p className="text-xs text-red-800">A data de encerramento não pode ser anterior ao início do contrato ({formatarData(contrato.data_inicio)}).</p>}
-              <div className="flex items-end gap-2">
-                <Campo rotulo="Data de encerramento" type="date" min={contrato.data_inicio} value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
-                <Botao type="button" variante="perigo" onClick={() => atualizar.mutate({ id: contrato.id, status: 'encerrado', data_fim: dataFim }, { onSuccess: aoFechar })} carregando={atualizar.isPending} disabled={dataFim < contrato.data_inicio}>Confirmar encerramento</Botao>
+              <Campo rotulo="Data de encerramento" type="date" min={contrato.data_inicio} value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" checked={cancelarPendencias} onChange={(e) => setCancelarPendencias(e.target.checked)} className="mt-0.5" />
+                <span>
+                  Cancelar também as cobranças em aberto deste contrato.
+                  <span className="block text-xs text-ink-muted">As que ainda não tinham vencido na data de encerramento são canceladas; as que já estavam vencidas entram como <b>perda</b> (motivo registrado no lançamento). O que já foi pago não é alterado.</span>
+                </span>
+              </label>
+              <div className="flex items-center gap-2">
+                <Botao type="button" variante="perigo" onClick={() => encerrar.mutate({ id: contrato.id, data_fim: dataFim, cancelar_pendencias: cancelarPendencias }, { onSuccess: aoFechar })} carregando={encerrar.isPending} disabled={dataFim < contrato.data_inicio}>Confirmar encerramento</Botao>
                 <Botao type="button" variante="secundario" onClick={() => setModo('nenhum')}>Voltar</Botao>
               </div>
             </div>

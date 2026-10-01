@@ -15,7 +15,7 @@ export function AppShell({ modulos, grupos, raiz }: { modulos: DefinicaoModulo[]
 
   return (
     <OrganizacaoProvider>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden print:h-auto print:overflow-visible">
         <aside className="hidden w-60 shrink-0 md:block">
           <BarraLateral modulos={modulos} grupos={grupos} raiz={raiz} />
         </aside>
@@ -27,9 +27,9 @@ export function AppShell({ modulos, grupos, raiz }: { modulos: DefinicaoModulo[]
           </div>
         )}
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col print:flex-none">
           <BarraSuperior aoAbrirMenu={() => setMenuAberto(true)} />
-          <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 print:overflow-visible">
             {/* largura: as listas (lançamentos, contas, contratos) precisam de espaço — com
                 max-w-6xl a descrição quebrava em 4 linhas e as ações saíam da tela num monitor
                 comum. Ainda há um teto para não esticar demais em tela ultrawide. */}

@@ -53,7 +53,7 @@ export function AcoesLancamento({ lancamento, ocupado, erro, aoEfetivar, aoCance
           {lancamento.recorrente && aoProjetar && !fixa && <Botao type="button" variante="secundario" onClick={() => setModo('projetar')}>Projetar meses futuros</Botao>}
           {lancamento.status === 'efetivado' && aoEstornar && lancamento.valor > 0 && <Botao type="button" variante="secundario" onClick={() => setModo('estornar')}>Estornar</Botao>}
           <Botao type="button" variante="secundario" onClick={() => setModo('cancelar')}>Cancelar lançamento</Botao>
-          {lancamento.status === 'previsto' && <Botao type="button" variante="perigo" onClick={() => setModo('excluir')}>Excluir</Botao>}
+          {lancamento.status === 'previsto' && lancamento.origem !== 'faturamento' && <Botao type="button" variante="perigo" onClick={() => setModo('excluir')}>Excluir</Botao>}
         </div>
       )}
       {modo === 'efetivar' && (

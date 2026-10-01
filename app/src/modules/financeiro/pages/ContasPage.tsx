@@ -5,6 +5,7 @@ import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../..
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
 import { Alerta } from '../../../core/ui/Alerta'
+import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
 import { Campo } from '../../../core/ui/Campo'
 import { Selecao } from '../../../core/ui/Selecao'
 import { Carregando } from '../../../core/ui/Carregando'
@@ -31,47 +32,28 @@ import { ConsultaCliente } from '../components/ConsultaCliente'
 
 const diasAtraso = (vencimento: string) => Math.max(0, Math.round((Date.parse(hojeISO()) - Date.parse(vencimento)) / 86400000))
 
-const CHAVE_RECOLHER_PENDENCIAS = 'erp.pendenciasAnteriores.recolhido'
-
 /** Previstos vencidos antes do mês corrente: fica visível não importa em qual mês o usuário esteja navegando. */
 function PendenciasAnteriores({ tipo, aoAbrirAcao }: { tipo: 'receita' | 'despesa'; aoAbrirAcao: (l: Lancamento) => void }) {
   const receber = tipo === 'receita'
   const vencidos = useLancamentosVencidosAntes(tipo, mesAtualISO())
-  const chave = `${CHAVE_RECOLHER_PENDENCIAS}.${tipo}`
-  const [recolhido, setRecolhido] = useState(() => {
-    try { return localStorage.getItem(chave) === '1' } catch { return false }
-  })
-  const alternar = () => {
-    setRecolhido((v) => {
-      const novo = !v
-      try { localStorage.setItem(chave, novo ? '1' : '0') } catch { /* ignora */ }
-      return novo
-    })
-  }
   if (!vencidos.data || vencidos.data.length === 0) return null
   const total = vencidos.data.reduce((s, l) => s + l.valor, 0)
   return (
-    <Alerta tipo="erro">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-semibold">{vencidos.data.length} pendência(s) de meses anteriores · {formatarMoeda(total)}</p>
-        <button type="button" className="shrink-0 text-xs font-medium underline" onClick={alternar}>
-          {recolhido ? 'Expandir' : 'Recolher'}
-        </button>
-      </div>
-      {!recolhido && (
-        <>
-          <ul className="mt-1 divide-y divide-red-200/60">
-            {vencidos.data.slice(0, 8).map((l) => (
-              <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
-                <span>{l.descricao} · vencido em {formatarData(l.data_vencimento)} (há {diasAtraso(l.data_vencimento)} dia(s)) · {formatarMoeda(l.valor)}</span>
-                <button type="button" className="font-medium underline" onClick={() => aoAbrirAcao(l)}>{receber ? 'Receber' : 'Pagar'}</button>
-              </li>
-            ))}
-          </ul>
-          {vencidos.data.length > 8 && <p className="mt-1 text-xs">+ {vencidos.data.length - 8} outro(s).</p>}
-        </>
-      )}
-    </Alerta>
+    <CartaoRecolhivel
+      id={`pendencias-anteriores-${tipo}`}
+      recolhidoPadrao={false}
+      titulo={<h2 className="text-sm font-semibold text-red-800">{vencidos.data.length} pendência(s) de meses anteriores · {formatarMoeda(total)}</h2>}
+    >
+      <ul className="divide-y divide-line">
+        {vencidos.data.slice(0, 8).map((l) => (
+          <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 px-6 py-2.5 text-sm">
+            <span>{l.descricao} · vencido em {formatarData(l.data_vencimento)} (há {diasAtraso(l.data_vencimento)} dia(s)) · {formatarMoeda(l.valor)}</span>
+            <button type="button" className="font-medium text-brand-700 underline" onClick={() => aoAbrirAcao(l)}>{receber ? 'Receber' : 'Pagar'}</button>
+          </li>
+        ))}
+      </ul>
+      {vencidos.data.length > 8 && <p className="px-6 py-2 text-xs text-ink-muted">+ {vencidos.data.length - 8} outro(s).</p>}
+    </CartaoRecolhivel>
   )
 }
 

@@ -276,6 +276,22 @@ export function useAtualizarLancamentoRecorrente() {
   })
 }
 
+export type EscopoVencimentoContrato = 'futuras' | 'todas'
+
+/** Propaga o novo vencimento (já salvo neste lançamento via atualizar_lancamento) pras
+ * demais cobranças do mesmo contrato: 'futuras' = próximas já geradas, ainda previstas;
+ * 'todas' = futuras + já efetivadas (só a data, não mexe em saldo/movimento). */
+export function useCascatearVencimentoContrato() {
+  const invalidar = useInvalidarFinanceiro()
+  return useMutation({
+    mutationFn: async ({ id, escopo }: { id: string; escopo: EscopoVencimentoContrato }) => {
+      const { error } = await supabase.rpc('cascatear_vencimento_contrato', { p_id: id, p_escopo: escopo })
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+}
+
 /** Correção de cadastro em parcelamento já gerado: vale para a cadeia inteira (0089). */
 export function useCorrigirCadeiaLancamento() {
   const invalidar = useInvalidarFinanceiro()

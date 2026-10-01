@@ -8,7 +8,7 @@ import { hojeISO } from '../../../core/formatos'
 import type { Conta } from '../../contas/tipos'
 import { montarArvore, type Categoria } from '../../categorias/tipos'
 import { TIPOS_LANCAMENTO, rotuloParcela, type DadosLancamento, type Lancamento, type TipoLancamento, type TipoRecorrencia } from '../tipos'
-import type { EscopoEdicaoRecorrente } from '../api'
+import type { EscopoEdicaoRecorrente, EscopoVencimentoContrato } from '../api'
 import { SelecaoNegocio } from '../../negocios/components/SelecaoNegocio'
 import { gerarSlug, type Negocio } from '../../negocios/tipos'
 import type { Pessoa } from '../../pessoas/tipos'
@@ -92,12 +92,14 @@ interface Props {
    *  centro: o lote não carrega esses campos, e em parcelamento eles valem para a cadeia inteira.
    *  `atual` vem quando mudou a baixa (pago ↔ previsto), que é sempre de UMA parcela só. */
   aoSalvarLote?: (dados: { descricao: string; valor: number; observacao: string | null; escopo: EscopoEdicaoRecorrente; data_vencimento?: string | null; cadastro?: { pessoa_id: string | null; categoria_id: string | null; contrato_id: string | null; negocio_id: string | null; centro_custo_id: string | null }; atual?: DadosLancamento }) => void
+  /** cobrança de contrato (origem faturamento): depois de salvar o vencimento desta fatura, propaga pras próximas já geradas e/ou já pagas. */
+  aoSalvarVencimentoContrato?: (dados: DadosLancamento, escopo: EscopoVencimentoContrato) => void
   aoCancelar: () => void
 }
 
 interface Erros { descricao?: string; valor?: string; data?: string; conta?: string; destino?: string; categoria?: string; recorrencia?: string; estoque?: string }
 
-export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, centros = [], negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoSalvarLote, aoCancelar }: Props) {
+export function FormularioLancamento({ lancamento, contas, categorias, negocios, pessoas, contratos, centros = [], negocioInicial = null, tipoInicial = 'despesa', salvando, erro, avisoDuplicidade, proximaGerada = false, aoSalvar, aoSalvarLote, aoSalvarVencimentoContrato, aoCancelar }: Props) {
   const editando = Boolean(lancamento)
   const [tipo, setTipo] = useState<TipoLancamento>(lancamento?.tipo ?? tipoInicial)
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '')
@@ -140,6 +142,8 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
   // com parcelas geradas só descrição e observação mudam (regra do banco)
   const travado = lancamento?.recorrente === true && proximaGerada
   const ehFaturamento = lancamento?.origem === 'faturamento'
+  const ehContratoFaturamento = ehFaturamento && Boolean(lancamento?.contrato_id)
+  const [escopoVencContrato, setEscopoVencContrato] = useState<'atual' | EscopoVencimentoContrato>('atual')
 
   const criarConta = useCriarConta()
   const criarCategoria = useCriarCategoria()
@@ -235,7 +239,12 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       return
     }
     const d = montar()
-    if (d) aoSalvar(d, false)
+    if (!d) return
+    if (ehContratoFaturamento && escopoVencContrato !== 'atual' && aoSalvarVencimentoContrato && lancamento && d.data_vencimento !== lancamento.data_vencimento) {
+      aoSalvarVencimentoContrato(d, escopoVencContrato)
+      return
+    }
+    aoSalvar(d, false)
   }
 
   return (
@@ -357,6 +366,14 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
             : <Campo rotulo="Vencimento" type="date" value={vencimento || data} onChange={(e) => setVencimento(e.target.value)} disabled={travado} />}
         </div>
         {!efetivado && <p className="mt-2 text-xs text-ink-muted">Lançamento previsto: não altera o saldo até ser efetivado.</p>}
+        {!efetivado && ehContratoFaturamento && (
+          <div role="radiogroup" aria-label="Alcance da mudança de vencimento" className="mt-3 space-y-1.5 border-t border-line pt-3">
+            <p className="text-xs font-medium text-ink-muted">Mudar o vencimento vale para:</p>
+            <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopoVencContrato" checked={escopoVencContrato === 'atual'} onChange={() => setEscopoVencContrato('atual')} className="mt-0.5 accent-brand-600" /><span><b>Apenas esta cobrança</b><span className="block text-xs text-ink-muted">Só esta fatura muda.</span></span></label>
+            <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopoVencContrato" checked={escopoVencContrato === 'futuras'} onChange={() => setEscopoVencContrato('futuras')} className="mt-0.5 accent-brand-600" /><span><b>Esta e as próximas</b><span className="block text-xs text-ink-muted">As cobranças futuras deste contrato, já geradas ou não, passam a vencer no mesmo dia.</span></span></label>
+            <label className="flex items-start gap-2 text-sm"><input type="radio" name="escopoVencContrato" checked={escopoVencContrato === 'todas'} onChange={() => setEscopoVencContrato('todas')} className="mt-0.5 accent-brand-600" /><span><b>Esta, as próximas e as já pagas</b><span className="block text-xs text-amber-800">Corrige também a data das cobranças já efetivadas deste contrato (só o registro — não mexe em saldo nem em pontos).</span></span></label>
+          </div>
+        )}
       </div>
       )}
 

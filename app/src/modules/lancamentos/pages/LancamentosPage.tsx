@@ -21,7 +21,7 @@ import { useContratos } from '../../contratos/api'
 import { useCentrosCusto } from '../../centros_custo/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
-import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCorrigirCadeiaLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, useEstornarLancamento, type ProjecaoContrato } from '../api'
+import { buscarPossiveisDuplicados, useAtualizarLancamento, useAtualizarLancamentoRecorrente, useCascatearVencimentoContrato, useCorrigirCadeiaLancamento, useCancelarLancamento, useCriarLancamento, useEfetivarLancamento, useExcluirLancamento, useLancamentos, useProjecaoContratos, useProjetarLancamento, useProximaParcela, useFechamentos, useFecharMes, useEstornarLancamento, type ProjecaoContrato } from '../api'
 import { FormularioLancamento } from '../components/FormularioLancamento'
 import { AcoesLancamento } from '../components/AcoesLancamento'
 import { BotaoAtualizarBloqueios } from '../../financeiro/components/BotaoAtualizarBloqueios'
@@ -73,6 +73,7 @@ export function LancamentosPage() {
   const projetar = useProjetarLancamento()
   const estornar = useEstornarLancamento()
   const atualizarLote = useAtualizarLancamentoRecorrente()
+  const cascatearVencimento = useCascatearVencimentoContrato()
   const corrigirCadeia = useCorrigirCadeiaLancamento()
   const emEdicao = edicao?.modo === 'editar' ? edicao.lancamento : null
   const proximaParcela = useProximaParcela(emEdicao?.id ?? null, emEdicao?.recorrente ?? false)
@@ -156,7 +157,7 @@ export function LancamentosPage() {
 
   const carregando = lancamentos.isPending || contas.isPending || categorias.isPending
   const erroCarga = lancamentos.error ?? contas.error ?? categorias.error
-  const erroSalvar = criar.error ?? atualizar.error ?? atualizarLote.error ?? corrigirCadeia.error
+  const erroSalvar = criar.error ?? atualizar.error ?? atualizarLote.error ?? corrigirCadeia.error ?? cascatearVencimento.error
   const erroAcao = efetivar.error ?? cancelar.error ?? excluir.error ?? projetar.error ?? estornar.error
   const ocupadoAcao = efetivar.isPending || cancelar.isPending || excluir.isPending || projetar.isPending || estornar.isPending
 
@@ -380,7 +381,7 @@ export function LancamentosPage() {
               centros={centros.data ?? []}
               negocioInicial={filtroNegocio && filtroNegocio !== 'pessoal' ? filtroNegocio : null}
               tipoInicial={filtroTipo || 'despesa'}
-              salvando={criar.isPending || atualizar.isPending || atualizarLote.isPending || corrigirCadeia.isPending}
+              salvando={criar.isPending || atualizar.isPending || atualizarLote.isPending || corrigirCadeia.isPending || cascatearVencimento.isPending}
               erro={erroSalvar ? mensagemDeErro(erroSalvar) : null}
               avisoDuplicidade={avisoDuplicidade}
               proximaGerada={Boolean(proximaParcela.data)}
@@ -396,6 +397,12 @@ export function LancamentosPage() {
                     if (!cadastro) { baixa(); return }
                     corrigirCadeia.mutate({ id, ...cadastro }, { onSuccess: baixa })
                   },
+                })
+              } : undefined}
+              aoSalvarVencimentoContrato={edicao.modo === 'editar' ? (dados, escopo) => {
+                const id = edicao.lancamento.id
+                atualizar.mutate({ id, ...dados }, {
+                  onSuccess: () => cascatearVencimento.mutate({ id, escopo }, { onSuccess: fechar }),
                 })
               } : undefined}
               aoCancelar={fechar}

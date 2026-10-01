@@ -21,3 +21,19 @@ O ERP continua **sem nenhuma integração de comando com o ReceitaNet/OLT** — 
 
 1. SQL Editor: aplicar `20260902000097_bloqueio_automatico.sql` e depois `20260902000098_bloqueio_automatico_agendado.sql` (nessa ordem — o segundo agenda o pg_cron).
 2. No app: **Notificações → configurar o negócio → marcar "Bloqueio e desbloqueio automáticos" → Salvar** (só pra negócios onde a rede já bloqueia/libera sozinha).
+
+## Ajuste (0114): curso cortesia acompanha inadimplência dos outros contratos
+
+Bloqueio/desbloqueio (`gerar_bloqueios`, 0059/0072/0097) olha cada contrato isoladamente — só as cobranças vencidas daquele mesmo contrato. O contrato cortesia do curso Leveduca (etapa 60, valor R$ 0) nunca tem cobrança vencida, então nunca entra nessa varredura: ficava **Ativo pra sempre**, mesmo com a mesma pessoa suspensa em outro negócio (internet) por falta de pagamento — e é esse status que a Leveduca enxerga pela API (`api_consultar_cliente`, 0099) pra liberar o curso.
+
+**Decisão do proprietário:** o curso é benefício condicionado a estar em dia nos outros negócios.
+
+- `sincronizar_cortesia_curso(organizacao_id)`: pra cada contrato cortesia com plano "curso" no nome, suspende se a mesma pessoa tiver **qualquer outro** contrato de receita pago (não cortesia) suspenso em qualquer negócio da organização; libera de volta quando não tiver mais nenhum. Chamável pelo app (autenticado, exige ser membro da organização).
+- `sincronizar_cortesia_curso_automatico()`: mesma coisa, para todas as organizações — encadeado no fim do robô diário (`executar_bloqueios_automaticos`, 00:00 Brasília), roda todo dia independente do negócio ter `bloqueio_automatico` ligado (é checagem cruzada entre negócios, não depende da rede de nenhum deles específico).
+- Outros tipos de cortesia (indicação, prêmios da vitrine de pontos) **não** entram nessa regra — só o plano de curso, de propósito.
+- Correção imediata de um cliente específico (sem esperar a virada do dia): SQL Editor, `select public.sincronizar_cortesia_curso('ID_DA_ORGANIZACAO');`.
+
+### Deploy (proprietário)
+
+1. SQL Editor: aplicar `20260902000114_curso_cortesia_segue_inadimplencia.sql`.
+2. Opcional, pra corrigir agora quem já está nessa situação sem esperar 00:00: `select public.sincronizar_cortesia_curso('ID_DA_ORGANIZACAO');` (pega o ID em Configurações, ou `select id from organizacoes;`).

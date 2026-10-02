@@ -46,3 +46,16 @@ A sincronização da 0114 só estava encadeada no robô diário (`executar_bloqu
 
 ### Deploy (proprietário)
 SQL Editor: aplicar `20260902000119_atualizar_agora_sincroniza_curso.sql`.
+
+## Ajuste (0121): bloqueio por pessoa, não só pelo contrato isolado
+
+Caso real: mesma pessoa, mesmo negócio (Servidor Toptv), três contratos — dois suspensos por inadimplência (#029, #069) e um novo/renumerado, sem nada vencido nele mesmo (#085). `gerar_bloqueios`/`gerar_bloqueios_interno` olhavam cada contrato isoladamente: o #085 ficava "Ativo" mesmo a mesma pessoa devendo em outro contrato dela.
+
+**Regra inegociável (agora em `CLAUDE.md`):** cliente inadimplente perde acesso a tudo — sempre checar por pessoa, nunca só pelo contrato isolado. Mesmo padrão já usado na 0114 (curso cortesia).
+
+- Novo motivo de bloqueio: contrato ativo cuja pessoa tem **outro contrato de receita suspenso** (`pessoa_tem_contrato_suspenso`, qualquer negócio da organização).
+- Desbloqueio (e descarte de bloqueio pendente que deixou de valer) passam a exigir também que **nenhum contrato irmão continue suspenso** — senão a pessoa voltaria a ter acesso com outro contrato dela ainda inadimplente.
+- Testes: `bloqueio_por_pessoa_test.sql`. Suítes existentes (`bloqueio_automatico`, `confianca`, `pix_bloqueio`, `regua`, `curso_cortesia_bloqueio`) continuam passando sem alteração.
+
+### Deploy (proprietário)
+SQL Editor: aplicar `20260902000121_bloqueio_por_pessoa.sql`. Depois, em Cobrança, clicar em "Atualizar bloqueio/desbloqueio agora" (ou gerar sugestões manualmente) pra já pegar quem está nessa situação sem esperar o robô da meia-noite.

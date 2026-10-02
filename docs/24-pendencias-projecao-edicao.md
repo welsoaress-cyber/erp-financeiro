@@ -67,3 +67,11 @@ comum (internet/provedor, `ciclo_prepago = false`, padrão) continua exatamente 
 deixou. Pago em dia/adiantado nunca mexe em nada, nos dois casos. Testes:
 `reancoragem_prepaga_test.sql`. `reancoragem_cascata_test.sql` (0115) continua passando sem
 alteração, comprovando que o padrão (`ciclo_prepago = false`) preserva o comportamento antigo.
+
+## Adendo (migration 0122): reancoragem vale mesmo com o contrato suspenso
+Bug desde a 0034: o `update contratos set dia_vencimento = ...` da reancoragem só rodava com
+`status = 'ativo'`. Contrato suspenso que acabou de pagar — e a baixa não reativa sozinha —
+nunca tinha o dia atualizado: a projeção seguinte saía pelo dia antigo. Trocado por
+`status <> 'encerrado'`: ativo ou suspenso reancora normalmente (o pagamento já aconteceu,
+independente de o contrato estar reativado); encerrado continua intocado (não cobra mais).
+Testes: `reancoragem_mesmo_suspenso_test.sql`.

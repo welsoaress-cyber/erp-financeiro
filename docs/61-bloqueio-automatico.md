@@ -37,3 +37,12 @@ Bloqueio/desbloqueio (`gerar_bloqueios`, 0059/0072/0097) olha cada contrato isol
 
 1. SQL Editor: aplicar `20260902000114_curso_cortesia_segue_inadimplencia.sql`.
 2. Opcional, pra corrigir agora quem já está nessa situação sem esperar 00:00: `select public.sincronizar_cortesia_curso('ID_DA_ORGANIZACAO');` (pega o ID em Configurações, ou `select id from organizacoes;`).
+
+## Ajuste (0119): botão "Atualizar bloqueio/desbloqueio agora" também sincroniza o curso
+
+A sincronização da 0114 só estava encadeada no robô diário (`executar_bloqueios_automaticos`, 00:00). O botão manual "Atualizar bloqueio/desbloqueio agora" chama `executar_bloqueios_agora` — uma função **por negócio**, separada — que nunca chamava `sincronizar_cortesia_curso_logica`. Resultado: clicar no botão suspendia o contrato pago na hora, mas o curso cortesia da mesma pessoa só acompanhava na virada do dia seguinte — a Leveduca via "Ativo" até lá.
+
+`executar_bloqueios_agora` agora chama `sincronizar_cortesia_curso_logica(organizacao_id)` ao final, igual ao robô. O retorno ganhou `curso_suspensos`/`curso_liberados`, junto com `executados`.
+
+### Deploy (proprietário)
+SQL Editor: aplicar `20260902000119_atualizar_agora_sincroniza_curso.sql`.

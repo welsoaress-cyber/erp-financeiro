@@ -21,7 +21,7 @@ Migration `20260902000079_relatorios.sql`. Teste `supabase/tests/relatorios_test
 4. **Lançamentos** — listagem por período com todos os filtros; agrupável.
 5. **Contas a receber — previsto × realizado** por cliente.
 6. **Contas a pagar — previsto × realizado** por fornecedor/categoria.
-7. **Inadimplência** — vencidas em aberto hoje.
+7. **Inadimplência** — vencidas em aberto hoje; agrupável por mês de vencimento (0124), cliente ou negócio.
 
 Limite de 5.000 linhas por consulta (aviso na tela) — refinar o período.
 

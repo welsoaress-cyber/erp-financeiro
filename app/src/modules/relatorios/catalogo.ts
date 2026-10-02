@@ -1,3 +1,5 @@
+import { formatarMes } from '../../core/formatos'
+
 /**
  * Catálogo da Central de Relatórios (etapa 53A). Um relatório = uma view
  * versionada no banco (security_invoker → RLS) + esta definição. Nada de SQL
@@ -384,6 +386,7 @@ export const RELATORIOS: Relatorio[] = [
     view: 'vw_rel_inadimplencia',
     filtros: ['negocio', 'pessoa'],
     colunas: [
+      { chave: 'mes_vencimento', rotulo: 'Mês' },
       { chave: 'pessoa', rotulo: 'Cliente' },
       { chave: 'telefone', rotulo: 'Telefone' },
       { chave: 'contrato_codigo', rotulo: 'Contrato', tipo: 'numero' },
@@ -393,8 +396,9 @@ export const RELATORIOS: Relatorio[] = [
       { chave: 'valor', rotulo: 'Valor', tipo: 'moeda', totalizar: true },
       { chave: 'negocio', rotulo: 'Negócio' },
     ],
-    agrupavel: ['pessoa', 'negocio'],
-    ordem: { chave: 'dias_atraso', desc: true },
+    agrupavel: ['mes_vencimento', 'pessoa', 'negocio'],
+    ordem: { chave: 'data_vencimento' },
+    preparar: (linhas) => linhas.map((l) => ({ ...l, mes_vencimento: formatarMes(String(l.mes_vencimento)) })),
   },
   {
     id: 'api-consultas',

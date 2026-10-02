@@ -63,5 +63,27 @@ do $$ declare v_org uuid; v_id uuid; begin
   exception when no_data_found then null; end;
 end $$;
 
+-- T6 (0124): vw_rel_inadimplencia ganha mes_vencimento (pra agrupar o relatório por mês)
+do $$ declare v_org uuid; v_neg uuid; v_conta uuid; v_cat uuid; v_cli uuid;
+  v_vencido uuid; v_futuro uuid; v_pago uuid; begin
+  select organizacao_id into v_org from public.categorias limit 1;
+  select id into v_neg from public.negocios where slug = 'cc-t';
+  select id into v_conta from public.contas where nome = 'Caixa CC';
+  select id into v_cat from public.categorias where nome = 'CC Receita';
+  insert into public.pessoas (organizacao_id, nome, telefone) values (v_org, 'Cliente Vencidas', '92988880001') returning id into v_cli;
+
+  v_vencido := (public.criar_lancamento('receita', 'Vencida rel', 50, current_date - 40, current_date - 40, null, v_conta, null, v_cat, null, v_neg, v_cli)).id;
+  v_futuro := (public.criar_lancamento('receita', 'Futura rel', 60, current_date + 10, current_date + 10, null, v_conta, null, v_cat, null, v_neg, v_cli)).id;
+  v_pago := (public.criar_lancamento('receita', 'Paga rel', 70, current_date - 5, current_date - 5, current_date, v_conta, null, v_cat, null, v_neg, v_cli)).id;
+
+  if not exists (select 1 from public.vw_rel_inadimplencia where id = v_vencido) then raise exception 'T6 vencida deveria aparecer'; end if;
+  if exists (select 1 from public.vw_rel_inadimplencia where id = v_futuro) then raise exception 'T6 futura não deveria aparecer'; end if;
+  if exists (select 1 from public.vw_rel_inadimplencia where id = v_pago) then raise exception 'T6 paga não deveria aparecer'; end if;
+  if (select mes_vencimento from public.vw_rel_inadimplencia where id = v_vencido) <> date_trunc('month', current_date - 40)::date then
+    raise exception 'T6 mes_vencimento errado';
+  end if;
+  if (select pessoa from public.vw_rel_inadimplencia where id = v_vencido) <> 'Cliente Vencidas' then raise exception 'T6 pessoa'; end if;
+end $$;
+
 rollback;
 \echo OK

@@ -3,6 +3,7 @@
 Leia `docs/01-arquitetura.md` antes de propor mudanças de estrutura. Cada etapa tem um doc em `docs/`.
 
 ## Regras inegociáveis (definidas pelo proprietário)
+- **Cliente inadimplente perde acesso a tudo, sem exceção — inclusive o curso cortesia.** Só tem acesso (ao serviço, ao curso, a qualquer benefício) quem está com os contratos em dia. Venceu e passou da tolerância: bloqueia tudo daquela pessoa, não só o contrato que está vencido. Nenhuma regra nova pode criar uma brecha onde a pessoa fica "Ativo" em algo com dívida vencida em outro contrato dela — sempre checar por pessoa, não só pelo contrato isolado.
 - **Custo zero.** Nada pago, nenhum serviço externo com cobrança, nada ativado sem autorização prévia. Informe antes: serviço, motivo, plano gratuito, limites, quando cobra.
 - **Sem segredos no repositório.** Chaves só em `app/.env.local` (ignorado) e nas variáveis de build do Cloudflare. Nunca pedir credenciais pelo chat.
 - **Banco isolado.** Projeto Supabase novo e exclusivo. Os projetos legados `holding-financeiro` e `navalha-app` não são tocados (nem pausados, nem alterados).

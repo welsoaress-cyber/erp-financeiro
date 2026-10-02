@@ -52,3 +52,18 @@ Padrões quando vazio: telefone → sem aviso de WhatsApp até preencher na tela
 
 ## Adendo (migration 0115): reancoragem de contrato cascateia pras faturas já geradas
 Lacuna na 0034: pra cobrança de contrato, a reancoragem só atualizava `contratos.dia_vencimento` (vale pro faturamento futuro ainda não gerado) — faturas de meses seguintes que já tinham sido geradas (faturamento adiantado) ficavam com o vencimento antigo. Caso real: servidor pré-pago (ex. Top TV) vencia dia 29, cliente só paga dia 01 — as cobranças futuras já geradas (previstas, ainda não pagas) precisam acompanhar na mesma baixa. `efetivar_lancamento` agora, no mesmo caso (`data_efetivacao > data_vencimento`, contrato, `origem = 'faturamento'`), além de atualizar o contrato, também atualiza `data_vencimento` de todo lançamento do mesmo contrato com `status = 'previsto'` e competência posterior à que acabou de ser paga, recalculando pelo novo dia (`data_vencimento_no_mes`). Já pago (passado) nunca muda; pago em dia/adiantado não cascateia nada. Testes: `reancoragem_cascata_test.sql`. `verificar_tudo.sql`: 77 de 77.
+
+## Adendo (migration 0120): reancoragem pré-paga para negócio de revenda (ex.: Servidor)
+A 0115 resolveu a lacuna do adendo acima errando o alvo: pra negócio de revenda pré-paga
+(Servidor Toptv/Uniplay), cascatear pro **dia do mês** do pagamento atrasado reancorava a fatura
+seguinte, já gerada, pro mesmo dia em que o cliente acabou de pagar — nova cobrança no ato,
+como se ele devesse de novo na hora, em vez de ter acabado de comprar 30 dias de acesso.
+
+Novo campo `negocios.ciclo_prepago` (checkbox "Cobrança pré-paga" na tela de Negócios). Só
+quando ligado, `efetivar_lancamento` (pagamento atrasado, contrato, `origem = 'faturamento'`)
+muda a reancoragem: a próxima fatura (e as seguintes, se houver mais de uma já gerada)
+encadeiam a partir de `data_efetivacao + 1 período do contrato` — não do dia do mês. Negócio
+comum (internet/provedor, `ciclo_prepago = false`, padrão) continua exatamente como a 0115
+deixou. Pago em dia/adiantado nunca mexe em nada, nos dois casos. Testes:
+`reancoragem_prepaga_test.sql`. `reancoragem_cascata_test.sql` (0115) continua passando sem
+alteração, comprovando que o padrão (`ciclo_prepago = false`) preserva o comportamento antigo.

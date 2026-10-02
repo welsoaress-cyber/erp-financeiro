@@ -431,7 +431,7 @@ export function FormularioLancamento({ lancamento, contas, categorias, negocios,
       )}
       {!ehFaturamento && (
         <CriarRapido rotulo="Criar negócio" aoCriar={async (nome) => {
-          const n = await criarNegocio.mutateAsync({ nome, slug: gerarSlug(nome), ativo: true, conta_padrao_id: null, categoria_receita_id: null, categoria_despesa_id: null, usa_carteira: false })
+          const n = await criarNegocio.mutateAsync({ nome, slug: gerarSlug(nome), ativo: true, conta_padrao_id: null, categoria_receita_id: null, categoria_despesa_id: null, usa_carteira: false, ciclo_prepago: false })
           setNegocioId(n.id); setContratoId('')
         }} />
       )}

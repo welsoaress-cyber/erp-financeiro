@@ -27,6 +27,7 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
   const [categoriaReceita, setCategoriaReceita] = useState(negocio?.categoria_receita_id ?? '')
   const [categoriaDespesa, setCategoriaDespesa] = useState(negocio?.categoria_despesa_id ?? '')
   const [usaCarteira, setUsaCarteira] = useState(negocio?.usa_carteira ?? false)
+  const [cicloPrepago, setCicloPrepago] = useState(negocio?.ciclo_prepago ?? false)
   const [erros, setErros] = useState<{ nome?: string; slug?: string }>({})
 
   function aoMudarNome(v: string) {
@@ -42,7 +43,7 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
     if (!SLUG_VALIDO.test(slug)) novos.slug = 'Use apenas letras minúsculas, números e hífens.'
     setErros(novos)
     if (Object.keys(novos).length > 0) return
-    aoSalvar({ nome: nome.trim(), slug, ativo, conta_padrao_id: contaPadrao || null, categoria_receita_id: categoriaReceita || null, categoria_despesa_id: categoriaDespesa || null, usa_carteira: usaCarteira })
+    aoSalvar({ nome: nome.trim(), slug, ativo, conta_padrao_id: contaPadrao || null, categoria_receita_id: categoriaReceita || null, categoria_despesa_id: categoriaDespesa || null, usa_carteira: usaCarteira, ciclo_prepago: cicloPrepago })
   }
 
   return (
@@ -64,6 +65,11 @@ export function FormularioNegocio({ negocio, contas, categorias, salvando, erro,
         Usa carteira para ativação de apps
       </label>
       {usaCarteira && <p className="-mt-2 text-xs text-ink-muted">Habilita o módulo Apps, com saldo em dinheiro (R$) e em créditos simultâneos. Cada recarga e cada ativação informam o valor e a forma de pagamento na hora.</p>}
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={cicloPrepago} onChange={(e) => setCicloPrepago(e.target.checked)} className="size-4 accent-brand-600" />
+        Cobrança pré-paga (ex.: revenda de servidor)
+      </label>
+      {cicloPrepago && <p className="-mt-2 text-xs text-ink-muted">Quando o cliente paga atrasado, a próxima fatura (e as seguintes, se já geradas) passam a vencer 1 período do contrato após a data do pagamento — não no dia do mês. Negócio comum (internet/provedor) deixa desmarcado.</p>}
       {editando && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-brand-600" />

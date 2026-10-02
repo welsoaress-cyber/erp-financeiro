@@ -8,6 +8,7 @@ export interface Negocio {
   categoria_receita_id: string | null
   categoria_despesa_id: string | null
   usa_carteira: boolean
+  ciclo_prepago: boolean
   criado_em: string
   atualizado_em: string
 }
@@ -20,6 +21,7 @@ export interface DadosNegocio {
   categoria_receita_id: string | null
   categoria_despesa_id: string | null
   usa_carteira: boolean
+  ciclo_prepago: boolean
 }
 
 /** "Navalha no Bigode" → "navalha-no-bigode". Sem acentos, minúsculas, hífens. */

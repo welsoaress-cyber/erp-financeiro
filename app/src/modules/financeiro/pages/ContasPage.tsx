@@ -33,7 +33,7 @@ import { ConsultaCliente } from '../components/ConsultaCliente'
 const diasAtraso = (vencimento: string) => Math.max(0, Math.round((Date.parse(hojeISO()) - Date.parse(vencimento)) / 86400000))
 
 /** Previstos vencidos antes do mês corrente: fica visível não importa em qual mês o usuário esteja navegando. */
-function PendenciasAnteriores({ tipo, aoAbrirAcao }: { tipo: 'receita' | 'despesa'; aoAbrirAcao: (l: Lancamento) => void }) {
+function PendenciasAnteriores({ tipo, nomePessoa, aoAbrirAcao }: { tipo: 'receita' | 'despesa'; nomePessoa: Map<string, string>; aoAbrirAcao: (l: Lancamento) => void }) {
   const receber = tipo === 'receita'
   const vencidos = useLancamentosVencidosAntes(tipo, mesAtualISO())
   if (!vencidos.data || vencidos.data.length === 0) return null
@@ -47,7 +47,7 @@ function PendenciasAnteriores({ tipo, aoAbrirAcao }: { tipo: 'receita' | 'despes
       <ul className="divide-y divide-line">
         {vencidos.data.slice(0, 8).map((l) => (
           <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 px-6 py-2.5 text-sm">
-            <span>{l.descricao} · vencido em {formatarData(l.data_vencimento)} (há {diasAtraso(l.data_vencimento)} dia(s)) · {formatarMoeda(l.valor)}</span>
+            <span><b>{l.pessoa_id ? nomePessoa.get(l.pessoa_id) ?? '—' : '—'}</b> · {l.descricao} · vencido em {formatarData(l.data_vencimento)} (há {diasAtraso(l.data_vencimento)} dia(s)) · {formatarMoeda(l.valor)}</span>
             <button type="button" className="font-medium text-brand-700 underline" onClick={() => aoAbrirAcao(l)}>{receber ? 'Receber' : 'Pagar'}</button>
           </li>
         ))}
@@ -236,7 +236,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
       <CabecalhoPagina titulo={receber ? 'Contas a receber' : 'Contas a pagar'} descricao={receber ? 'Faturas e receitas do mês: previsto × realizado' : 'Compromissos com fornecedores: previsto × realizado'} />
       {receber && <BotaoAtualizarBloqueios filtroNegocio={filtroNegocio} />}
       {receber && <ConsultaCliente />}
-      <div className="mb-4"><PendenciasAnteriores tipo={tipo} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
+      <div className="mb-4"><PendenciasAnteriores tipo={tipo} nomePessoa={nomePessoa} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
       <BarraFiltros>
         <CampoBusca valor={busca} aoMudar={setBusca} rotulo={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'} />
         <ContagemFiltro visiveis={lista.length} total={base.length} singular="lançamento" plural="lançamentos" />

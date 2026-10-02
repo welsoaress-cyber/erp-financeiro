@@ -75,3 +75,16 @@ nunca tinha o dia atualizado: a projeção seguinte saía pelo dia antigo. Troca
 `status <> 'encerrado'`: ativo ou suspenso reancora normalmente (o pagamento já aconteceu,
 independente de o contrato estar reativado); encerrado continua intocado (não cobra mais).
 Testes: `reancoragem_mesmo_suspenso_test.sql`.
+
+## Adendo (migration 0123): negócio pré-pago nunca acumula cobrança em aberto
+Revenda pré-paga (Servidor Toptv/Uniplay): sem fidelidade. Se o cliente não pagou o mês
+corrente, o faturamento não pode gerar o mês seguinte em cima — ele não vai pagar duas pra
+usar uma. `faturar_contrato` (negócio `ciclo_prepago`) agora: nunca gera a próxima competência
+enquanto já existir uma `previsto` em aberto (vencida ou não); se por algum motivo já existir
+mais de uma (dado antigo, falha anterior), mantém só a mais antiga (a dívida real) e cancela as
+demais sozinho, motivo registrado (`Negócio pré-pago: só uma cobrança em aberto por vez.`).
+Negócio comum (`ciclo_prepago = false`) não muda — continua faturando vários meses à frente
+normalmente. Testes: `prepago_sem_acumular_cobranca_test.sql`. `reancoragem_prepaga_test.sql`
+(0120) ajustado: a cascata pra "faturas futuras já geradas" agora quase nunca encontra mais de
+uma (porque não acumula mais), então o foco passa a ser a próxima cobrança *gerada depois do
+pagamento* já usar o novo dia.

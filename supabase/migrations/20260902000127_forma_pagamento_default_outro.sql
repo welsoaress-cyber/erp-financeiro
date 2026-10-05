@@ -11,4 +11,6 @@
 alter table public.contratos alter column forma_pagamento set default 'outro';
 
 -- Ninguém escolheu "pix" de propósito até agora — era só o default da 0126.
-update public.contratos set forma_pagamento = 'outro' where forma_pagamento = 'pix';
+-- Encerrado é imutável (tg_contratos_protecao trava qualquer update) — fora do escopo mesmo:
+-- não tem fatura futura, não precisa de classificação.
+update public.contratos set forma_pagamento = 'outro' where forma_pagamento = 'pix' and status <> 'encerrado';

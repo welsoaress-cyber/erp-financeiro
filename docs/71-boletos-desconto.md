@@ -1,6 +1,8 @@
 # 71 · Controle de Boletos (v1) + desconto em lançamento
 
-Migration `20260902000126_boletos_desconto.sql`. Módulo `app/src/modules/boletos` + tela em `Financeiro → Cobrança`.
+Migrations `20260902000126_boletos_desconto.sql` e `20260902000127_forma_pagamento_default_outro.sql`. Módulo `app/src/modules/boletos` + tela em `Financeiro → Cobrança`.
+
+**0127**: o default original (`forma_pagamento` nasce `pix`) marcava todo contrato existente como pix silenciosamente, sem o proprietário decidir — impossível saber quem ainda faltava classificar. Trocado para nascer **`outro`** (estado neutro, "ainda não decidi") — migration já zera pra `outro` todo contrato que estava em `pix` (ninguém tinha escolhido isso de propósito, era só o default antigo). Agora o proprietário vai revisando contrato a contrato e marcando pix/boleto conforme o caso real.
 
 ## Pedido do proprietário
 Servidor (IPTV/streaming) é 100% Pix; Servnet (internet) mistura Pix e boleto, e não havia como saber quem ainda precisava receber o boleto por WhatsApp perto do vencimento.

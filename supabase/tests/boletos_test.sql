@@ -20,10 +20,11 @@ begin
   insert into public.pessoas (organizacao_id, nome, telefone) values (v_org, 'Cliente Boleto', '92988880002') returning id into v_pessoa_boleto;
   insert into public.pessoas (organizacao_id, nome, telefone) values (v_org, 'Cliente Boleto Suspenso', '92988880003') returning id into v_pessoa_susp;
 
-  -- T1: forma_pagamento nasce 'pix' por padrão
+  -- T1 (0127): forma_pagamento nasce 'outro' por padrão — "pix" só quando escolhido de propósito
   insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento)
   values (v_org, v_neg, v_pessoa_pix, v_plano, 100, 'mensal', current_date - 60, 10) returning id into v_ct_pix;
-  if (select forma_pagamento from public.contratos where id = v_ct_pix) <> 'pix' then raise exception 'T1 default deveria ser pix'; end if;
+  if (select forma_pagamento from public.contratos where id = v_ct_pix) <> 'outro' then raise exception 'T1 default deveria ser outro'; end if;
+  update public.contratos set forma_pagamento = 'pix' where id = v_ct_pix;
 
   insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento, forma_pagamento)
   values (v_org, v_neg, v_pessoa_boleto, v_plano, 150, 'mensal', current_date - 60, 15, 'boleto') returning id into v_ct_boleto;

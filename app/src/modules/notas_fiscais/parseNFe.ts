@@ -8,15 +8,7 @@ function num(el: Element | Document, tag: string): number {
 }
 const soDigitos = (s: string) => s.replace(/\D/g, '')
 
-/** Lê o XML de uma NFe (procNFe ou NFe isolada) 100% no navegador — sem subir nada. */
-export function parseNFeXml(xmlText: string): NotaFiscalParseada {
-  const doc = new DOMParser().parseFromString(xmlText, 'application/xml')
-  const erro = doc.getElementsByTagName('parsererror')[0]
-  if (erro) throw new Error('Arquivo não é um XML válido.')
-
-  const infNFe = doc.getElementsByTagName('infNFe')[0]
-  if (!infNFe) throw new Error('XML não parece ser uma Nota Fiscal Eletrônica (NFe).')
-
+function parseNFeProduto(doc: Document, infNFe: Element): NotaFiscalParseada {
   const idAttr = infNFe.getAttribute('Id') ?? ''
   const chaveProt = txt(doc, 'chNFe')
   const chave = soDigitos(chaveProt || idAttr).slice(-44)
@@ -61,4 +53,53 @@ export function parseNFeXml(xmlText: string): NotaFiscalParseada {
     itens,
     valorTotal: num(doc, 'vNF'),
   }
+}
+
+/** NFS-e (nota de serviço, prefeitura) — layout ABRASF; sem chave de 44 dígitos, usa Número + Código de verificação. */
+function parseNFSe(infNfse: Element): NotaFiscalParseada {
+  const numero = txt(infNfse, 'Numero')
+  const codigoVerificacao = txt(infNfse, 'CodigoVerificacao')
+  if (!numero || !codigoVerificacao) throw new Error('XML de NFS-e sem número ou código de verificação.')
+
+  const prestador = infNfse.getElementsByTagName('PrestadorServico')[0]
+  const cnpjPrestador = prestador ? soDigitos(txt(prestador, 'Cnpj')) || null : null
+  const fornecedorNome = prestador ? (txt(prestador, 'NomeFantasia') || txt(prestador, 'RazaoSocial')) : ''
+
+  const dataEmissao = txt(infNfse, 'DataEmissao')
+  const servico = infNfse.getElementsByTagName('Servico')[0]
+  const discriminacao = servico ? txt(servico, 'Discriminacao') : 'Serviço'
+  const valorServicos = servico ? num(servico, 'ValorServicos') : 0
+  const valorLiquido = num(infNfse, 'ValorLiquidoNfse') || valorServicos
+
+  const status = infNfse.getElementsByTagName('Rps')[0]?.getElementsByTagName('Status')[0]?.textContent?.trim()
+  const cancelada = status != null && status !== '1'
+
+  return {
+    chave: `NFSE-${cnpjPrestador ?? '0'}-${numero}-${codigoVerificacao}`,
+    numero,
+    serie: '',
+    dataEmissao: dataEmissao ? dataEmissao.slice(0, 10) : null,
+    autorizada: !cancelada,
+    situacao: cancelada ? `Status ${status}` : 'NFS-e normal',
+    fornecedorCnpj: cnpjPrestador,
+    fornecedorCpf: null,
+    fornecedorNome,
+    itens: [{ codigo: '', descricao: discriminacao, unidade: 'UN', quantidade: 1, valorUnitario: valorServicos, valorTotal: valorServicos }],
+    valorTotal: valorLiquido,
+  }
+}
+
+/** Lê o XML de uma nota fiscal (NFe de produto ou NFS-e de serviço) 100% no navegador — sem subir nada. */
+export function parseNFeXml(xmlText: string): NotaFiscalParseada {
+  const doc = new DOMParser().parseFromString(xmlText, 'application/xml')
+  const erro = doc.getElementsByTagName('parsererror')[0]
+  if (erro) throw new Error('Arquivo não é um XML válido.')
+
+  const infNFe = doc.getElementsByTagName('infNFe')[0]
+  if (infNFe) return parseNFeProduto(doc, infNFe)
+
+  const infNfse = doc.getElementsByTagName('InfNfse')[0]
+  if (infNfse) return parseNFSe(infNfse)
+
+  throw new Error('XML não parece ser uma Nota Fiscal Eletrônica (NFe) nem uma NFS-e de serviço.')
 }

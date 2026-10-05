@@ -56,6 +56,10 @@ begin
     perform public.registrar_nota_fiscal_importada('00000000-0000-0000-0000-000000000000', v_fornecedor, '00000000000000000000000000000000000000000000', '1', 1, current_date, 'contrato', null, v_ct);
     raise exception 'T6 deveria falhar (negócio inexistente)';
   exception when no_data_found then null; end;
+
+  -- T7: chave de NFS-e (mais longa que 44, formato "NFSE-<cnpj>-<numero>-<codigoVerificacao>") funciona
+  r := public.registrar_nota_fiscal_importada(v_neg, v_fornecedor, 'NFSE-31405199000161-100053341-31518001231405199000161000010005334126100000037120', '100053341', 30, current_date, 'contrato', null, v_ct);
+  if r.contrato_id <> v_ct then raise exception 'T7 nota de NFS-e não gravou certo'; end if;
 end $$;
 
 rollback;

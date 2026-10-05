@@ -55,6 +55,9 @@ export interface Lancamento {
   centro_custo_id: string | null
   cancelado_em: string | null
   motivo_cancelamento: string | null
+  valor_desconto: number
+  motivo_desconto: string | null
+  codigo_barras: string | null
   criado_em: string
   atualizado_em: string
 }

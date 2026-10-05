@@ -16,6 +16,9 @@ export const ROTULO_PESSOA_CONTRATO: Record<TipoFinanceiroContrato, string> = { 
 export type StatusContrato = 'ativo' | 'suspenso' | 'encerrado'
 export const ROTULO_STATUS_CONTRATO: Record<StatusContrato, string> = { ativo: 'Ativo', suspenso: 'Suspenso', encerrado: 'Encerrado' }
 
+export type FormaPagamentoContrato = 'pix' | 'boleto' | 'outro'
+export const ROTULO_FORMA_PAGAMENTO: Record<FormaPagamentoContrato, string> = { pix: 'Pix', boleto: 'Boleto', outro: 'Outro' }
+
 export interface Plano {
   id: string
   organizacao_id: string
@@ -55,6 +58,7 @@ export interface Contrato {
   tipo_financeiro: TipoFinanceiroContrato
   cortesia: boolean
   centro_custo_id: string | null
+  forma_pagamento: FormaPagamentoContrato
 }
 
 export interface DadosNovoContrato {

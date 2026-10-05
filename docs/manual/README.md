@@ -138,6 +138,14 @@ A tela monta sozinha a lista de **quem bloquear** (cobrança vencida além do pr
 
 **Bloqueio automático (opt-in):** em Notificações → configurar o negócio, ligue **"Bloqueio e desbloqueio automáticos"** — todo dia às 00:00 o sistema confirma sozinho quem bloquear/desbloquear, sem precisar clicar em nada. **Só ligue se a rede (ReceitaNet/OLT) já corta e libera o acesso do cliente por conta própria** — o ERP passa a só acompanhar o que a rede já faz, no prazo configurado na régua "avisar depois". Com isso ligado, a lista "Ações na rede" desta tela costuma ficar vazia (o robô já tratou); o histórico completo — manual e automático — fica em **Relatórios → Bloqueios e desbloqueios**.
 
+**Boletos pendentes de envio (etapa 71):** no fim da tela, a lista de quem tem forma de pagamento **boleto** (campo novo em Editar contrato), fatura prevista, e ainda **não recebeu o boleto por WhatsApp**. Pago ou com contrato bloqueado some sozinho da lista. Filtra por dia de vencimento (ex.: dia 10 a 15). Em cada linha:
+- **+ Código**: cola o código de barras/linha digitável do boleto (opcional, vai junto na mensagem).
+- **+ Desconto**: valor e motivo (negociação, pontualidade…) — desconta direto no lançamento; o valor cheio aparece riscado ao lado.
+- **WhatsApp**: abre a conversa já com a mensagem pronta (valor, vencimento, código de barras, desconto se houver).
+- **Marcar como enviado**: registra o envio e tira da lista; mandar de novo é possível, cada envio fica no histórico.
+
+Desconto e código de barras também aparecem no relatório **Lançamentos** e no novo relatório **Boletos pendentes de envio** (Central de Relatórios → Clientes e contratos).
+
 Não quer esperar virar o dia (ex.: acabou de lançar um contrato e a fatura já venceu)? O botão **"Atualizar bloqueio/desbloqueio agora"** fica em **Contas a receber** e em **Lançamentos** (não nesta tela) — roda a mesma checagem do robô na hora, para todo negócio com o toggle ligado dentro do filtro atual da tela. Só aparece quando há algum negócio elegível.
 
 ### 3.5 Conciliação bancária

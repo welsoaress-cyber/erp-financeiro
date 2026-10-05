@@ -49,9 +49,9 @@ const planos = [
   { id: id('f', 2), organizacao_id: ORG, negocio_id: NEG, nome: 'Fibra 600 Mega', descricao: null, valor_tabela: 129.9, periodicidade: 'mensal', ativo: true },
 ]
 const contratos = [
-  { id: id('1', 1), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 1), plano_id: id('f', 1), codigo: 1, valor: 99.9, periodicidade: 'mensal', data_inicio: '2026-02-10', data_fim: null, dia_vencimento: 10, status: 'ativo', observacao: null, faturamento_automatico: true, faturar_desde: '2026-02-01', conta_id: id('d', 2), tipo_financeiro: 'receita' },
-  { id: id('1', 2), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 2), plano_id: id('f', 2), codigo: 2, valor: 129.9, periodicidade: 'mensal', data_inicio: '2026-04-05', data_fim: null, dia_vencimento: 5, status: 'ativo', observacao: null, faturamento_automatico: true, faturar_desde: '2026-04-01', conta_id: id('d', 2), tipo_financeiro: 'receita' },
-  { id: id('1', 3), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 3), plano_id: id('f', 1), codigo: 3, valor: 99.9, periodicidade: 'mensal', data_inicio: '2026-06-20', data_fim: null, dia_vencimento: 20, status: 'suspenso', observacao: 'Suspenso por inadimplência', faturamento_automatico: true, faturar_desde: '2026-07-01', conta_id: id('d', 2), tipo_financeiro: 'receita' },
+  { id: id('1', 1), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 1), plano_id: id('f', 1), codigo: 1, valor: 99.9, periodicidade: 'mensal', data_inicio: '2026-02-10', data_fim: null, dia_vencimento: 10, status: 'ativo', observacao: null, faturamento_automatico: true, faturar_desde: '2026-02-01', conta_id: id('d', 2), tipo_financeiro: 'receita', forma_pagamento: 'pix' },
+  { id: id('1', 2), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 2), plano_id: id('f', 2), codigo: 2, valor: 129.9, periodicidade: 'mensal', data_inicio: '2026-04-05', data_fim: null, dia_vencimento: 5, status: 'ativo', observacao: null, faturamento_automatico: true, faturar_desde: '2026-04-01', conta_id: id('d', 2), tipo_financeiro: 'receita', forma_pagamento: 'boleto' },
+  { id: id('1', 3), organizacao_id: ORG, negocio_id: NEG, pessoa_id: id('c', 3), plano_id: id('f', 1), codigo: 3, valor: 99.9, periodicidade: 'mensal', data_inicio: '2026-06-20', data_fim: null, dia_vencimento: 20, status: 'suspenso', observacao: 'Suspenso por inadimplência', faturamento_automatico: true, faturar_desde: '2026-07-01', conta_id: id('d', 2), tipo_financeiro: 'receita', forma_pagamento: 'pix' },
 ]
 const lanc = (n, extra) => ({
   id: id('2', n), organizacao_id: ORG, tipo: 'receita', descricao: 'Mensalidade', valor: 99.9,
@@ -243,6 +243,10 @@ const tabelas = {
     { organizacao_id: ORG, negocio_id: null, negocio: null, mes: mesAtual + '-01', tipo: 'despesa', status: 'efetivado', categoria_id: id('e', 2), categoria: 'Energia', natureza: 'operacional', valor: 310.5, lancamentos: 1 },
   ],
   vw_rel_lancamentos: lancamentos.map((l) => ({ ...l, conta: 'Sicoob Servnet', categoria: 'Mensalidades', natureza: 'operacional', negocio: 'Servnet', pessoa: pessoas.find((p) => p.id === l.pessoa_id)?.nome ?? null, contrato_codigo: contratos.find((c) => c.id === l.contrato_id)?.codigo ?? null, centro_custo_id: null, centro_custo: 'Geral' })),
+  // Controle de boletos (etapa 71) — José Lima (contrato #002) é boleto e ainda não foi avisado
+  vw_rel_boletos_pendentes: [
+    { id: id('2', 2), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', contrato_id: id('1', 2), contrato_codigo: 2, dia_vencimento: 5, pessoa_id: id('c', 2), pessoa: 'José Lima', telefone: '92988882222', descricao: 'Mensalidade', valor: 129.9, valor_desconto: 0, motivo_desconto: null, codigo_barras: null, data_vencimento: dia(5) },
+  ],
   vw_rel_inadimplencia: [
     { id: id('2', 2), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', pessoa_id: id('c', 2), pessoa: 'José Lima', telefone: '92988882222', contrato_id: id('1', 2), contrato_codigo: 2, descricao: 'Fibra 600 Mega · ' + mesAtual.slice(5) + '/' + mesAtual.slice(0, 4) + ' · contrato #002', valor: 129.9, data_vencimento: dia(5), dias_atraso: Math.max(1, hoje.getDate() - 5) },
     { id: id('2', 3), organizacao_id: ORG, negocio_id: NEG, negocio: 'Servnet', pessoa_id: id('c', 3), pessoa: 'Ana Pereira', telefone: '92988883333', contrato_id: id('1', 3), contrato_codigo: 3, descricao: 'Fibra 300 Mega · ' + mesDelta(-1).slice(5) + '/' + mesDelta(-1).slice(0, 4) + ' · contrato #003', valor: 99.9, data_vencimento: mesDelta(-1) + '-20', dias_atraso: hoje.getDate() + 10 },

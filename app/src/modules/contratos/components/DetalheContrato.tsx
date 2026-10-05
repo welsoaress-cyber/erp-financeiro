@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../../core/supabase/client'
 import { ROTULO_COMODATO } from '../../estoque/tipos'
 import { Selecao } from '../../../core/ui/Selecao'
-import { codigoContrato, PERIODICIDADES, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type Periodicidade, type ResultadoContrato } from '../tipos'
+import { codigoContrato, PERIODICIDADES, ROTULO_FORMA_PAGAMENTO, ROTULO_PERIODICIDADE, ROTULO_STATUS_CONTRATO, type Contrato, type FormaPagamentoContrato, type Periodicidade, type ResultadoContrato } from '../tipos'
 import { FaturamentoContrato } from './FaturamentoContrato'
 import type { Conta } from '../../contas/tipos'
 
@@ -53,6 +53,7 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   const [cortesia, setCortesia] = useState(contrato.cortesia)
   const [dia, setDia] = useState(String(contrato.dia_vencimento))
   const [periodicidade, setPeriodicidade] = useState<Periodicidade>(contrato.periodicidade)
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamentoContrato>(contrato.forma_pagamento)
   const [observacao, setObservacao] = useState(contrato.observacao ?? '')
   const [modo, setModo] = useState<'nenhum' | 'encerrar'>('nenhum')
   // Encerramento nunca pode ser antes do início do contrato (check do banco)
@@ -63,7 +64,7 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
   function salvar() {
     const v = cortesia ? 0 : Number(valor.replace(',', '.')); const d = Number(dia)
     if (Number.isNaN(v) || v < 0 || !Number.isInteger(d) || d < 1 || d > 31) return
-    atualizar.mutate({ id: contrato.id, valor: Math.round(v * 100) / 100, dia_vencimento: d, periodicidade, observacao: observacao.trim() || null, cortesia }, { onSuccess: aoFechar })
+    atualizar.mutate({ id: contrato.id, valor: Math.round(v * 100) / 100, dia_vencimento: d, periodicidade, observacao: observacao.trim() || null, cortesia, forma_pagamento: formaPagamento }, { onSuccess: aoFechar })
   }
 
   return (
@@ -110,10 +111,14 @@ export function DetalheContrato({ contrato, nomes, resultado, contas, aoFechar }
         <Alerta tipo="info">Contrato encerrado. Não pode ser alterado; o histórico permanece na rentabilidade.</Alerta>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Campo rotulo="Valor negociado (R$)" type="number" inputMode="decimal" step="0.01" min="0" value={cortesia ? '0' : valor} onChange={(e) => setValor(e.target.value)} disabled={cortesia} />
             <Campo rotulo="Dia de vencimento" type="number" min={1} max={31} value={dia} onChange={(e) => setDia(e.target.value)} />
             <Selecao rotulo="Periodicidade" opcoes={PERIODICIDADES} value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value as Periodicidade)} />
+            {contrato.tipo_financeiro === 'receita' && (
+              <Selecao rotulo="Forma de pagamento" opcoes={(Object.keys(ROTULO_FORMA_PAGAMENTO) as FormaPagamentoContrato[]).map((f) => ({ valor: f, rotulo: ROTULO_FORMA_PAGAMENTO[f] }))}
+                value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value as FormaPagamentoContrato)} />
+            )}
           </div>
           <AreaTexto rotulo="Observação (opcional)" rows={2} maxLength={500} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
           {contrato.tipo_financeiro === 'receita' && (

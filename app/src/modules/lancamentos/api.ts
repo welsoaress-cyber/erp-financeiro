@@ -328,6 +328,31 @@ export function useLancamentosVencidosAntes(tipo: 'receita' | 'despesa', antesDe
   })
 }
 
+/** Desconto (0126): p_valor_desconto é o desconto TOTAL desejado (substitui o anterior); 0 remove. */
+export function useConcederDesconto() {
+  const invalidar = useInvalidarFinanceiro()
+  return useMutation({
+    mutationFn: async ({ id, valor_desconto, motivo }: { id: string; valor_desconto: number; motivo: string | null }) => {
+      const { data, error } = await supabase.rpc('conceder_desconto_lancamento', { p_id: id, p_valor_desconto: valor_desconto, p_motivo: motivo })
+      if (error) throw error
+      return data as Lancamento
+    },
+    onSuccess: invalidar,
+  })
+}
+
+export function useDefinirCodigoBarras() {
+  const invalidar = useInvalidarFinanceiro()
+  return useMutation({
+    mutationFn: async ({ id, codigo }: { id: string; codigo: string | null }) => {
+      const { data, error } = await supabase.rpc('definir_codigo_barras_lancamento', { p_id: id, p_codigo: codigo })
+      if (error) throw error
+      return data as Lancamento
+    },
+    onSuccess: invalidar,
+  })
+}
+
 // ---- Fechamento de mês ----
 export function useFechamentos() {
   const { organizacao } = useOrganizacao()

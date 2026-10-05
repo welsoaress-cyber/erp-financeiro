@@ -17,6 +17,7 @@ import { useContratos } from '../../contratos/api'
 import { useConfigsNotificacao } from '../../notificacoes/api'
 import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { codigoContrato } from '../../contratos/tipos'
+import { TelaBoletos } from '../../boletos/components/TelaBoletos'
 
 interface Bloqueio { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; tipo: 'bloqueio' | 'desbloqueio'; status: string; motivo: string; confianca_furada: boolean; criado_em: string }
 interface Confianca { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; segurar_ate: string; observacao: string | null; status: string }
@@ -248,6 +249,8 @@ export function CobrancaPage() {
             </ul>
           )}
         </Cartao>
+
+        {negocioAtual && <TelaBoletos negocioId={negocioAtual} />}
       </div>
     </>
   )

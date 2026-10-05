@@ -52,18 +52,17 @@ Cada grupo expande/recolhe com um clique; o estado é lembrado no navegador. O g
 
 ![Dashboard](img/02-dashboard.png)
 
-É a primeira tela (abre sozinha ao entrar). A faixa escura no topo é só a marca (saudação + "ERP Financeiro"); os dados começam logo abaixo, para o mês escolhido no canto superior direito:
+É a primeira tela (abre sozinha ao entrar). A faixa escura no topo é só a marca (saudação + "ERP Financeiro"); os dados começam logo abaixo, em cinco blocos, nessa ordem (redesenho da etapa 70, doc `70-dashboard-operacional.md`):
 
-- **Cartões do topo**: saldo total das contas, receitas/despesas do mês (realizado e previsto) e resultado. O "previsto" inclui a **projeção dos contratos** do mês exibido (mensalidades ainda não faturadas) — por isso um mês futuro já mostra a receita esperada.
-- **Cobrança do período**: três anéis — Confirmadas (recebidas), A receber (no prazo) e Inadimplentes (vencidas) — com filtro Dia · Semana · Mês · **Acumulado** (desde sempre, sem cortar por data — pra ver o total histórico previsto × realizado) e atalho para Contas a receber.
-- **Clientes**: quantos contratos de receita estão bloqueados (suspensos por falta de pagamento) e quantos desbloqueados (ativos) — clique em qualquer um dos dois números pra abrir Contratos já filtrado.
-- **Clientes bloqueados**: quantos contratos estão **suspensos por falta de pagamento** agora, com os primeiros nomes na lista. Clique em qualquer linha ou em **Ver todos** para abrir Contratos já filtrado em "Suspensos". Só aparece quando há algum.
-- **Avisos no WhatsApp**: se a régua de cobrança de cada negócio está em dia, com erro ou sem configuração.
-- **Estoque**: itens zerados ou abaixo do mínimo; o link **Comprar** de cada item abre a Nova compra já com ele selecionado.
-- **Resumo financeiro do período**: saldo inicial, previsto × realizado e resultado.
-- **Saldo por conta** e **últimas movimentações**.
+1. **Resumo** (4 cartões): saldo total das contas, a receber nos próximos 30 dias, a pagar nos próximos 30 dias e resultado do mês selecionado (projetado — já soma o previsto, incluindo a **projeção dos contratos** ainda não faturados).
+2. **Agenda financeira**: Hoje · Próximos 7 dias · Próximos 30 dias · Acima de 30 dias — cada linha mostra A pagar, A receber e Saldo projetado daquela faixa (faixas não se sobrepõem) e leva a Lançamentos.
+3. **Pendências**: cartões clicáveis — Contas a pagar vencidas, Contas a receber vencidas, Clientes bloqueados (suspensos por falta de pagamento), Compras aguardando recebimento, Avisos pendentes no WhatsApp e Estoque em alerta (zerado/abaixo do mínimo). Cada um abre o módulo correspondente já filtrado.
+4. **Visão por negócio**: um bloco por negócio (nunca somados entre si) com barra previsto × realizado de receitas e de despesas, e o resultado do negócio.
+5. **Movimentações recentes**: últimas efetivadas (data, descrição, valor, conta).
 
-Use o seletor "Todos os negócios" para filtrar tudo por um negócio (ex.: só Servnet).
+Abaixo, recolhidos por padrão (clique no título pra abrir): **Resumo financeiro do mês** (saldo inicial, previsto × realizado por natureza) e **Saldo por conta**.
+
+Use o seletor "Todos os negócios" para filtrar tudo por um negócio (ex.: só Servnet), e o seletor de mês para o Resumo e a Visão por negócio (a Agenda e as Pendências são sempre "a partir de hoje", não navegam por mês).
 
 > **Dica — organizar o menu:** os itens do menu lateral podem ser **arrastados** para a ordem que você preferir (segure e solte no lugar desejado). A ordem fica salva no navegador; em outro computador o menu volta ao padrão até você reordenar lá também.
 

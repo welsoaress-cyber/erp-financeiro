@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../core/supabase/client'
 import { useOrganizacao } from '../../core/organizacao/useOrganizacao'
 import type { Lancamento } from '../lancamentos/tipos'
+import { ROTULO_PESSOAL } from '../negocios/tipos'
 
 export interface ResultadoNegocio { negocio_id: string | null; receitas: number; despesas: number; resultado: number }
 
@@ -79,26 +80,55 @@ export function useSaudeNotificacoes() {
   })
 }
 
-/** Cobrança do período: receitas confirmadas, a receber e vencidas (inadimplentes). */
-export interface LancamentoCobranca { negocio_id: string | null; pessoa_id: string | null; valor: number; status: string; data_efetivacao: string | null; data_vencimento: string }
+/** Agenda financeira (0125): previstos futuros somados por faixa de vencimento, já agregados no banco. */
+export type BucketAgenda = 'hoje' | '7dias' | '30dias' | 'mais30'
+export interface AgendaItem { negocio_id: string | null; tipo: 'receita' | 'despesa'; bucket: BucketAgenda; valor: number }
 
-export function useCobranca(inicio: string, fim: string) {
+export function useDashboardAgenda() {
   const { organizacao } = useOrganizacao()
   return useQuery({
-    queryKey: ['dashboard', organizacao.id, 'cobranca', inicio, fim],
-    queryFn: async (): Promise<{ efetivadas: LancamentoCobranca[]; previstas: LancamentoCobranca[] }> => {
-      const sel = 'negocio_id, pessoa_id, valor, status, data_efetivacao, data_vencimento'
-      const [ef, pr] = await Promise.all([
-        supabase.from('lancamentos').select(sel).eq('organizacao_id', organizacao.id)
-          .eq('tipo', 'receita').eq('status', 'efetivado')
-          .gte('data_efetivacao', inicio).lte('data_efetivacao', fim),
-        supabase.from('lancamentos').select(sel).eq('organizacao_id', organizacao.id)
-          .eq('tipo', 'receita').eq('status', 'previsto').lte('data_vencimento', fim),
-      ])
-      if (ef.error) throw ef.error
-      if (pr.error) throw pr.error
-      const num = (xs: typeof ef.data) => (xs ?? []).map((l) => ({ ...l, valor: Number(l.valor) })) as LancamentoCobranca[]
-      return { efetivadas: num(ef.data), previstas: num(pr.data) }
+    queryKey: ['dashboard', organizacao.id, 'agenda'],
+    queryFn: async (): Promise<AgendaItem[]> => {
+      const { data, error } = await supabase
+        .from('vw_dashboard_agenda')
+        .select('negocio_id, tipo, bucket, valor')
+        .eq('organizacao_id', organizacao.id)
+      if (error) throw error
+      return (data ?? []).map((r) => ({ ...r, valor: Number(r.valor) })) as AgendaItem[]
     },
   })
+}
+
+/** Visão por negócio (0125): previsto × realizado, um negócio por vez (nunca somado entre negócios). */
+export interface PrevistoNegocio { negocio_id: string | null; receitas: number; despesas: number }
+export interface LinhaVisaoPorNegocio {
+  chave: string
+  nome: string
+  realizado: { receitas: number; despesas: number }
+  previsto: { receitas: number; despesas: number }
+}
+
+/** Monta as linhas (um negócio por vez, "Pessoal" incluso) a partir do realizado e do previsto já agrupados por negocio_id. */
+export function montarLinhasVisaoPorNegocio(
+  negocios: { id: string; nome: string }[],
+  resultado: ResultadoNegocio[],
+  previsto: PrevistoNegocio[],
+  bate: (negocioId: string | null) => boolean,
+): LinhaVisaoPorNegocio[] {
+  const chaves = new Set<string | null>()
+  for (const r of resultado) if (bate(r.negocio_id)) chaves.add(r.negocio_id)
+  for (const p of previsto) if (bate(p.negocio_id)) chaves.add(p.negocio_id)
+  const nomeNegocio = new Map(negocios.map((n) => [n.id, n.nome]))
+  return [...chaves]
+    .sort((a, b) => (a === null ? -1 : b === null ? 1 : (nomeNegocio.get(a) ?? '').localeCompare(nomeNegocio.get(b) ?? '')))
+    .map((id) => {
+      const r = resultado.find((x) => x.negocio_id === id)
+      const p = previsto.find((x) => x.negocio_id === id)
+      return {
+        chave: id ?? 'pessoal',
+        nome: id ? nomeNegocio.get(id) ?? '—' : ROTULO_PESSOAL,
+        realizado: { receitas: r?.receitas ?? 0, despesas: r?.despesas ?? 0 },
+        previsto: { receitas: p?.receitas ?? 0, despesas: p?.despesas ?? 0 },
+      }
+    })
 }

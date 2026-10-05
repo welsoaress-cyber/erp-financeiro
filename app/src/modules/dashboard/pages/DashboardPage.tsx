@@ -7,22 +7,20 @@ import { Alerta } from '../../../core/ui/Alerta'
 import { Carregando } from '../../../core/ui/Carregando'
 import { SeletorMes } from '../../../core/ui/SeletorMes'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
-import { formatarData, formatarMoeda, mesAtualISO } from '../../../core/formatos'
+import { formatarMoeda, mesAtualISO } from '../../../core/formatos'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useContas } from '../../contas/api'
 import { useCategorias } from '../../categorias/api'
 import { ROTULO_TIPO as ROTULO_TIPO_CONTA } from '../../contas/tipos'
-import { ROTULO_TIPO } from '../../lancamentos/tipos'
 import { useNegocios } from '../../negocios/api'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { useLancamentos, useProjecaoContratos } from '../../lancamentos/api'
-import { useResultadoPorNegocio, useSaldoInicial, useSaudeNotificacoes, useUltimosLancamentos } from '../api'
+import { montarLinhasVisaoPorNegocio, useDashboardAgenda, useResultadoPorNegocio, useSaldoInicial, useUltimosLancamentos, type PrevistoNegocio } from '../api'
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
-import { AlertasEstoque } from '../components/AlertasEstoque'
-import { AlertaBloqueados } from '../components/AlertaBloqueados'
-import { StatusPessoas } from '../components/StatusPessoas'
-import { SaudeAvisos } from '../components/SaudeAvisos'
-import { RelatorioCobranca } from '../components/RelatorioCobranca'
+import { AgendaFinanceira } from '../components/AgendaFinanceira'
+import { PendenciasOperacionais } from '../components/PendenciasOperacionais'
+import { VisaoPorNegocio } from '../components/VisaoPorNegocio'
+import { MovimentacoesRecentes } from '../components/MovimentacoesRecentes'
 import { HeroBoasVindas } from '../components/HeroBoasVindas'
 
 function Indicador({ rotulo, valor, tom = 'neutro', detalhe }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto'; detalhe?: string }) {
@@ -48,7 +46,7 @@ export function DashboardPage() {
   const lancamentosMes = useLancamentos(mes)
   const projecao = useProjecaoContratos(mes)
   const saldoInicial = useSaldoInicial(mes)
-  const saudeNotificacoes = useSaudeNotificacoes()
+  const agenda = useDashboardAgenda()
 
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
   const nomeCategoria = useMemo(() => new Map((categorias.data ?? []).map((c) => [c.id, c.nome])), [categorias.data])
@@ -61,22 +59,38 @@ export function DashboardPage() {
   const linhas = (resultado.data ?? []).filter((r) => bate(r.negocio_id))
   const totais = linhas.reduce((t, r) => ({ receitas: t.receitas + r.receitas, despesas: t.despesas + r.despesas, resultado: t.resultado + r.resultado }), { receitas: 0, despesas: 0, resultado: 0 })
   const ultimosFiltrados = (ultimos.data ?? []).filter((l) => bate(l.negocio_id))
-  // Previsto do mês: lançamentos ainda não efetivados (fora cancelados), respeitando o filtro de negócio
-  const previstos = (lancamentosMes.data ?? []).filter((l) => l.status === 'previsto' && bate(l.negocio_id))
-  const prev = previstos.reduce((t, l) => {
-    if (l.tipo === 'receita') t.receitas += l.valor
-    if (l.tipo === 'despesa') t.despesas += l.valor
-    return t
-  }, { receitas: 0, despesas: 0 })
-  // projeção dos contratos (meses ainda não faturados) entra no previsto do mês exibido
-  for (const pj of (projecao.data ?? []).filter((x) => bate(x.negocio_id))) {
-    if (pj.tipo === 'receita') prev.receitas += Number(pj.valor)
-    if (pj.tipo === 'despesa') prev.despesas += Number(pj.valor)
-  }
+
+  // Previsto do mês por negócio: lançamentos ainda não efetivados + projeção de contratos (meses ainda não faturados) — nunca lançamentos pré-gerados.
+  const previstosPorNegocio = useMemo(() => {
+    const mapa = new Map<string | null, PrevistoNegocio>()
+    const soma = (negocioId: string | null, tipo: 'receita' | 'despesa', valor: number) => {
+      const atual = mapa.get(negocioId) ?? { negocio_id: negocioId, receitas: 0, despesas: 0 }
+      if (tipo === 'receita') atual.receitas += valor
+      else atual.despesas += valor
+      mapa.set(negocioId, atual)
+    }
+    for (const l of lancamentosMes.data ?? []) {
+      if (l.status === 'previsto' && (l.tipo === 'receita' || l.tipo === 'despesa')) soma(l.negocio_id, l.tipo, l.valor)
+    }
+    for (const pj of projecao.data ?? []) {
+      if (pj.tipo === 'receita' || pj.tipo === 'despesa') soma(pj.negocio_id, pj.tipo, Number(pj.valor))
+    }
+    return [...mapa.values()]
+  }, [lancamentosMes.data, projecao.data])
+
+  const previstosFiltrados = previstosPorNegocio.filter((p) => bate(p.negocio_id))
+  const prev = previstosFiltrados.reduce((t, p) => ({ receitas: t.receitas + p.receitas, despesas: t.despesas + p.despesas }), { receitas: 0, despesas: 0 })
+
+  const agendaFiltrada = (agenda.data ?? []).filter((i) => bate(i.negocio_id))
+  const receber30 = agendaFiltrada.filter((i) => i.tipo === 'receita' && i.bucket !== 'mais30').reduce((s, i) => s + i.valor, 0)
+  const pagar30 = agendaFiltrada.filter((i) => i.tipo === 'despesa' && i.bucket !== 'mais30').reduce((s, i) => s + i.valor, 0)
+
+  const linhasVisaoPorNegocio = montarLinhasVisaoPorNegocio(negocios.data ?? [], resultado.data ?? [], previstosPorNegocio, bate)
+
   const temNegocios = (negocios.data ?? []).length > 0
 
-  const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending || lancamentosMes.isPending || saldoInicial.isPending
-  const erro = contas.error ?? resultado.error ?? ultimos.error ?? negocios.error ?? lancamentosMes.error ?? saldoInicial.error
+  const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending || lancamentosMes.isPending || saldoInicial.isPending || agenda.isPending
+  const erro = contas.error ?? resultado.error ?? ultimos.error ?? negocios.error ?? lancamentosMes.error ?? saldoInicial.error ?? agenda.error
 
   return (
     <>
@@ -102,76 +116,50 @@ export function DashboardPage() {
       {carregando && <Carregando texto="Calculando…" />}
       {erro && <Alerta tipo="erro" titulo="Não foi possível carregar o painel">{mensagemDeErro(erro)}</Alerta>}
 
-      {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && negocios.isSuccess && lancamentosMes.isSuccess && saldoInicial.isSuccess && (
+      {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && negocios.isSuccess && lancamentosMes.isSuccess && saldoInicial.isSuccess && agenda.isSuccess && (
         <div className="space-y-6">
+          {/* Resumo */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Indicador rotulo="Saldo total" valor={saldoTotal} tom="auto" />
-            <Indicador rotulo="Receitas do mês" valor={totais.receitas} tom="positivo" detalhe={`Previsto: ${formatarMoeda(prev.receitas)}`} />
-            <Indicador rotulo="Despesas do mês" valor={totais.despesas} tom="negativo" detalhe={`Previsto: ${formatarMoeda(prev.despesas)}`} />
-            <Indicador rotulo="Resultado do mês" valor={totais.resultado} tom="auto" detalhe={`Projetado (com previstos): ${formatarMoeda(totais.resultado + prev.receitas - prev.despesas)}`} />
+            <Indicador rotulo="A receber · 30 dias" valor={receber30} tom="positivo" />
+            <Indicador rotulo="A pagar · 30 dias" valor={pagar30} tom="negativo" />
+            <Indicador rotulo="Resultado do mês (projetado)" valor={totais.resultado + prev.receitas - prev.despesas} tom="auto"
+              detalhe={`Realizado: ${formatarMoeda(totais.resultado)}`} />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatusPessoas />
-          </div>
+          {/* Agenda financeira */}
+          <AgendaFinanceira itens={agenda.data ?? []} bate={bate} />
 
-          <RelatorioCobranca bate={bate} />
+          {/* Pendências */}
+          <PendenciasOperacionais bate={bate} />
 
-          <AlertaBloqueados bate={bate} nomeNegocio={nomeNegocio} />
-
-          <SaudeAvisos negocios={(negocios.data ?? []).filter((n) => bate(n.id))} saude={saudeNotificacoes.data} />
-
-          <AlertasEstoque bate={bate} nomeNegocio={nomeNegocio} />
+          {/* Visão por negócio */}
+          <VisaoPorNegocio linhas={linhasVisaoPorNegocio} />
 
           <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate}
             naturezaDe={new Map((categorias.data ?? []).map((c) => [c.id, c.natureza]))} />
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <CartaoRecolhivel
-              id="saldo-por-conta"
-              titulo={<h2 className="text-sm font-semibold">Saldo por conta</h2>}
-              acao={<Link to="/contas" className="shrink-0 text-xs font-medium text-brand-600 hover:underline">Ver contas</Link>}
-            >
-              {contasAtivas.length === 0 ? (
-                <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhuma conta ativa. <Link to="/contas" className="text-brand-600 hover:underline">Cadastre a primeira.</Link></p>
-              ) : (
-                <ul className="divide-y divide-line">
-                  {contasAtivas.map((c) => (
-                    <li key={c.id} className="flex items-center justify-between px-6 py-3 text-sm">
-                      <span><span className="font-medium">{c.nome}</span> <span className="text-xs text-ink-muted">· {ROTULO_TIPO_CONTA[c.tipo]}{temNegocios ? ` · ${rotuloNegocio(c.negocio_id)}` : ''}</span></span>
-                      <span className={`font-medium tabular-nums ${Number(c.saldo) < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(c.saldo)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CartaoRecolhivel>
+          {/* Movimentações recentes */}
+          <MovimentacoesRecentes lancamentos={ultimosFiltrados} nomeConta={nomeConta} nomeCategoria={nomeCategoria} nomeNegocio={nomeNegocio} />
 
-            <CartaoRecolhivel
-              id="ultimas-movimentacoes"
-              titulo={<h2 className="text-sm font-semibold">Últimas movimentações</h2>}
-              acao={<Link to="/financeiro/lancamentos" className="shrink-0 text-xs font-medium text-brand-600 hover:underline">Ver lançamentos</Link>}
-            >
-              {ultimosFiltrados.length === 0 ? (
-                <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhum lançamento efetivado ainda.</p>
-              ) : (
-                <ul className="divide-y divide-line">
-                  {ultimosFiltrados.map((l) => (
-                    <li key={l.id} className="flex items-center justify-between gap-3 px-6 py-3 text-sm">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{l.descricao}</p>
-                        <p className="truncate text-xs text-ink-muted">
-                          {formatarData(l.data_efetivacao ?? l.data_competencia)} · {l.tipo === 'transferencia' ? `${nomeConta.get(l.conta_id) ?? '—'} → ${nomeConta.get(l.conta_destino_id ?? '') ?? '—'}` : `${nomeCategoria.get(l.categoria_id ?? '') ?? ROTULO_TIPO[l.tipo]} · ${nomeConta.get(l.conta_id) ?? '—'}`}{l.negocio_id ? ` · ${rotuloNegocio(l.negocio_id)}` : ''}
-                        </p>
-                      </div>
-                      <span className={`shrink-0 font-medium tabular-nums ${l.tipo === 'receita' ? 'text-green-700' : l.tipo === 'despesa' ? 'text-red-700' : 'text-brand-700'}`}>
-                        {l.tipo === 'despesa' ? '− ' : l.tipo === 'receita' ? '+ ' : ''}{formatarMoeda(l.valor)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CartaoRecolhivel>
-          </div>
+          <CartaoRecolhivel
+            id="saldo-por-conta"
+            titulo={<h2 className="text-sm font-semibold">Saldo por conta</h2>}
+            acao={<Link to="/contas" className="shrink-0 text-xs font-medium text-brand-600 hover:underline">Ver contas</Link>}
+          >
+            {contasAtivas.length === 0 ? (
+              <p className="px-6 py-10 text-center text-sm text-ink-muted">Nenhuma conta ativa. <Link to="/contas" className="text-brand-600 hover:underline">Cadastre a primeira.</Link></p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {contasAtivas.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between px-6 py-3 text-sm">
+                    <span><span className="font-medium">{c.nome}</span> <span className="text-xs text-ink-muted">· {ROTULO_TIPO_CONTA[c.tipo]}{temNegocios ? ` · ${rotuloNegocio(c.negocio_id)}` : ''}</span></span>
+                    <span className={`font-medium tabular-nums ${Number(c.saldo) < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(c.saldo)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CartaoRecolhivel>
         </div>
       )}
     </>

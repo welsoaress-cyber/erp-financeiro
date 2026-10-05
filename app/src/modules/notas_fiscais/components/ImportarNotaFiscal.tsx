@@ -10,9 +10,9 @@ import { Carregando } from '../../../core/ui/Carregando'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useNegocios } from '../../negocios/api'
-import { usePessoas, useCriarPessoa } from '../../pessoas/api'
+import { usePessoas, useCriarPessoa, useAtualizarPessoa } from '../../pessoas/api'
 import { useContratos, useCriarContrato } from '../../contratos/api'
-import { useCategorias } from '../../categorias/api'
+import { useCategorias, useCriarCategoria } from '../../categorias/api'
 import { useContas } from '../../contas/api'
 import { useEstoqueItens, useEstoqueCategorias, useSalvarEstoqueItem } from '../../estoque/api'
 import { useEfetivarLancamento } from '../../lancamentos/api'
@@ -31,6 +31,8 @@ interface LinhaItem {
   criandoItem: boolean
   novoCodigo: string
   novoEstoqueCategoriaId: string
+  criandoCategoria: boolean
+  novaCategoriaNome: string
 }
 
 const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -96,7 +98,9 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
   const pedidos = usePedidos()
 
   const criarPessoa = useCriarPessoa()
+  const atualizarPessoa = useAtualizarPessoa()
   const salvarItem = useSalvarEstoqueItem()
+  const criarCategoria = useCriarCategoria()
   const criarRequisicao = useCriarRequisicao()
   const aprovarRequisicao = useAprovarRequisicao()
   const registrarRecebimento = useRegistrarRecebimento()
@@ -109,9 +113,15 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
   const fornecedorExistente = useMemo(() => (pessoas.data ?? []).find((p) => p.documento === cnpjNota), [pessoas.data, cnpjNota])
   const [fornecedorIdEscolhido, setFornecedorIdEscolhido] = useState('')
   const fornecedorId = fornecedorIdEscolhido || fornecedorExistente?.id || ''
+  const fornecedorNovoCriado = useMemo(() => (pessoas.data ?? []).find((p) => p.id === fornecedorIdEscolhido), [pessoas.data, fornecedorIdEscolhido])
+  const [editandoFornecedor, setEditandoFornecedor] = useState(false)
+  const [fornecedorNome, setFornecedorNome] = useState('')
+  const [fornecedorEmail, setFornecedorEmail] = useState('')
+  const [fornecedorTelefone, setFornecedorTelefone] = useState('')
 
   const [linhas, setLinhas] = useState<LinhaItem[]>(() => nota.itens.map(() => ({
     destino: 'despesa', itemEstoqueId: '', categoriaFinanceiraId: '', criandoItem: false, novoCodigo: '', novoEstoqueCategoriaId: '',
+    criandoCategoria: false, novaCategoriaNome: '',
   })))
   // sugestão de item de estoque, roda quando a lista de itens do negócio muda
   const itensDoNegocio = (estoqueItens.data ?? []).filter((i) => i.ativo && i.negocio_id === negocioId)
@@ -165,6 +175,26 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
       email: null, telefone: null, data_nascimento: null, observacao: null, ativo: true, receber_avisos: false,
     })
     setFornecedorIdEscolhido(criado.id)
+    setFornecedorNome(criado.nome)
+    setFornecedorEmail(criado.email ?? '')
+    setFornecedorTelefone(criado.telefone ?? '')
+  }
+
+  async function salvarEdicaoFornecedor() {
+    if (!fornecedorNovoCriado) return
+    await atualizarPessoa.mutateAsync({
+      id: fornecedorNovoCriado.id, tipo: fornecedorNovoCriado.tipo, nome: fornecedorNome.trim(), documento: fornecedorNovoCriado.documento,
+      email: fornecedorEmail.trim() || null, telefone: fornecedorTelefone.trim() || null,
+      data_nascimento: null, observacao: fornecedorNovoCriado.observacao, ativo: true, receber_avisos: false,
+    })
+    setEditandoFornecedor(false)
+  }
+
+  async function criarCategoriaInline(i: number) {
+    const l = linha(i)
+    if (!l.novaCategoriaNome.trim()) return
+    const nova = await criarCategoria.mutateAsync({ nome: l.novaCategoriaNome.trim(), tipo: 'despesa', categoria_pai_id: null, natureza: 'operacional', ativo: true })
+    atualizarLinha(i, { categoriaFinanceiraId: nova.id, criandoCategoria: false })
   }
 
   async function criarItemInline(i: number) {
@@ -286,8 +316,26 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
         <p className="mb-1 text-sm font-medium text-ink">Fornecedor</p>
         {fornecedorExistente && !fornecedorIdEscolhido ? (
           <p className="text-sm">✓ <b>{fornecedorExistente.nome}</b> (CNPJ já cadastrado)</p>
-        ) : fornecedorIdEscolhido ? (
-          <p className="text-sm text-green-700">✓ Fornecedor cadastrado agora.</p>
+        ) : fornecedorIdEscolhido && fornecedorNovoCriado ? (
+          <div className="space-y-2">
+            <p className="text-sm text-green-700">✓ Fornecedor cadastrado agora: <b>{fornecedorNovoCriado.nome}</b>.{' '}
+              {!editandoFornecedor && <button type="button" className="font-medium text-brand-600 hover:underline" onClick={() => setEditandoFornecedor(true)}>Editar</button>}
+            </p>
+            {editandoFornecedor && (
+              <div className="space-y-2 rounded-md border border-line bg-canvas p-3">
+                {atualizarPessoa.error && <Alerta tipo="erro">{mensagemDeErro(atualizarPessoa.error)}</Alerta>}
+                <Campo rotulo="Nome" value={fornecedorNome} onChange={(e) => setFornecedorNome(e.target.value)} />
+                <div className="grid grid-cols-2 gap-2">
+                  <Campo rotulo="E-mail (opcional)" type="email" value={fornecedorEmail} onChange={(e) => setFornecedorEmail(e.target.value)} />
+                  <Campo rotulo="Telefone (opcional)" value={fornecedorTelefone} onChange={(e) => setFornecedorTelefone(e.target.value)} />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Botao type="button" variante="secundario" onClick={() => setEditandoFornecedor(false)}>Cancelar</Botao>
+                  <Botao type="button" carregando={atualizarPessoa.isPending} onClick={() => void salvarEdicaoFornecedor()}>Salvar</Botao>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3">
             <p className="text-sm">Não achei nenhum fornecedor com o CNPJ {cnpjNota || '(não veio no XML)'}.</p>
@@ -343,8 +391,17 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
                         )}
                       </div>
                     ) : (
-                      <div className="mt-2">
+                      <div className="mt-2 space-y-2">
                         <Selecao rotulo="Categoria de despesa" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...categoriasDespesa.map((c) => ({ valor: c.id, rotulo: c.nome }))]} value={l.categoriaFinanceiraId} onChange={(e) => atualizarLinha(i, { categoriaFinanceiraId: e.target.value })} />
+                        {l.criandoCategoria ? (
+                          <div className="flex items-end gap-2 rounded-md bg-canvas p-2">
+                            <div className="flex-1"><Campo rotulo="Nome da categoria nova" value={l.novaCategoriaNome} onChange={(e) => atualizarLinha(i, { novaCategoriaNome: e.target.value })} /></div>
+                            <Botao type="button" variante="secundario" onClick={() => atualizarLinha(i, { criandoCategoria: false })}>Cancelar</Botao>
+                            <Botao type="button" carregando={criarCategoria.isPending} onClick={() => void criarCategoriaInline(i)}>Criar</Botao>
+                          </div>
+                        ) : (
+                          <button type="button" className="text-xs font-medium text-brand-600 hover:underline" onClick={() => atualizarLinha(i, { criandoCategoria: true })}>+ Nova categoria</button>
+                        )}
                       </div>
                     )}
                   </li>

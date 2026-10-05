@@ -28,3 +28,5 @@ select l.organizacao_id, l.negocio_id, l.tipo,
  where l.status = 'previsto'
    and l.tipo in ('receita', 'despesa')
    and l.data_vencimento >= current_date;
+
+grant select on public.vw_dashboard_agenda to authenticated;

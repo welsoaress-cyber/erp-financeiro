@@ -11,7 +11,7 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarMoeda, hojeISO } from '../../../core/formatos'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas, useCriarPessoa, useAtualizarPessoa } from '../../pessoas/api'
-import { useContratos, useCriarContrato } from '../../contratos/api'
+import { useContratos, useCriarContrato, useCriarPlano } from '../../contratos/api'
 import { useCategorias, useCriarCategoria } from '../../categorias/api'
 import { useContas } from '../../contas/api'
 import { useEstoqueItens, useEstoqueCategorias, useSalvarEstoqueItem } from '../../estoque/api'
@@ -105,6 +105,7 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
   const aprovarRequisicao = useAprovarRequisicao()
   const registrarRecebimento = useRegistrarRecebimento()
   const criarContrato = useCriarContrato()
+  const criarPlano = useCriarPlano()
   const efetivar = useEfetivarLancamento()
   const registrarNota = useRegistrarNotaFiscalImportada()
 
@@ -114,6 +115,7 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
   const [fornecedorIdEscolhido, setFornecedorIdEscolhido] = useState('')
   const fornecedorId = fornecedorIdEscolhido || fornecedorExistente?.id || ''
   const fornecedorNovoCriado = useMemo(() => (pessoas.data ?? []).find((p) => p.id === fornecedorIdEscolhido), [pessoas.data, fornecedorIdEscolhido])
+  const fornecedorAtivo = fornecedorNovoCriado ?? fornecedorExistente ?? null
   const [editandoFornecedor, setEditandoFornecedor] = useState(false)
   const [fornecedorNome, setFornecedorNome] = useState('')
   const [fornecedorEmail, setFornecedorEmail] = useState('')
@@ -175,17 +177,22 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
       email: null, telefone: null, data_nascimento: null, observacao: null, ativo: true, receber_avisos: false,
     })
     setFornecedorIdEscolhido(criado.id)
-    setFornecedorNome(criado.nome)
-    setFornecedorEmail(criado.email ?? '')
-    setFornecedorTelefone(criado.telefone ?? '')
+  }
+
+  function abrirEdicaoFornecedor() {
+    if (!fornecedorAtivo) return
+    setFornecedorNome(fornecedorAtivo.nome)
+    setFornecedorEmail(fornecedorAtivo.email ?? '')
+    setFornecedorTelefone(fornecedorAtivo.telefone ?? '')
+    setEditandoFornecedor(true)
   }
 
   async function salvarEdicaoFornecedor() {
-    if (!fornecedorNovoCriado) return
+    if (!fornecedorAtivo) return
     await atualizarPessoa.mutateAsync({
-      id: fornecedorNovoCriado.id, tipo: fornecedorNovoCriado.tipo, nome: fornecedorNome.trim(), documento: fornecedorNovoCriado.documento,
+      id: fornecedorAtivo.id, tipo: fornecedorAtivo.tipo, nome: fornecedorNome.trim(), documento: fornecedorAtivo.documento,
       email: fornecedorEmail.trim() || null, telefone: fornecedorTelefone.trim() || null,
-      data_nascimento: null, observacao: fornecedorNovoCriado.observacao, ativo: true, receber_avisos: false,
+      data_nascimento: null, observacao: fornecedorAtivo.observacao, ativo: true, receber_avisos: false,
     })
     setEditandoFornecedor(false)
   }
@@ -240,9 +247,13 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
             valor: nota.valorTotal, emitida_em: nota.dataEmissao, destino: 'contrato', contrato_id: contratoExistente.id, lancamento_id: lanc.id,
           })
         } else {
-          // 1ª nota: cria o contrato de fornecedor recorrente
+          // 1ª nota: todo contrato precisa de um plano — cria um na hora com o nome do fornecedor
+          const nomeFornecedorPlano = fornecedorAtivo?.nome || nota.fornecedorNome || 'Fornecedor'
+          const plano = await criarPlano.mutateAsync({
+            negocio_id: negocioId, nome: `SVA/Serviço — ${nomeFornecedorPlano}`, descricao: null, valor_tabela: nota.valorTotal, periodicidade, ativo: true,
+          })
           const novoContrato = await criarContrato.mutateAsync({
-            negocio_id: negocioId, pessoa_id: fornecedorId, plano_id: '', valor: nota.valorTotal, periodicidade,
+            negocio_id: negocioId, pessoa_id: fornecedorId, plano_id: plano.id, valor: nota.valorTotal, periodicidade,
             data_inicio: hojeISO(), dia_vencimento: Number(dia) || 10, observacao: `Criado a partir da nota ${nota.numero} (importação XML).`,
             faturar_desde: hojeISO(), conta_id: contaId || null, tipo_financeiro: 'despesa', cortesia: false, centro_custo_id: null,
           })
@@ -314,12 +325,12 @@ function Revisao({ nota, aoReiniciar, aoFechar }: { nota: NotaFiscalParseada; ao
 
       <div>
         <p className="mb-1 text-sm font-medium text-ink">Fornecedor</p>
-        {fornecedorExistente && !fornecedorIdEscolhido ? (
-          <p className="text-sm">✓ <b>{fornecedorExistente.nome}</b> (CNPJ já cadastrado)</p>
-        ) : fornecedorIdEscolhido && fornecedorNovoCriado ? (
+        {fornecedorAtivo ? (
           <div className="space-y-2">
-            <p className="text-sm text-green-700">✓ Fornecedor cadastrado agora: <b>{fornecedorNovoCriado.nome}</b>.{' '}
-              {!editandoFornecedor && <button type="button" className="font-medium text-brand-600 hover:underline" onClick={() => setEditandoFornecedor(true)}>Editar</button>}
+            <p className="text-sm">
+              {fornecedorNovoCriado ? <span className="text-green-700">✓ Fornecedor cadastrado agora: </span> : '✓ '}
+              <b>{fornecedorAtivo.nome}</b>{!fornecedorNovoCriado && ' (CNPJ já cadastrado)'}.{' '}
+              {!editandoFornecedor && <button type="button" className="font-medium text-brand-600 hover:underline" onClick={() => abrirEdicaoFornecedor()}>Editar</button>}
             </p>
             {editandoFornecedor && (
               <div className="space-y-2 rounded-md border border-line bg-canvas p-3">

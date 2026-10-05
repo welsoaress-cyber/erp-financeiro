@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
-import { formatarMoeda, hojeISO } from '../../../core/formatos'
+import { formatarMoedaOuOculto, hojeISO } from '../../../core/formatos'
 import { useLancamentosVencidosAntes } from '../../lancamentos/api'
 import { useContratos } from '../../contratos/api'
 import { usePedidos } from '../../compras/api'
@@ -11,6 +11,7 @@ import { useSaudeNotificacoes } from '../api'
 
 interface Props {
   bate: (negocioId: string | null) => boolean
+  oculto: boolean
 }
 
 function CartaoPendencia({ to, titulo, quantidade, detalhe }: { to: string; titulo: string; quantidade: number; detalhe: string }) {
@@ -27,7 +28,7 @@ function CartaoPendencia({ to, titulo, quantidade, detalhe }: { to: string; titu
 }
 
 /** Pendências operacionais (0126): tudo que precisa de ação agora, de relance. */
-export function PendenciasOperacionais({ bate }: Props) {
+export function PendenciasOperacionais({ bate, oculto }: Props) {
   const hoje = hojeISO()
   const vencidasPagar = useLancamentosVencidosAntes('despesa', hoje)
   const vencidasReceber = useLancamentosVencidosAntes('receita', hoje)
@@ -66,9 +67,9 @@ export function PendenciasOperacionais({ bate }: Props) {
     >
       <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
         <CartaoPendencia to="/financeiro/pagar" titulo="Contas a pagar vencidas" quantidade={pagarFiltradas.length}
-          detalhe={`Total em aberto ${formatarMoeda(somar(pagarFiltradas))}`} />
+          detalhe={`Total em aberto ${formatarMoedaOuOculto(somar(pagarFiltradas), oculto)}`} />
         <CartaoPendencia to="/financeiro/receber" titulo="Contas a receber vencidas" quantidade={receberFiltradas.length}
-          detalhe={`Total em aberto ${formatarMoeda(somar(receberFiltradas))}`} />
+          detalhe={`Total em aberto ${formatarMoedaOuOculto(somar(receberFiltradas), oculto)}`} />
         <CartaoPendencia to="/contratos?status=suspenso" titulo="Clientes bloqueados" quantidade={bloqueados.length}
           detalhe="Por inadimplência, acesso cortado" />
         <CartaoPendencia to="/compras/pedidos" titulo="Compras aguardando recebimento" quantidade={pedidosAbertos.length}

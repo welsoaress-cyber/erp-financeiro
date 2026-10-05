@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react'
 
-export type NomeIcone = 'painel' | 'financeiro' | 'lancamentos' | 'contas' | 'cartao' | 'categorias' | 'negocios' | 'centros' | 'pessoas' | 'contratos' | 'leads' | 'rh' | 'apps' | 'notificacoes' | 'disparos' | 'ftth' | 'estoque' | 'compras' | 'os' | 'gerencial' | 'relatorios' | 'portal' | 'indicacoes' | 'configuracoes' | 'sair'
+export type NomeIcone = 'painel' | 'financeiro' | 'lancamentos' | 'contas' | 'cartao' | 'categorias' | 'negocios' | 'centros' | 'pessoas' | 'contratos' | 'leads' | 'rh' | 'apps' | 'notificacoes' | 'disparos' | 'ftth' | 'estoque' | 'compras' | 'os' | 'gerencial' | 'relatorios' | 'portal' | 'indicacoes' | 'configuracoes' | 'sair' | 'olho' | 'olho_fechado'
 
 const CAMINHOS: Record<NomeIcone, string> = {
   painel: 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z',
@@ -28,6 +28,8 @@ const CAMINHOS: Record<NomeIcone, string> = {
   indicacoes: 'M20 12v9H4v-9M2 7h20v5H2V7Zm10 0v14M12 7s-2-4.5-5-4.5A2.25 2.25 0 0 0 7 7h5Zm0 0s2-4.5 5-4.5A2.25 2.25 0 0 1 17 7h-5Z',
   configuracoes: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7.6 7.6 0 0 0-1.7-1L14.8 3H9.2l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.4 7.4 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.6h5.6l.4-2.6a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1Z',
   sair: 'M10 17l5-5-5-5M15 12H3M13 3h6v18h-6',
+  olho: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  olho_fechado: 'M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.4 5.3A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a15.6 15.6 0 0 1-4 4.6M6.1 6.1A15.6 15.6 0 0 0 2 12s3.5 7 10 7c1.2 0 2.3-.2 3.3-.6',
 }
 
 export function Icone({ nome, ...rest }: { nome: NomeIcone } & SVGProps<SVGSVGElement>) {

@@ -64,6 +64,8 @@ Abaixo, recolhidos por padrão (clique no título pra abrir): **Resumo financeir
 
 Use o seletor "Todos os negócios" para filtrar tudo por um negócio (ex.: só Servnet), e o seletor de mês para o Resumo e a Visão por negócio (a Agenda e as Pendências são sempre "a partir de hoje", não navegam por mês).
 
+O botão **Ocultar valores** (ícone de olho, ao lado do filtro de negócio) troca todos os valores em dinheiro da tela por "••••••" — útil pra abrir o Dashboard em público (reunião, print de tela) sem expor números. A escolha fica salva no navegador.
+
 > **Dica — organizar o menu:** os itens do menu lateral podem ser **arrastados** para a ordem que você preferir (segure e solte no lugar desejado). A ordem fica salva no navegador; em outro computador o menu volta ao padrão até você reordenar lá também.
 
 > **Dica — cartões do dashboard:** os cartões (Avisos no WhatsApp, Estoque, Resumo financeiro, Saldo por conta, Últimas movimentações) começam **recolhidos**: clique em qualquer lugar da linha do título para expandir ou recolher. A escolha de cada cartão também fica salva no navegador.

@@ -17,6 +17,9 @@ Abaixo das 5 camadas, dois blocos recolhidos por padrão (já existiam, mantidos
 ## O que saiu do dashboard antigo
 `AlertaBloqueados`, `StatusPessoas`, `SaudeAvisos`, `AlertasEstoque` e `RelatorioCobranca` (anéis de cobrança por período) foram removidos — o conteúdo deles está coberto pela camada Pendências (clientes bloqueados, avisos, estoque) ou pela Agenda financeira (cobrança prevista por período). Se o proprietário sentir falta de algum anel/detalhe específico de "Cobrança do período" (confirmadas × a receber × inadimplentes com filtro dia/semana/mês/acumulado), dá pra trazer de volta como card à parte — não foi pedido no redesenho, por isso ficou fora.
 
+## Ocultar valores (0126)
+Botão no cabeçalho (ícone de olho) troca todo valor em dinheiro exibido no Dashboard por "••••••" — pedido do proprietário pra abrir a tela em público sem expor números. Estado em `localStorage` (`erp.dash.ocultarValores`), só nesta página. Implementado com `formatarMoedaOuOculto(valor, oculto)` (`core/formatos`) propagado por prop a cada subcomponente — sem SQL, sem migration.
+
 ## SQL novo
 `vw_dashboard_agenda` (`security_invoker`): `organizacao_id, negocio_id, tipo, bucket, valor` — um `select` sobre `lancamentos` com `case` de faixa de vencimento; `status = 'previsto'`, `tipo in ('receita','despesa')`, `data_vencimento >= current_date`. Sem RLS própria: herda a de `lancamentos`.
 

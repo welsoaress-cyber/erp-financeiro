@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
-import { formatarMoeda } from '../../../core/formatos'
+import { formatarMoedaOuOculto } from '../../../core/formatos'
 import type { AgendaItem, BucketAgenda } from '../api'
 
 const PERIODOS: { bucket: BucketAgenda; rotulo: string }[] = [
@@ -13,10 +13,11 @@ const PERIODOS: { bucket: BucketAgenda; rotulo: string }[] = [
 interface Props {
   itens: AgendaItem[]
   bate: (negocioId: string | null) => boolean
+  oculto: boolean
 }
 
 /** Agenda financeira (0125): previstos futuros por faixa de vencimento, A Pagar | A Receber | Saldo Projetado. */
-export function AgendaFinanceira({ itens, bate }: Props) {
+export function AgendaFinanceira({ itens, bate, oculto }: Props) {
   const filtrados = itens.filter((i) => bate(i.negocio_id))
 
   const linhas = PERIODOS.map(({ bucket, rotulo }) => {
@@ -43,15 +44,15 @@ export function AgendaFinanceira({ itens, bate }: Props) {
               </span>
               <span className="text-right sm:text-right">
                 <span className="block text-xs font-medium text-ink-muted">A pagar</span>
-                <span className="text-sm font-semibold tabular-nums text-red-700">{formatarMoeda(l.aPagar)}</span>
+                <span className="text-sm font-semibold tabular-nums text-red-700">{formatarMoedaOuOculto(l.aPagar, oculto)}</span>
               </span>
               <span className="text-right">
                 <span className="block text-xs font-medium text-ink-muted">A receber</span>
-                <span className="text-sm font-semibold tabular-nums text-green-700">{formatarMoeda(l.aReceber)}</span>
+                <span className="text-sm font-semibold tabular-nums text-green-700">{formatarMoedaOuOculto(l.aReceber, oculto)}</span>
               </span>
               <span className="text-right">
                 <span className="block text-xs font-medium text-ink-muted">Saldo projetado</span>
-                <span className={`text-sm font-semibold tabular-nums ${l.saldo < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(l.saldo)}</span>
+                <span className={`text-sm font-semibold tabular-nums ${l.saldo < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoedaOuOculto(l.saldo, oculto)}</span>
               </span>
             </Link>
           </li>

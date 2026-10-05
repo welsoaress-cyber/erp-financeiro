@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
-import { formatarData, formatarMoeda } from '../../../core/formatos'
+import { formatarData, formatarMoedaOuOculto } from '../../../core/formatos'
 import { ROTULO_TIPO } from '../../lancamentos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import type { Lancamento } from '../../lancamentos/tipos'
@@ -10,10 +10,11 @@ interface Props {
   nomeConta: Map<string, string>
   nomeCategoria: Map<string, string>
   nomeNegocio: Map<string, string>
+  oculto: boolean
 }
 
 /** Últimas movimentações efetivadas: data, descrição, valor, conta, status. */
-export function MovimentacoesRecentes({ lancamentos, nomeConta, nomeCategoria, nomeNegocio }: Props) {
+export function MovimentacoesRecentes({ lancamentos, nomeConta, nomeCategoria, nomeNegocio, oculto }: Props) {
   const rotuloNegocio = (id: string | null) => (id ? nomeNegocio.get(id) ?? '—' : ROTULO_PESSOAL)
   return (
     <CartaoRecolhivel
@@ -35,7 +36,7 @@ export function MovimentacoesRecentes({ lancamentos, nomeConta, nomeCategoria, n
                 </p>
               </div>
               <span className={`shrink-0 font-medium tabular-nums ${l.tipo === 'receita' ? 'text-green-700' : l.tipo === 'despesa' ? 'text-red-700' : 'text-brand-700'}`}>
-                {l.tipo === 'despesa' ? '− ' : l.tipo === 'receita' ? '+ ' : ''}{formatarMoeda(l.valor)}
+                {l.tipo === 'despesa' ? '− ' : l.tipo === 'receita' ? '+ ' : ''}{formatarMoedaOuOculto(l.valor, oculto)}
               </span>
             </li>
           ))}

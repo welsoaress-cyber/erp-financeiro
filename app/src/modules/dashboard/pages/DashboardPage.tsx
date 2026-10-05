@@ -3,11 +3,12 @@ import { Link } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
 import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
+import { Icone } from '../../../core/ui/Icone'
 import { Alerta } from '../../../core/ui/Alerta'
 import { Carregando } from '../../../core/ui/Carregando'
 import { SeletorMes } from '../../../core/ui/SeletorMes'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
-import { formatarMoeda, mesAtualISO } from '../../../core/formatos'
+import { formatarMoedaOuOculto, mesAtualISO } from '../../../core/formatos'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useContas } from '../../contas/api'
 import { useCategorias } from '../../categorias/api'
@@ -23,21 +24,32 @@ import { VisaoPorNegocio } from '../components/VisaoPorNegocio'
 import { MovimentacoesRecentes } from '../components/MovimentacoesRecentes'
 import { HeroBoasVindas } from '../components/HeroBoasVindas'
 
-function Indicador({ rotulo, valor, tom = 'neutro', detalhe }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto'; detalhe?: string }) {
+function Indicador({ rotulo, valor, tom = 'neutro', detalhe, oculto }: { rotulo: string; valor: number; tom?: 'neutro' | 'positivo' | 'negativo' | 'auto'; detalhe?: string; oculto: boolean }) {
   const cor = tom === 'positivo' ? 'text-green-700' : tom === 'negativo' ? 'text-red-700' : tom === 'auto' ? (valor < 0 ? 'text-red-700' : 'text-green-700') : ''
   return (
     <Cartao className="p-5">
       <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{rotulo}</p>
-      <p className={`mt-2 text-2xl font-semibold tabular-nums ${cor}`}>{formatarMoeda(valor)}</p>
+      <p className={`mt-2 text-2xl font-semibold tabular-nums ${cor}`}>{formatarMoedaOuOculto(valor, oculto)}</p>
       {detalhe && <p className="mt-1 text-xs tabular-nums text-ink-muted">{detalhe}</p>}
     </Cartao>
   )
+}
+
+const CHAVE_OCULTAR_VALORES = 'erp.dash.ocultarValores'
+function lerOcultarValores(): boolean {
+  try { return localStorage.getItem(CHAVE_OCULTAR_VALORES) === '1' } catch { return false }
 }
 
 export function DashboardPage() {
   const { organizacao } = useOrganizacao()
   const [mes, setMes] = useState(mesAtualISO())
   const [filtro, setFiltro] = useState<string>('') // '' = todos, 'pessoal', ou id do negócio
+  const [oculto, setOculto] = useState(lerOcultarValores)
+  const alternarOculto = () => setOculto((v) => {
+    const novo = !v
+    try { localStorage.setItem(CHAVE_OCULTAR_VALORES, novo ? '1' : '0') } catch { /* sem storage — vale só até recarregar */ }
+    return novo
+  })
   const contas = useContas()
   const categorias = useCategorias()
   const negocios = useNegocios()
@@ -101,6 +113,12 @@ export function DashboardPage() {
         descricao={`Visão geral de ${organizacao.nome}`}
         acoes={
           <div className="flex flex-wrap items-start gap-2">
+            <button type="button" onClick={alternarOculto} aria-pressed={oculto}
+              title={oculto ? 'Mostrar valores' : 'Ocultar valores (abrir em público)'}
+              className="flex h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-sm text-ink-muted hover:text-ink">
+              <Icone nome={oculto ? 'olho_fechado' : 'olho'} className="size-4" />
+              {oculto ? 'Valores ocultos' : 'Ocultar valores'}
+            </button>
             {temNegocios && (
               <select aria-label="Filtrar por negócio" value={filtro} onChange={(e) => setFiltro(e.target.value)} className="h-10 rounded-md border border-line bg-white px-3 text-sm">
                 <option value="">Todos os negócios</option>
@@ -120,27 +138,27 @@ export function DashboardPage() {
         <div className="space-y-6">
           {/* Resumo */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Indicador rotulo="Saldo total" valor={saldoTotal} tom="auto" />
-            <Indicador rotulo="A receber · 30 dias" valor={receber30} tom="positivo" />
-            <Indicador rotulo="A pagar · 30 dias" valor={pagar30} tom="negativo" />
-            <Indicador rotulo="Resultado do mês (projetado)" valor={totais.resultado + prev.receitas - prev.despesas} tom="auto"
-              detalhe={`Realizado: ${formatarMoeda(totais.resultado)}`} />
+            <Indicador rotulo="Saldo total" valor={saldoTotal} tom="auto" oculto={oculto} />
+            <Indicador rotulo="A receber · 30 dias" valor={receber30} tom="positivo" oculto={oculto} />
+            <Indicador rotulo="A pagar · 30 dias" valor={pagar30} tom="negativo" oculto={oculto} />
+            <Indicador rotulo="Resultado do mês (projetado)" valor={totais.resultado + prev.receitas - prev.despesas} tom="auto" oculto={oculto}
+              detalhe={`Realizado: ${formatarMoedaOuOculto(totais.resultado, oculto)}`} />
           </div>
 
           {/* Agenda financeira */}
-          <AgendaFinanceira itens={agenda.data ?? []} bate={bate} />
+          <AgendaFinanceira itens={agenda.data ?? []} bate={bate} oculto={oculto} />
 
           {/* Pendências */}
-          <PendenciasOperacionais bate={bate} />
+          <PendenciasOperacionais bate={bate} oculto={oculto} />
 
           {/* Visão por negócio */}
-          <VisaoPorNegocio linhas={linhasVisaoPorNegocio} />
+          <VisaoPorNegocio linhas={linhasVisaoPorNegocio} oculto={oculto} />
 
           <ResumoFinanceiro lancamentos={lancamentosMes.data} saldoInicial={saldoInicial.data} negocioPorId={nomeNegocio} filtro={filtro} bate={bate}
-            naturezaDe={new Map((categorias.data ?? []).map((c) => [c.id, c.natureza]))} />
+            naturezaDe={new Map((categorias.data ?? []).map((c) => [c.id, c.natureza]))} oculto={oculto} />
 
           {/* Movimentações recentes */}
-          <MovimentacoesRecentes lancamentos={ultimosFiltrados} nomeConta={nomeConta} nomeCategoria={nomeCategoria} nomeNegocio={nomeNegocio} />
+          <MovimentacoesRecentes lancamentos={ultimosFiltrados} nomeConta={nomeConta} nomeCategoria={nomeCategoria} nomeNegocio={nomeNegocio} oculto={oculto} />
 
           <CartaoRecolhivel
             id="saldo-por-conta"
@@ -154,7 +172,7 @@ export function DashboardPage() {
                 {contasAtivas.map((c) => (
                   <li key={c.id} className="flex items-center justify-between px-6 py-3 text-sm">
                     <span><span className="font-medium">{c.nome}</span> <span className="text-xs text-ink-muted">· {ROTULO_TIPO_CONTA[c.tipo]}{temNegocios ? ` · ${rotuloNegocio(c.negocio_id)}` : ''}</span></span>
-                    <span className={`font-medium tabular-nums ${Number(c.saldo) < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(c.saldo)}</span>
+                    <span className={`font-medium tabular-nums ${Number(c.saldo) < 0 ? 'text-red-700' : ''}`}>{formatarMoedaOuOculto(c.saldo, oculto)}</span>
                   </li>
                 ))}
               </ul>

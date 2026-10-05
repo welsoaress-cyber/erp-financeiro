@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
-import { formatarMoeda } from '../../../core/formatos'
+import { formatarMoedaOuOculto } from '../../../core/formatos'
 import type { Lancamento } from '../../lancamentos/tipos'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import type { SaldoInicialNegocio } from '../api'
@@ -10,27 +10,28 @@ const GRUPO_ZERO: Grupo = { receitaPrevista: 0, receitaRealizada: 0, despesaPrev
 function somar(a: Grupo, b: Grupo): Grupo {
   return { receitaPrevista: a.receitaPrevista + b.receitaPrevista, receitaRealizada: a.receitaRealizada + b.receitaRealizada, despesaPrevista: a.despesaPrevista + b.despesaPrevista, despesaRealizada: a.despesaRealizada + b.despesaRealizada, invPrevisto: a.invPrevisto + b.invPrevisto, invRealizado: a.invRealizado + b.invRealizado, saldoInicial: a.saldoInicial + b.saldoInicial }
 }
-function Linha({ rotulo, previsto, realizado, tom }: { rotulo: string; previsto: number; realizado: number; tom: 'receita' | 'despesa' }) {
+function Linha({ rotulo, previsto, realizado, tom, oculto }: { rotulo: string; previsto: number; realizado: number; tom: 'receita' | 'despesa'; oculto: boolean }) {
   const cor = tom === 'receita' ? 'text-green-700' : 'text-red-700'
   return (
     <tr className="border-b border-line last:border-0">
       <td className="px-4 py-2 font-medium">{rotulo}</td>
-      <td className="px-4 py-2 text-right tabular-nums text-ink-muted">{formatarMoeda(previsto)}</td>
-      <td className={`px-4 py-2 text-right font-medium tabular-nums ${cor}`}>{formatarMoeda(realizado)}</td>
-      <td className={`px-4 py-2 text-right font-medium tabular-nums ${cor}`}>{formatarMoeda(previsto + realizado)}</td>
+      <td className="px-4 py-2 text-right tabular-nums text-ink-muted">{formatarMoedaOuOculto(previsto, oculto)}</td>
+      <td className={`px-4 py-2 text-right font-medium tabular-nums ${cor}`}>{formatarMoedaOuOculto(realizado, oculto)}</td>
+      <td className={`px-4 py-2 text-right font-medium tabular-nums ${cor}`}>{formatarMoedaOuOculto(previsto + realizado, oculto)}</td>
     </tr>
   )
 }
 
 /** Resumo Financeiro do Período: saldo inicial, receitas e despesas (previsto × realizado) e
  * resultado, consolidado ou por negócio. Baseado nos mesmos lançamentos do mês do Financeiro. */
-export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filtro, bate, naturezaDe }: {
+export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filtro, bate, naturezaDe, oculto }: {
   lancamentos: Lancamento[]
   saldoInicial: SaldoInicialNegocio[]
   negocioPorId: Map<string, string>
   filtro: string
   bate: (negocioId: string | null) => boolean
   naturezaDe: Map<string, 'operacional' | 'investimento'>
+  oculto: boolean
 }) {
   const [expandido, setExpandido] = useState(false)
   const grupos = useMemo(() => {
@@ -72,32 +73,32 @@ export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filt
             <tr className="border-b border-line"><th className="px-4 py-2 font-medium"></th><th className="px-4 py-2 text-right font-medium">Previsto</th><th className="px-4 py-2 text-right font-medium">Realizado</th><th className="px-4 py-2 text-right font-medium">Total</th></tr>
           </thead>
           <tbody>
-            <tr className="border-b border-line bg-surface/60"><td className="px-4 py-2 font-medium">Saldo inicial do mês</td><td className="px-4 py-2 text-right text-ink-muted">—</td><td className="px-4 py-2 text-right text-ink-muted">—</td><td className={`px-4 py-2 text-right font-medium tabular-nums ${totalGeral.saldoInicial < 0 ? 'text-red-700' : ''}`}>{formatarMoeda(totalGeral.saldoInicial)}</td></tr>
-            <Linha rotulo="Receitas" previsto={totalGeral.receitaPrevista} realizado={totalGeral.receitaRealizada} tom="receita" />
-            <Linha rotulo="Despesas" previsto={-totalGeral.despesaPrevista} realizado={-totalGeral.despesaRealizada} tom="despesa" />
+            <tr className="border-b border-line bg-surface/60"><td className="px-4 py-2 font-medium">Saldo inicial do mês</td><td className="px-4 py-2 text-right text-ink-muted">—</td><td className="px-4 py-2 text-right text-ink-muted">—</td><td className={`px-4 py-2 text-right font-medium tabular-nums ${totalGeral.saldoInicial < 0 ? 'text-red-700' : ''}`}>{formatarMoedaOuOculto(totalGeral.saldoInicial, oculto)}</td></tr>
+            <Linha rotulo="Receitas" previsto={totalGeral.receitaPrevista} realizado={totalGeral.receitaRealizada} tom="receita" oculto={oculto} />
+            <Linha rotulo="Despesas" previsto={-totalGeral.despesaPrevista} realizado={-totalGeral.despesaRealizada} tom="despesa" oculto={oculto} />
             {(totalGeral.invPrevisto > 0 || totalGeral.invRealizado > 0) && (
               <>
                 <tr className="border-b border-line text-xs text-ink-muted">
                   <td className="px-4 py-1 pl-8">das quais investimentos (ativos)</td>
-                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoeda(-totalGeral.invPrevisto)}</td>
-                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoeda(-totalGeral.invRealizado)}</td>
-                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoeda(-(totalGeral.invPrevisto + totalGeral.invRealizado))}</td>
+                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoedaOuOculto(-totalGeral.invPrevisto, oculto)}</td>
+                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoedaOuOculto(-totalGeral.invRealizado, oculto)}</td>
+                  <td className="px-4 py-1 text-right tabular-nums">{formatarMoedaOuOculto(-(totalGeral.invPrevisto + totalGeral.invRealizado), oculto)}</td>
                 </tr>
                 <tr className="border-b border-line">
                   <td className="px-4 py-2 font-medium">Resultado operacional (sem investimentos)</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{formatarMoeda(totalGeral.receitaPrevista - (totalGeral.despesaPrevista - totalGeral.invPrevisto))}</td>
-                  <td className={`px-4 py-2 text-right font-medium tabular-nums ${totalGeral.receitaRealizada - (totalGeral.despesaRealizada - totalGeral.invRealizado) < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(totalGeral.receitaRealizada - (totalGeral.despesaRealizada - totalGeral.invRealizado))}</td>
-                  <td className="px-4 py-2 text-right font-medium tabular-nums">{formatarMoeda((totalGeral.receitaPrevista + totalGeral.receitaRealizada) - (totalGeral.despesaPrevista + totalGeral.despesaRealizada) + totalGeral.invPrevisto + totalGeral.invRealizado)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{formatarMoedaOuOculto(totalGeral.receitaPrevista - (totalGeral.despesaPrevista - totalGeral.invPrevisto), oculto)}</td>
+                  <td className={`px-4 py-2 text-right font-medium tabular-nums ${totalGeral.receitaRealizada - (totalGeral.despesaRealizada - totalGeral.invRealizado) < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoedaOuOculto(totalGeral.receitaRealizada - (totalGeral.despesaRealizada - totalGeral.invRealizado), oculto)}</td>
+                  <td className="px-4 py-2 text-right font-medium tabular-nums">{formatarMoedaOuOculto((totalGeral.receitaPrevista + totalGeral.receitaRealizada) - (totalGeral.despesaPrevista + totalGeral.despesaRealizada) + totalGeral.invPrevisto + totalGeral.invRealizado, oculto)}</td>
                 </tr>
               </>
             )}
             <tr className="border-b border-line bg-surface/60"><td className="px-4 py-2 font-semibold">Resultado do período</td>
-              <td className="px-4 py-2 text-right font-medium tabular-nums">{formatarMoeda(totalGeral.receitaPrevista - totalGeral.despesaPrevista)}</td>
-              <td className={`px-4 py-2 text-right font-semibold tabular-nums ${totalGeral.receitaRealizada - totalGeral.despesaRealizada < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(totalGeral.receitaRealizada - totalGeral.despesaRealizada)}</td>
-              <td className="px-4 py-2 text-right font-semibold tabular-nums">{formatarMoeda((totalGeral.receitaPrevista + totalGeral.receitaRealizada) - (totalGeral.despesaPrevista + totalGeral.despesaRealizada))}</td>
+              <td className="px-4 py-2 text-right font-medium tabular-nums">{formatarMoedaOuOculto(totalGeral.receitaPrevista - totalGeral.despesaPrevista, oculto)}</td>
+              <td className={`px-4 py-2 text-right font-semibold tabular-nums ${totalGeral.receitaRealizada - totalGeral.despesaRealizada < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoedaOuOculto(totalGeral.receitaRealizada - totalGeral.despesaRealizada, oculto)}</td>
+              <td className="px-4 py-2 text-right font-semibold tabular-nums">{formatarMoedaOuOculto((totalGeral.receitaPrevista + totalGeral.receitaRealizada) - (totalGeral.despesaPrevista + totalGeral.despesaRealizada), oculto)}</td>
             </tr>
             <tr><td className="px-4 py-2 font-semibold">Saldo final estimado do mês</td><td className="px-4 py-2" colSpan={2}></td>
-              <td className={`px-4 py-2 text-right font-semibold tabular-nums ${saldoFinal < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(saldoFinal)}</td>
+              <td className={`px-4 py-2 text-right font-semibold tabular-nums ${saldoFinal < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoedaOuOculto(saldoFinal, oculto)}</td>
             </tr>
           </tbody>
         </table>
@@ -112,10 +113,10 @@ export function ResumoFinanceiro({ lancamentos, saldoInicial, negocioPorId, filt
               {linhas.map((k) => { const g = grupos.get(k) ?? GRUPO_ZERO; const resultado = g.receitaRealizada - g.despesaRealizada; return (
                 <tr key={k} className="border-b border-line last:border-0">
                   <td className="whitespace-nowrap px-6 py-2 font-medium">{nomeDe(k)}</td>
-                  <td className="whitespace-nowrap px-6 py-2 text-right tabular-nums">{formatarMoeda(g.saldoInicial)}</td>
-                  <td className="whitespace-nowrap px-6 py-2 text-right tabular-nums text-green-700">{formatarMoeda(g.receitaRealizada)}</td>
-                  <td className="whitespace-nowrap px-6 py-2 text-right tabular-nums text-red-700">{formatarMoeda(g.despesaRealizada)}</td>
-                  <td className={`whitespace-nowrap px-6 py-2 text-right font-medium tabular-nums ${resultado < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(resultado)}</td>
+                  <td className="whitespace-nowrap px-6 py-2 text-right tabular-nums">{formatarMoedaOuOculto(g.saldoInicial, oculto)}</td>
+                  <td className="whitespace-nowrap px-6 py-2 text-right tabular-nums text-green-700">{formatarMoedaOuOculto(g.receitaRealizada, oculto)}</td>
+                  <td className="whitespace-nowrap px-6 py-2 text-right tabular-nums text-red-700">{formatarMoedaOuOculto(g.despesaRealizada, oculto)}</td>
+                  <td className={`whitespace-nowrap px-6 py-2 text-right font-medium tabular-nums ${resultado < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoedaOuOculto(resultado, oculto)}</td>
                 </tr>
               ) })}
             </tbody>

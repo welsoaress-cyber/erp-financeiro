@@ -5,6 +5,11 @@ export function formatarMoeda(valor: number | string): string {
   return moedaBRL.format(typeof valor === 'string' ? Number(valor) : valor)
 }
 
+/** Mesmo valor, mascarado com "••••••" quando `oculto` — pra abrir o Dashboard em público sem expor números. */
+export function formatarMoedaOuOculto(valor: number | string, oculto: boolean): string {
+  return oculto ? '••••••' : formatarMoeda(valor)
+}
+
 /** Recebe 'AAAA-MM-DD' (date do Postgres) e devolve 'DD/MM/AAAA' sem deslocamento de fuso.
  *  Data vazia/ausente/inválida vira '—': um campo nulo no banco não pode derrubar a tela inteira
  *  (era o "Invalid time value" que quebrava Lançamentos com o ErrorBoundary). */

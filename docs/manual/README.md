@@ -314,6 +314,13 @@ As três etapas são três itens do menu **Suprimentos** — Requisições, Pedi
 
 O botão **"Nova compra"** do Estoque virou **"Nova compra (via requisição)"** e leva direto para Suprimentos → Requisições. Não existe mais caminho paralelo — toda compra passa por aprovação.
 
+**Importar XML de nota (etapa 72).** Botão **"Importar XML de nota"** no topo de Compras (ou o atalho no Dashboard) abre um assistente: escolha o arquivo XML da nota (procNFe) recebida do fornecedor — nada é enviado pra fora, a leitura é só no seu navegador e o arquivo não fica guardado. O assistente:
+- Bloqueia nota cancelada/rejeitada e nota já importada antes (mesma chave).
+- Casa o fornecedor pelo CNPJ; se não achar, mostra os dados da nota e só cadastra com sua confirmação.
+- Pergunta se é **recorrente** (ex.: um SVA tipo curso fechado com fornecedor): se já existe um contrato de fornecedor pra essa pessoa, só dá baixa na fatura em aberto; senão, cria o contrato (próximas notas desse fornecedor já casam direto, sem passar por Compras de novo).
+- Se não for recorrente, cada item vira Material (tenta casar sozinho com o estoque, você confirma ou cadastra um item novo), Despesa ou Serviço; e você marca se já existe requisição pendente ou pedido aberto desse fornecedor — sem marcar nada, vira uma compra avulsa nova (requisição + aprovação + recebimento, tudo numa tela só).
+- Patrimônio e comodato não entram pelo XML ainda — use o recebimento manual pra esses casos.
+
 ## 12. Ordens de Serviço (OS)
 
 ![OS Dashboard](img/16-os-dashboard.png)

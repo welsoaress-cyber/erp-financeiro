@@ -18,6 +18,7 @@ import { CriarRapido } from '../../../core/ui/CriarRapido'
 import { useCategorias } from '../../categorias/api'
 import { useEstoqueItens } from '../../estoque/api'
 import { useContas } from '../../contas/api'
+import { ImportarNotaFiscal } from '../../notas_fiscais/components/ImportarNotaFiscal'
 import {
   useAprovarRequisicao, useCancelarPedido, useCancelarRequisicao, useCriarRequisicao,
   usePedidoItens, usePedidos, useRecebimentos, useRegistrarRecebimento, useRejeitarRequisicao, useRequisicaoItens, useRequisicoes, useTotaisPedido,
@@ -409,6 +410,7 @@ export function ComprasPage() {
   const segmento = location.pathname.split('/')[2] ?? ''
   const aba = ABA_POR_SEGMENTO[segmento] ?? 'requisicoes'
   const [modalNova, setModalNova] = useState(false)
+  const [modalXml, setModalXml] = useState(() => new URLSearchParams(location.search).get('importarXml') === '1')
   const [reqAberta, setReqAberta] = useState<Requisicao | null>(null)
   const [pedAberto, setPedAberto] = useState<Pedido | null>(null)
   const negocios = useNegocios()
@@ -427,7 +429,10 @@ export function ComprasPage() {
   return (
     <>
       <CabecalhoPagina titulo="Compras" descricao="Requisição → Aprovação → Pedido → Recebimento → Nota → Pagamento"
-        acoes={<Botao onClick={() => setModalNova(true)} disabled={!negocioAtual}>Nova requisição</Botao>} />
+        acoes={<div className="flex gap-2">
+          <Botao variante="secundario" onClick={() => setModalXml(true)}>Importar XML de nota</Botao>
+          <Botao onClick={() => setModalNova(true)} disabled={!negocioAtual}>Nova requisição</Botao>
+        </div>} />
 
       {pendentes > 0 && aba !== 'requisicoes' && (
         <div className="mb-4"><Alerta tipo="info" titulo={`${pendentes} requisição(ões) pendente(s) de aprovação`}>Você é o único aprovador; abra a aba Requisições para decidir.</Alerta></div>
@@ -503,6 +508,9 @@ export function ComprasPage() {
       </Modal>
       <Modal aberto={pedAberto !== null} aoFechar={() => setPedAberto(null)} largura="xl" titulo={pedAberto ? codigoPedido(pedAberto) : ''}>
         {pedAberto && <DetalhePedido ped={pedAberto} aoFechar={() => setPedAberto(null)} />}
+      </Modal>
+      <Modal aberto={modalXml} aoFechar={() => setModalXml(false)} largura="xl" titulo="Importar XML de nota fiscal">
+        {modalXml && <ImportarNotaFiscal aoFechar={() => setModalXml(false)} />}
       </Modal>
     </>
   )

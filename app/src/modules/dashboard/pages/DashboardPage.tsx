@@ -113,6 +113,10 @@ export function DashboardPage() {
         descricao={`Visão geral de ${organizacao.nome}`}
         acoes={
           <div className="flex flex-wrap items-start gap-2">
+            <Link to="/compras/pedidos?importarXml=1"
+              className="flex h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-sm text-ink-muted hover:text-ink">
+              Importar XML de nota
+            </Link>
             <button type="button" onClick={alternarOculto} aria-pressed={oculto}
               title={oculto ? 'Mostrar valores' : 'Ocultar valores (abrir em público)'}
               className="flex h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-sm text-ink-muted hover:text-ink">

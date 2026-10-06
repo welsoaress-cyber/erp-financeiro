@@ -259,6 +259,28 @@ export function useComodatos() {
   })
 }
 
+/** Séries já digitadas no recebimento da compra (campo "Série") e ainda não alocadas em nenhum comodato — evita redigitar. */
+export function useSeriesRecebidasPendentes(itemId: string) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chave(organizacao.id), 'series_pendentes', itemId],
+    enabled: !!itemId,
+    queryFn: async (): Promise<string[]> => {
+      const { data: itens, error: e1 } = await supabase.from('compra_itens').select('id').eq('item_id', itemId)
+      if (e1) throw e1
+      const ids = (itens ?? []).map((i) => i.id)
+      if (ids.length === 0) return []
+      const { data: recebidos, error: e2 } = await supabase.from('compra_recebimento_itens').select('numero_serie').in('compra_item_id', ids).not('numero_serie', 'is', null)
+      if (e2) throw e2
+      const { data: usados, error: e3 } = await supabase.from('comodatos').select('numero_serie').eq('organizacao_id', organizacao.id).eq('item_id', itemId)
+      if (e3) throw e3
+      const emUso = new Set((usados ?? []).map((u) => u.numero_serie))
+      const disponiveis = new Set((recebidos ?? []).map((r) => r.numero_serie as string).filter((s) => s && !emUso.has(s)))
+      return [...disponiveis]
+    },
+  })
+}
+
 function useRpcComodato<T extends Record<string, unknown>>(fn: string) {
   const invalidar = useInvalidarEstoque()
   const { organizacao } = useOrganizacao()

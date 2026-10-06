@@ -12,7 +12,7 @@ import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
 import { codigoContrato } from '../../contratos/tipos'
 import { useTecnicos } from '../../os/api'
-import { useComodatos, useEstoqueItens, usePerdaComodato, useRecolherComodato, useRegistrarComodato, useTrocarComodato } from '../api'
+import { useComodatos, useEstoqueItens, usePerdaComodato, useRecolherComodato, useRegistrarComodato, useSeriesRecebidasPendentes, useTrocarComodato } from '../api'
 import { ROTULO_COMODATO, type Comodato } from '../tipos'
 
 const TOM = { instalado: 'ok', recolhido: 'neutro', trocado: 'info', perdido: 'alerta' } as const
@@ -32,6 +32,10 @@ export function AbaComodato({ negocioId }: { negocioId: string }) {
   const [modal, setModal] = useState<'registrar' | null>(null)
   const [acao, setAcao] = useState<{ tipo: 'recolher' | 'trocar' | 'perda'; c: Comodato } | null>(null)
   const [itemId, setItemId] = useState(''); const [serie, setSerie] = useState(''); const [pessoaId, setPessoaId] = useState(''); const [contratoId, setContratoId] = useState('')
+  const seriesPendentes = useSeriesRecebidasPendentes(itemId)
+  // já digitou a série no recebimento da compra? se só sobrou uma pendente de alocar, sugere sem redigitar
+  const serieSugerida = seriesPendentes.data?.length === 1 ? seriesPendentes.data[0] : ''
+  const serieEfetiva = serie || serieSugerida
   // entrega de verdade tira do estoque; desmarcar é só para equipamento que já estava na casa do cliente
   const [baixarEstoque, setBaixarEstoque] = useState(true)
   const [motivo, setMotivo] = useState(''); const [descartar, setDescartar] = useState(false); const [defeito, setDefeito] = useState(false); const [tecnicoId, setTecnicoId] = useState(''); const [serieNova, setSerieNova] = useState('')
@@ -99,8 +103,14 @@ export function AbaComodato({ negocioId }: { negocioId: string }) {
           <div className="space-y-4">
             {registrar.error != null && <Alerta tipo="erro">{mensagemDeErro(registrar.error)}</Alerta>}
             <p className="text-xs text-ink-muted">Para equipamento que já estava na casa do cliente antes do sistema. Não mexe no estoque.</p>
-            <Selecao rotulo="Equipamento" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(itens.data ?? []).filter((i) => i.negocio_id === negocioId && i.ativo).map((i) => ({ valor: i.id, rotulo: `${i.codigo} · ${i.nome}` }))]} value={itemId} onChange={(e) => setItemId(e.target.value)} />
-            <Campo rotulo="Número de série" value={serie} onChange={(e) => setSerie(e.target.value)} maxLength={40} />
+            <Selecao rotulo="Equipamento" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(itens.data ?? []).filter((i) => i.negocio_id === negocioId && i.ativo).map((i) => ({ valor: i.id, rotulo: `${i.codigo} · ${i.nome}` }))]} value={itemId} onChange={(e) => { setItemId(e.target.value); setSerie('') }} />
+            <Campo rotulo="Número de série" value={serieEfetiva} onChange={(e) => setSerie(e.target.value)} maxLength={40} list="series-pendentes" />
+            {(seriesPendentes.data?.length ?? 0) > 0 && (
+              <>
+                <datalist id="series-pendentes">{seriesPendentes.data!.map((s) => <option key={s} value={s} />)}</datalist>
+                <p className="-mt-2 text-xs text-ink-muted">Já recebida no estoque: {seriesPendentes.data!.join(', ')}{seriesPendentes.data!.length === 1 ? ' (preenchida sozinha)' : ' — escolha uma'}</p>
+              </>
+            )}
             <div className="rounded-md border border-line bg-surface/60 p-3">
               <label className="flex items-center gap-2 text-sm font-medium">
                 <input type="checkbox" checked={baixarEstoque} onChange={(e) => setBaixarEstoque(e.target.checked)} className="size-4 accent-brand-600" />
@@ -114,8 +124,8 @@ export function AbaComodato({ negocioId }: { negocioId: string }) {
             </div>
             <Selecao rotulo="Cliente" opcoes={[{ valor: '', rotulo: 'Selecione…' }, ...(pessoas.data ?? []).filter((p) => p.ativo).map((p) => ({ valor: p.id, rotulo: p.nome }))]} value={pessoaId} onChange={(e) => { setPessoaId(e.target.value); setContratoId('') }} />
             <Selecao rotulo="Contrato (opcional)" opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...contratosDoCliente.map((c) => ({ valor: c.id, rotulo: codigoContrato(c) }))]} value={contratoId} onChange={(e) => setContratoId(e.target.value)} disabled={!pessoaId} />
-            <div className="flex justify-end"><Botao disabled={!itemId || serie.trim().length < 3 || !pessoaId} carregando={registrar.isPending}
-              onClick={() => registrar.mutate({ p_negocio_id: negocioId, p_item_id: itemId, p_serie: serie.trim(), p_pessoa_id: pessoaId, p_contrato_id: contratoId || null, p_baixar_estoque: baixarEstoque }, { onSuccess: () => setModal(null) })}>Registrar</Botao></div>
+            <div className="flex justify-end"><Botao disabled={!itemId || serieEfetiva.trim().length < 3 || !pessoaId} carregando={registrar.isPending}
+              onClick={() => registrar.mutate({ p_negocio_id: negocioId, p_item_id: itemId, p_serie: serieEfetiva.trim(), p_pessoa_id: pessoaId, p_contrato_id: contratoId || null, p_baixar_estoque: baixarEstoque }, { onSuccess: () => setModal(null) })}>Registrar</Botao></div>
           </div>
         )}
       </Modal>

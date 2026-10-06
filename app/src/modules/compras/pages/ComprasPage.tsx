@@ -18,6 +18,8 @@ import { CriarRapido } from '../../../core/ui/CriarRapido'
 import { useCategorias } from '../../categorias/api'
 import { useEstoqueItens } from '../../estoque/api'
 import { useContas } from '../../contas/api'
+import { useContratos } from '../../contratos/api'
+import { codigoContrato } from '../../contratos/tipos'
 import { ImportarNotaFiscal } from '../../notas_fiscais/components/ImportarNotaFiscal'
 import {
   useAprovarRequisicao, useCancelarPedido, useCancelarRequisicao, useCriarRequisicao, useItensDosPedidos,
@@ -88,6 +90,7 @@ function DetalheRequisicao({ req, aoFechar }: { req: Requisicao; aoFechar: () =>
   const pessoas = usePessoas()
   const criarPessoa = useCriarPessoa()
   const categorias = useCategorias()
+  const contratos = useContratos()
   const aprovar = useAprovarRequisicao()
   const rejeitar = useRejeitarRequisicao()
   const cancelar = useCancelarRequisicao()
@@ -103,6 +106,8 @@ function DetalheRequisicao({ req, aoFechar }: { req: Requisicao; aoFechar: () =>
   const [valores, setValores] = useState<Record<string, { valor: string; categoria: string; contrato: string }>>({})
   const [erro, setErro] = useState<string | null>(null)
   const catsDespesa = (categorias.data ?? []).filter((c) => c.tipo === 'despesa' && c.ativo)
+  const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
+  const contratosAtivos = (contratos.data ?? []).filter((c) => c.status !== 'encerrado')
 
   const totalCalculado = useMemo(() => {
     const lista = itens.data ?? []
@@ -153,7 +158,7 @@ function DetalheRequisicao({ req, aoFechar }: { req: Requisicao; aoFechar: () =>
       {req.justificativa && <p className="rounded-md border border-line bg-surface/60 p-2 text-sm">{req.justificativa}</p>}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-3 py-2 font-medium">Item</th><th className="px-3 py-2 font-medium">Destino</th><th className="px-3 py-2 text-right font-medium">Qtd</th>{modo === 'aprovar' && <><th className="px-3 py-2 text-right font-medium">Valor unit.</th><th className="px-3 py-2 font-medium">Categoria</th></>}</tr></thead>
+          <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-3 py-2 font-medium">Item</th><th className="px-3 py-2 font-medium">Destino</th><th className="px-3 py-2 text-right font-medium">Qtd</th>{modo === 'aprovar' && <><th className="px-3 py-2 text-right font-medium">Valor unit.</th><th className="px-3 py-2 font-medium">Categoria</th><th className="px-3 py-2 font-medium">Contrato (comprou pra esse cliente?)</th></>}</tr></thead>
           <tbody>
             {(itens.data ?? []).map((i) => (
               <tr key={i.id} className="border-b border-line last:border-0">
@@ -164,6 +169,7 @@ function DetalheRequisicao({ req, aoFechar }: { req: Requisicao; aoFechar: () =>
                   <>
                     <td className="px-3 py-2"><input type="number" step="0.01" min="0" className="h-9 w-28 rounded-md border border-line bg-white px-2 text-right text-sm" value={valores[i.id]?.valor ?? ''} onChange={(e) => setValores((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { valor: '', categoria: '', contrato: '' }), valor: e.target.value } }))} /></td>
                     <td className="px-3 py-2"><select className="h-9 w-40 rounded-md border border-line bg-white px-2 text-sm" value={valores[i.id]?.categoria ?? ''} onChange={(e) => setValores((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { valor: '', categoria: '', contrato: '' }), categoria: e.target.value } }))}><option value="">Padrão do negócio</option>{catsDespesa.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></td>
+                    <td className="px-3 py-2"><select className="h-9 w-48 rounded-md border border-line bg-white px-2 text-sm" value={valores[i.id]?.contrato ?? ''} onChange={(e) => setValores((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { valor: '', categoria: '', contrato: '' }), contrato: e.target.value } }))}><option value="">Nenhum (estoque geral)</option>{contratosAtivos.map((c) => <option key={c.id} value={c.id}>{codigoContrato(c)} · {nomePessoa.get(c.pessoa_id) ?? '—'}</option>)}</select></td>
                   </>
                 )}
               </tr>

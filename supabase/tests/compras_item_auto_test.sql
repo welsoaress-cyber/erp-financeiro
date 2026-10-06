@@ -1,4 +1,5 @@
--- Testes da migration 0130 (recebimento sem item_id cria o item em estoque_itens sozinho). Saída "OK".
+-- Testes das migrations 0130 (recebimento sem item_id cria o item em estoque_itens sozinho)
+-- e 0131 (recebimento propaga compra_itens.contrato_id pro lançamento). Saída "OK".
 \set ON_ERROR_STOP on
 begin;
 set local role authenticated;
@@ -48,6 +49,54 @@ do $$ declare v r%rowtype; c_id uuid; ci_id uuid; reb public.compra_recebimentos
   assert (select quantidade_atual from public.estoque_itens where id = v_item_id) = 1, 'T1 quantidade entrou';
   assert (select valor_custo from public.estoque_itens where id = v_item_id) = 150, 'T1 custo médio = valor pago';
   assert (select status from public.lancamentos where id = reb.lancamento_id) = 'efetivado', 'T1 lançamento pago';
+end $$;
+
+-- T2 (0131): todos os itens do recebimento com o MESMO contrato → lançamento nasce vinculado
+do $$ declare v r%rowtype; v_cliente uuid; v_plano uuid; v_ct uuid; req public.compra_requisicoes; c public.compras; ci_id uuid; reb public.compra_recebimentos; begin
+  select * into v from r;
+  insert into public.pessoas (organizacao_id, nome) values (v.org, 'Cliente AutoItem') returning id into v_cliente;
+  insert into public.planos (organizacao_id, negocio_id, nome, valor_tabela, periodicidade) values (v.org, v.neg, 'Plano AutoItem', 100, 'mensal') returning id into v_plano;
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento, tipo_financeiro)
+    values (v.org, v.neg, v_cliente, v_plano, 100, 'mensal', current_date, 10, 'receita') returning id into v_ct;
+
+  req := public.criar_requisicao_compra(v.neg, jsonb_build_array(
+    jsonb_build_object('descricao', 'Roteador pro cliente', 'quantidade', 1, 'destino', 'comodato')
+  ), 'teste vínculo contrato');
+  c := public.aprovar_requisicao_compra(req.id, v.forn, jsonb_build_array(
+    jsonb_build_object('valor_unitario', 80.00, 'categoria_id', v.cat, 'contrato_id', v_ct::text)
+  ), current_date, current_date, 'à vista', 0, 0, null);
+  select id into ci_id from public.compra_itens where compra_id = c.id;
+  assert (select contrato_id from public.compra_itens where id = ci_id) = v_ct, 'T2 contrato_id gravado na aprovação';
+
+  reb := public.registrar_recebimento_compra(c.id,
+    jsonb_build_array(jsonb_build_object('compra_item_id', ci_id::text, 'quantidade', 1)),
+    current_date, 'NF-RT', null, 80.00, null, v.conta, true, 1, v.cat);
+  assert (select contrato_id from public.lancamentos where id = reb.lancamento_id) = v_ct, 'T2 lançamento vinculado ao contrato sozinho';
+end $$;
+
+-- T3 (0131): recebimento mistura item com contrato e item sem contrato → lançamento fica sem vínculo (não atribui errado)
+do $$ declare v r%rowtype; v_cliente uuid; v_plano uuid; v_ct uuid; req public.compra_requisicoes; c public.compras; ci1 uuid; ci2 uuid; reb public.compra_recebimentos; begin
+  select * into v from r;
+  insert into public.pessoas (organizacao_id, nome) values (v.org, 'Cliente AutoItem 2') returning id into v_cliente;
+  insert into public.planos (organizacao_id, negocio_id, nome, valor_tabela, periodicidade) values (v.org, v.neg, 'Plano AutoItem 2', 100, 'mensal') returning id into v_plano;
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento, tipo_financeiro)
+    values (v.org, v.neg, v_cliente, v_plano, 100, 'mensal', current_date, 10, 'receita') returning id into v_ct;
+
+  req := public.criar_requisicao_compra(v.neg, jsonb_build_array(
+    jsonb_build_object('descricao', 'Item do cliente', 'quantidade', 1, 'destino', 'comodato'),
+    jsonb_build_object('descricao', 'Item de estoque geral', 'quantidade', 1, 'destino', 'estoque')
+  ), 'teste vínculo misto');
+  c := public.aprovar_requisicao_compra(req.id, v.forn, jsonb_build_array(
+    jsonb_build_object('valor_unitario', 50.00, 'categoria_id', v.cat, 'contrato_id', v_ct::text),
+    jsonb_build_object('valor_unitario', 50.00, 'categoria_id', v.cat)
+  ), current_date, current_date, 'à vista', 0, 0, null);
+  select id into ci1 from public.compra_itens where compra_id = c.id and descricao = 'Item do cliente';
+  select id into ci2 from public.compra_itens where compra_id = c.id and descricao = 'Item de estoque geral';
+
+  reb := public.registrar_recebimento_compra(c.id,
+    jsonb_build_array(jsonb_build_object('compra_item_id', ci1::text, 'quantidade', 1), jsonb_build_object('compra_item_id', ci2::text, 'quantidade', 1)),
+    current_date, 'NF-MISTO', null, 100.00, null, v.conta, true, 1, v.cat);
+  assert (select contrato_id from public.lancamentos where id = reb.lancamento_id) is null, 'T3 lançamento misto fica sem vínculo';
 end $$;
 
 rollback;

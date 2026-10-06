@@ -1,11 +1,10 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { Cartao } from '../../../core/ui/Cartao'
 import { Botao } from '../../../core/ui/Botao'
 import { Alerta } from '../../../core/ui/Alerta'
-import { CartaoRecolhivel } from '../../../core/ui/CartaoRecolhivel'
 import { Campo } from '../../../core/ui/Campo'
 import { Selecao } from '../../../core/ui/Selecao'
 import { Carregando } from '../../../core/ui/Carregando'
@@ -28,34 +27,7 @@ import { useCartoesConfig } from '../../cartoes/api'
 import { vencimentoFaturaReal } from '../../cartoes/tipos'
 import { useCancelarConfianca, useConfiancasAtivas, useDarConfianca, type Confianca } from '../confiancas'
 import { BotaoAtualizarBloqueios } from '../components/BotaoAtualizarBloqueios'
-import { ConsultaCliente } from '../components/ConsultaCliente'
-
-const diasAtraso = (vencimento: string) => Math.max(0, Math.round((Date.parse(hojeISO()) - Date.parse(vencimento)) / 86400000))
-
-/** Previstos vencidos antes do mês corrente: fica visível não importa em qual mês o usuário esteja navegando. */
-function PendenciasAnteriores({ tipo, nomePessoa, aoAbrirAcao }: { tipo: 'receita' | 'despesa'; nomePessoa: Map<string, string>; aoAbrirAcao: (l: Lancamento) => void }) {
-  const receber = tipo === 'receita'
-  const vencidos = useLancamentosVencidosAntes(tipo, mesAtualISO())
-  if (!vencidos.data || vencidos.data.length === 0) return null
-  const total = vencidos.data.reduce((s, l) => s + l.valor, 0)
-  return (
-    <CartaoRecolhivel
-      id={`pendencias-anteriores-${tipo}`}
-      recolhidoPadrao={false}
-      titulo={<h2 className="text-sm font-semibold text-red-800">{vencidos.data.length} pendência(s) de meses anteriores · {formatarMoeda(total)}</h2>}
-    >
-      <ul className="divide-y divide-line">
-        {vencidos.data.slice(0, 8).map((l) => (
-          <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 px-6 py-2.5 text-sm">
-            <span><b>{l.pessoa_id ? nomePessoa.get(l.pessoa_id) ?? '—' : '—'}</b> · {l.descricao} · vencido em {formatarData(l.data_vencimento)} (há {diasAtraso(l.data_vencimento)} dia(s)) · {formatarMoeda(l.valor)}</span>
-            <button type="button" className="font-medium text-brand-700 underline" onClick={() => aoAbrirAcao(l)}>{receber ? 'Receber' : 'Pagar'}</button>
-          </li>
-        ))}
-      </ul>
-      {vencidos.data.length > 8 && <p className="px-6 py-2 text-xs text-ink-muted">+ {vencidos.data.length - 8} outro(s).</p>}
-    </CartaoRecolhivel>
-  )
-}
+import { PendenciasAnteriores } from '../components/PendenciasAnteriores'
 
 type Situacao = 'aberto' | 'vencido' | 'pago'
 const situacaoDe = (l: Lancamento): Situacao => (l.status === 'efetivado' ? 'pago' : l.data_vencimento < hojeISO() ? 'vencido' : 'aberto')
@@ -125,6 +97,16 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState(''); const [encargos, setEncargos] = useState(''); const [contaBaixa, setContaBaixa] = useState('')
   const categorias = useCategorias()
   const criarAjuste = useCriarLancamento()
+  // vindo da Cobrança ("Receber" numa pendência de mês anterior): abre a baixa direto
+  const [searchParams, setSearchParams] = useSearchParams()
+  const vencidosAnteriores = useLancamentosVencidosAntes(tipo, mesAtualISO())
+  useEffect(() => {
+    const abrirId = searchParams.get('abrir')
+    if (!abrirId) return
+    const l = vencidosAnteriores.data?.find((x) => x.id === abrirId)
+    if (l) { setAcao({ tipo: 'baixa', l }); setSearchParams((p) => { p.delete('abrir'); return p }, { replace: true }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, vencidosAnteriores.data])
   // promessa de pagamento (voto de confiança): só faz sentido em contas a receber
   const confiancas = useConfiancasAtivas(receber)
   const darConfianca = useDarConfianca()
@@ -235,8 +217,12 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     <>
       <CabecalhoPagina titulo={receber ? 'Contas a receber' : 'Contas a pagar'} descricao={receber ? 'Faturas e receitas do mês: previsto × realizado' : 'Compromissos com fornecedores: previsto × realizado'} />
       {receber && <BotaoAtualizarBloqueios filtroNegocio={filtroNegocio} />}
-      {receber && <ConsultaCliente />}
-      <div className="mb-4"><PendenciasAnteriores tipo={tipo} nomePessoa={nomePessoa} aoAbrirAcao={(l) => setAcao({ tipo: 'baixa', l })} /></div>
+      {!receber && (
+        <PendenciasAnteriores tipo={tipo} nomePessoa={nomePessoa} aoAbrirAcao={(id) => {
+          const l = vencidosAnteriores.data?.find((x) => x.id === id)
+          if (l) setAcao({ tipo: 'baixa', l })
+        }} />
+      )}
       <BarraFiltros>
         <CampoBusca valor={busca} aoMudar={setBusca} rotulo={receber ? 'Pesquisar cliente, login ou descrição…' : 'Pesquisar fornecedor ou descrição…'} />
         <ContagemFiltro visiveis={lista.length} total={base.length} singular="lançamento" plural="lançamentos" />

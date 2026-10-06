@@ -10,7 +10,7 @@ import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
 import { formatarData, formatarMoeda } from '../../../core/formatos'
 import { supabase } from '../../../core/supabase/client'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useNegocios } from '../../negocios/api'
 import { usePessoas } from '../../pessoas/api'
 import { useContratos } from '../../contratos/api'
@@ -18,6 +18,8 @@ import { useConfigsNotificacao } from '../../notificacoes/api'
 import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { codigoContrato } from '../../contratos/tipos'
 import { TelaBoletos } from '../../boletos/components/TelaBoletos'
+import { ConsultaCliente } from '../components/ConsultaCliente'
+import { PendenciasAnteriores } from '../components/PendenciasAnteriores'
 
 interface Bloqueio { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; tipo: 'bloqueio' | 'desbloqueio'; status: string; motivo: string; confianca_furada: boolean; criado_em: string }
 interface Confianca { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; segurar_ate: string; observacao: string | null; status: string }
@@ -27,6 +29,7 @@ interface PixCobranca { id: string; negocio_id: string; pessoa_id: string | null
 export function CobrancaPage() {
   const { organizacao } = useOrganizacao()
   const qc = useQueryClient()
+  const navegar = useNavigate()
   const negocios = useNegocios()
   const pessoas = usePessoas()
   const contratos = useContratos()
@@ -149,6 +152,9 @@ export function CobrancaPage() {
           </Alerta>
         </div>
       )}
+
+      <ConsultaCliente />
+      <PendenciasAnteriores tipo="receita" nomePessoa={nomePessoa} aoAbrirAcao={(id) => navegar(`/financeiro/contas-a-receber?abrir=${id}`)} />
 
       <div className="space-y-6">
         <Cartao className="p-0">

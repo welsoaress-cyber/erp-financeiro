@@ -12,6 +12,9 @@ interface Props {
 }
 
 const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+// Lista de clientes/contratos pode passar de 10 mil linhas (ex.: 12 mil clientes) — nunca despeja tudo
+// no DOM de uma vez, mesmo com a busca vazia. Digitar refina e sempre cabe no limite.
+const LIMITE_EXIBIDO = 50
 
 /** Campo tipo "select" com busca: digita e filtra as opções por nome, em vez de rolar uma lista longa. */
 export function SelecaoBusca({ rotulo, opcoes, value, onChange, placeholder, ajuda, erro, disabled }: Props) {
@@ -24,7 +27,9 @@ export function SelecaoBusca({ rotulo, opcoes, value, onChange, placeholder, aju
   useEffect(() => { setTexto(selecionada?.rotulo ?? '') }, [selecionada?.rotulo])
 
   const busca = normalizar(texto)
-  const filtradas = !aberto ? [] : busca && texto !== selecionada?.rotulo ? opcoes.filter((o) => normalizar(o.rotulo).includes(busca)) : opcoes
+  const todasFiltradas = !aberto ? [] : busca && texto !== selecionada?.rotulo ? opcoes.filter((o) => normalizar(o.rotulo).includes(busca)) : opcoes
+  const filtradas = todasFiltradas.slice(0, LIMITE_EXIBIDO)
+  const resto = todasFiltradas.length - filtradas.length
 
   function escolher(o: { valor: string; rotulo: string }) {
     onChange(o.valor)
@@ -55,6 +60,7 @@ export function SelecaoBusca({ rotulo, opcoes, value, onChange, placeholder, aju
                 className="block w-full px-3 py-1.5 text-left text-sm hover:bg-surface">{o.rotulo}</button>
             </li>
           ))}
+          {resto > 0 && <li className="px-3 py-1.5 text-xs text-ink-muted">+ {resto} outro(s) — digite pra refinar a busca</li>}
         </ul>
       )}
       {aberto && busca && filtradas.length === 0 && <p className="absolute z-10 mt-1 w-full rounded-md border border-line bg-white px-3 py-1.5 text-sm text-ink-muted shadow-lg">Nada encontrado.</p>}

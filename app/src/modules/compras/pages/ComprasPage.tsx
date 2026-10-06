@@ -7,6 +7,7 @@ import { Alerta } from '../../../core/ui/Alerta'
 import { Campo } from '../../../core/ui/Campo'
 import { AreaTexto } from '../../../core/ui/AreaTexto'
 import { Selecao } from '../../../core/ui/Selecao'
+import { SelecaoBusca } from '../../../core/ui/SelecaoBusca'
 import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { Carregando } from '../../../core/ui/Carregando'
@@ -169,7 +170,12 @@ function DetalheRequisicao({ req, aoFechar }: { req: Requisicao; aoFechar: () =>
                   <>
                     <td className="px-3 py-2"><input type="number" step="0.01" min="0" className="h-9 w-28 rounded-md border border-line bg-white px-2 text-right text-sm" value={valores[i.id]?.valor ?? ''} onChange={(e) => setValores((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { valor: '', categoria: '', contrato: '' }), valor: e.target.value } }))} /></td>
                     <td className="px-3 py-2"><select className="h-9 w-40 rounded-md border border-line bg-white px-2 text-sm" value={valores[i.id]?.categoria ?? ''} onChange={(e) => setValores((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { valor: '', categoria: '', contrato: '' }), categoria: e.target.value } }))}><option value="">Padrão do negócio</option>{catsDespesa.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></td>
-                    <td className="px-3 py-2"><select className="h-9 w-48 rounded-md border border-line bg-white px-2 text-sm" value={valores[i.id]?.contrato ?? ''} onChange={(e) => setValores((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { valor: '', categoria: '', contrato: '' }), contrato: e.target.value } }))}><option value="">Nenhum (estoque geral)</option>{contratosAtivos.map((c) => <option key={c.id} value={c.id}>{codigoContrato(c)} · {nomePessoa.get(c.pessoa_id) ?? '—'}</option>)}</select></td>
+                    <td className="px-3 py-2 w-56">
+                      <SelecaoBusca rotulo="" placeholder="Nenhum (estoque geral)"
+                        opcoes={contratosAtivos.map((c) => ({ valor: c.id, rotulo: `${codigoContrato(c)} · ${nomePessoa.get(c.pessoa_id) ?? '—'}` }))}
+                        value={valores[i.id]?.contrato ?? ''}
+                        onChange={(valor) => setValores((v) => ({ ...v, [i.id]: { ...(v[i.id] ?? { valor: '', categoria: '', contrato: '' }), contrato: valor } }))} />
+                    </td>
                   </>
                 )}
               </tr>

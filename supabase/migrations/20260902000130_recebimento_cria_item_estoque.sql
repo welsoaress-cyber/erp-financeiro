@@ -174,10 +174,14 @@ $$;
 -- repõe a entrada de cada recebimento já feito, na ordem em que aconteceram,
 -- preservando o custo médio ponderado histórico.
 -- -----------------------------------------------------------------------------
+-- Nota: roda como dono da migration (SQL Editor é 'postgres', sem auth.uid() de usuário
+-- logado) — por isso NÃO chama entrada_estoque (exige exigir_membro/auth.uid()) e replica
+-- a mesma lógica (custo médio ponderado) direto nas tabelas.
 do $$
 declare
   ci record; ri record; c public.compras%rowtype;
   v_cat_estoque uuid; v_codigo text; v_n int; v_item_id uuid;
+  v_qtd_atual numeric; v_custo_atual numeric; v_valor_total numeric; v_unit numeric;
 begin
   perform set_config('erp.motor', 'on', true);
   for ci in
@@ -206,7 +210,17 @@ begin
       where cri.compra_item_id = ci.id
       order by cr.data, cri.id
     loop
-      perform public.entrada_estoque(v_item_id, ri.quantidade, round(ri.quantidade * ci.valor_unitario, 2), ri.data, 'compra', ri.lancamento_id, 'Backfill (0130) · recebimento sem item vinculado');
+      v_valor_total := round(ri.quantidade * ci.valor_unitario, 2);
+      v_unit := round(v_valor_total / ri.quantidade, 4);
+      select quantidade_atual, valor_custo into v_qtd_atual, v_custo_atual from public.estoque_itens where id = v_item_id;
+      update public.estoque_itens
+         set valor_custo = case when v_qtd_atual + ri.quantidade > 0
+                                 then round((v_qtd_atual * v_custo_atual + v_valor_total) / (v_qtd_atual + ri.quantidade), 4)
+                                 else v_custo_atual end,
+             quantidade_atual = v_qtd_atual + ri.quantidade
+       where id = v_item_id;
+      insert into public.estoque_movimentacoes (organizacao_id, negocio_id, item_id, tipo, origem, quantidade, valor_unitario, valor_total, data, lancamento_id, observacao)
+      values (c.organizacao_id, c.negocio_id, v_item_id, 'entrada', 'compra', ri.quantidade, v_unit, v_valor_total, ri.data, ri.lancamento_id, 'Backfill (0130) · recebimento sem item vinculado');
     end loop;
   end loop;
 end $$;

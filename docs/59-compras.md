@@ -144,6 +144,21 @@ Na tela do recebimento, três colunas lado a lado: **pedido × recebido × nota*
 | Recebimento sem nota (chega antes) | Nota é opcional no recebimento; o alerta de divergência só liga quando ela é informada |
 | Estorno de compra recebida | Cancelamento de compra recebida não apaga nada: estorna o lançamento e devolve ao estoque por movimentação nova, tudo auditado |
 
+## Correção (0130) — recebimento com item novo não entrava no estoque
+
+Bug real, achado em uso: requisição com item **novo** (descrição livre, sem escolher um item
+já existente) completava Aprovação → Pedido → Recebimento normalmente — gerava a despesa —
+mas nunca criava o item em `estoque_itens` nem dava entrada, porque `entrada_estoque` só
+rodava quando `compra_itens.item_id` já vinha preenchido. O dinheiro saía, o material não
+entrava em lugar nenhum.
+
+`destino='patrimonio'` já não tinha esse problema (cria o bem sozinho, 0094). A 0130 estende
+o mesmo princípio a `estoque`/`comodato`: recebimento sem `item_id` cria o item sozinho
+(categoria "Equipamentos" do negócio, ou a primeira ativa que existir) e vincula
+`compra_itens.item_id` antes de dar entrada — e inclui backfill para o que já tinha
+acontecido antes dela existir (recompõe o histórico de entradas a partir dos recebimentos já
+registrados, preservando o custo médio ponderado).
+
 ## 9. O que ficou de fora de propósito
 
 - **Cotação com vários fornecedores** e mapa comparativo: só vale com volume de compra.

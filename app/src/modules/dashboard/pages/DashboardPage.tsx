@@ -35,21 +35,13 @@ function Indicador({ rotulo, valor, tom = 'neutro', detalhe, oculto }: { rotulo:
   )
 }
 
-const CHAVE_OCULTAR_VALORES = 'erp.dash.ocultarValores'
-function lerOcultarValores(): boolean {
-  try { return localStorage.getItem(CHAVE_OCULTAR_VALORES) === '1' } catch { return false }
-}
-
 export function DashboardPage() {
   const { organizacao } = useOrganizacao()
   const [mes, setMes] = useState(mesAtualISO())
   const [filtro, setFiltro] = useState<string>('') // '' = todos, 'pessoal', ou id do negócio
-  const [oculto, setOculto] = useState(lerOcultarValores)
-  const alternarOculto = () => setOculto((v) => {
-    const novo = !v
-    try { localStorage.setItem(CHAVE_OCULTAR_VALORES, novo ? '1' : '0') } catch { /* sem storage — vale só até recarregar */ }
-    return novo
-  })
+  // sempre começa oculto — quem quiser ver, clica "Mostrar valores"; não guarda entre acessos (ex.: logo após logar)
+  const [oculto, setOculto] = useState(true)
+  const alternarOculto = () => setOculto((v) => !v)
   const contas = useContas()
   const categorias = useCategorias()
   const negocios = useNegocios()

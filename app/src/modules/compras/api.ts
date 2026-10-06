@@ -59,6 +59,22 @@ export function usePedidoItens(pedidoId?: string | null) {
   })
 }
 
+/** Descrições dos itens de vários pedidos de uma vez (lista de Pedidos — uma linha por pedido, não um detalhe). */
+export function useItensDosPedidos(pedidoIds: string[]) {
+  const ids = [...pedidoIds].sort()
+  return useQuery({
+    queryKey: ['compras', 'ped_itens_varios', ids],
+    enabled: ids.length > 0,
+    queryFn: async (): Promise<Map<string, string[]>> => {
+      const { data, error } = await supabase.from('compra_itens').select('compra_id, descricao').in('compra_id', ids).order('id')
+      if (error) throw error
+      const mapa = new Map<string, string[]>()
+      for (const i of data ?? []) mapa.set(i.compra_id, [...(mapa.get(i.compra_id) ?? []), i.descricao])
+      return mapa
+    },
+  })
+}
+
 export function useTotaisPedido(pedidoId?: string | null) {
   return useQuery({
     queryKey: ['compras', 'ped_totais', pedidoId ?? 'nenhum'],

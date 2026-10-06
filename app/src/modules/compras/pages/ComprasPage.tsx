@@ -20,7 +20,7 @@ import { useEstoqueItens } from '../../estoque/api'
 import { useContas } from '../../contas/api'
 import { ImportarNotaFiscal } from '../../notas_fiscais/components/ImportarNotaFiscal'
 import {
-  useAprovarRequisicao, useCancelarPedido, useCancelarRequisicao, useCriarRequisicao,
+  useAprovarRequisicao, useCancelarPedido, useCancelarRequisicao, useCriarRequisicao, useItensDosPedidos,
   usePedidoItens, usePedidos, useRecebimentos, useRegistrarRecebimento, useRejeitarRequisicao, useRequisicaoItens, useRequisicoes, useTotaisPedido,
 } from '../api'
 import { codigoPedido, codigoRequisicao, ROTULO_DESTINO, ROTULO_STATUS_PEDIDO, ROTULO_STATUS_REQ, type DestinoCompra, type Requisicao, type Pedido } from '../tipos'
@@ -425,6 +425,7 @@ export function ComprasPage() {
   const reqFiltradas = (requisicoes.data ?? []).filter((r) => !negocioAtual || r.negocio_id === negocioAtual)
   const pedFiltrados = (pedidos.data ?? []).filter((p) => !negocioAtual || p.negocio_id === negocioAtual)
   const pendentes = reqFiltradas.filter((r) => r.status === 'pendente').length
+  const itensPedidos = useItensDosPedidos(pedFiltrados.map((p) => p.id))
 
   return (
     <>
@@ -479,19 +480,23 @@ export function ComprasPage() {
         <Cartao className="p-0">
           {pedFiltrados.length === 0 ? <p className="px-6 py-12 text-center text-sm text-ink-muted">Nenhum pedido. Aprove uma requisição para gerar o pedido.</p> : (
             <div className="overflow-x-auto"><table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Número</th><th className="px-4 py-2 font-medium">Data</th><th className="px-4 py-2 font-medium">Fornecedor</th><th className="px-4 py-2 font-medium">Previsão</th><th className="px-4 py-2 font-medium">Condição</th><th className="px-4 py-2 font-medium">Status</th><th className="px-4 py-2"></th></tr></thead>
+              <thead className="text-left text-xs uppercase tracking-wide text-ink-muted"><tr className="border-b border-line"><th className="px-4 py-2 font-medium">Número</th><th className="px-4 py-2 font-medium">Data</th><th className="px-4 py-2 font-medium">Fornecedor</th><th className="px-4 py-2 font-medium">Itens</th><th className="px-4 py-2 font-medium">Previsão</th><th className="px-4 py-2 font-medium">Condição</th><th className="px-4 py-2 font-medium">Status</th><th className="px-4 py-2"></th></tr></thead>
               <tbody>
-                {pedFiltrados.map((p) => (
-                  <tr key={p.id} className="border-b border-line last:border-0 hover:bg-surface">
-                    <td className="px-4 py-2 font-mono text-xs">{codigoPedido(p)}</td>
-                    <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatarData(p.data_pedido)}</td>
-                    <td className="px-4 py-2">{p.fornecedor_id ? (nomeFornecedor.get(p.fornecedor_id) ?? '—') : '—'}</td>
-                    <td className="whitespace-nowrap px-4 py-2 tabular-nums">{p.previsao_entrega ? formatarData(p.previsao_entrega) : '—'}</td>
-                    <td className="px-4 py-2 text-ink-muted">{p.condicao_pagamento ?? '—'}</td>
-                    <td className="px-4 py-2"><Distintivo tom={TOM_PED[p.status]}>{ROTULO_STATUS_PEDIDO[p.status]}</Distintivo></td>
-                    <td className="whitespace-nowrap px-4 py-2 text-right"><button type="button" className="text-brand-700 hover:underline" onClick={() => setPedAberto(p)}>Abrir</button></td>
-                  </tr>
-                ))}
+                {pedFiltrados.map((p) => {
+                  const itens = itensPedidos.data?.get(p.id) ?? []
+                  return (
+                    <tr key={p.id} className="border-b border-line last:border-0 hover:bg-surface">
+                      <td className="px-4 py-2 font-mono text-xs">{codigoPedido(p)}</td>
+                      <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatarData(p.data_pedido)}</td>
+                      <td className="px-4 py-2">{p.fornecedor_id ? (nomeFornecedor.get(p.fornecedor_id) ?? '—') : '—'}</td>
+                      <td className="max-w-72 truncate px-4 py-2 text-ink-muted" title={itens.join(', ')}>{itens.length === 0 ? '—' : itens.length === 1 ? itens[0] : `${itens[0]} +${itens.length - 1}`}</td>
+                      <td className="whitespace-nowrap px-4 py-2 tabular-nums">{p.previsao_entrega ? formatarData(p.previsao_entrega) : '—'}</td>
+                      <td className="px-4 py-2 text-ink-muted">{p.condicao_pagamento ?? '—'}</td>
+                      <td className="px-4 py-2"><Distintivo tom={TOM_PED[p.status]}>{ROTULO_STATUS_PEDIDO[p.status]}</Distintivo></td>
+                      <td className="whitespace-nowrap px-4 py-2 text-right"><button type="button" className="text-brand-700 hover:underline" onClick={() => setPedAberto(p)}>Abrir</button></td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table></div>
           )}

@@ -48,7 +48,7 @@ export function NotificacoesPage() {
     <>
       <CabecalhoPagina
         titulo="Notificações"
-        descricao="Avisos de cobrança por WhatsApp: antes do vencimento, no dia e no bloqueio (modo simulado)"
+        descricao="Avisos de cobrança por WhatsApp: antes do vencimento, no dia e no bloqueio"
         acoes={negocio && config ? (
           <>
             <Botao variante="secundario" onClick={() => setJanela('teste')}>Enviar teste</Botao>
@@ -74,7 +74,7 @@ export function NotificacoesPage() {
           </div>
           {executar.data && (
             <Alerta tipo="sucesso" titulo={`Verificação de ${formatarData(executar.data.data)} concluída`}>
-              {executar.data.geradas} aviso(s) gerado(s), {executar.data.processadas} processado(s) em modo simulado, {executar.data.pendentes} pendente(s) (fora do horário comercial).
+              {executar.data.geradas} aviso(s) gerado(s), {executar.data.processadas} processado(s){config?.provedor === 'simulado' ? ' em modo simulado' : ''}, {executar.data.pendentes} pendente(s) (fora do horário comercial).
             </Alerta>
           )}
           {executar.error && <Alerta tipo="erro">{mensagemDeErro(executar.error)}</Alerta>}

@@ -10,7 +10,7 @@ import { Modal } from '../../../core/ui/Modal'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { SeletorMes } from '../../../core/ui/SeletorMes'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
-import { formatarData, formatarMoeda } from '../../../core/formatos'
+import { formatarData, formatarMoeda, hojeISO } from '../../../core/formatos'
 import { usePeriodo } from '../../../core/periodo/usePeriodo'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useContas } from '../../contas/api'
@@ -39,7 +39,8 @@ export function LancamentosPage() {
   const mesPassado = mes < new Date().toISOString().slice(0, 7)
   const [filtroTipo, setFiltroTipo] = useState<TipoLancamento | ''>('')
   // 'ativos' = previstos + efetivados (padrão): cancelados só quando pedidos explicitamente
-  const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | '' | 'ativos'>('ativos')
+  // 'vencidos' = previstos com vencimento já passado
+  const [filtroStatus, setFiltroStatus] = useState<StatusLancamento | '' | 'ativos' | 'vencidos'>('ativos')
   const [filtroNegocio, setFiltroNegocio] = useState<string>('') // '' = todos, 'pessoal', ou id
   const [busca, setBusca] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
@@ -94,7 +95,9 @@ export function LancamentosPage() {
 
   const lista = (lancamentos.data ?? []).filter((l) =>
     (!filtroTipo || l.tipo === filtroTipo)
-    && (filtroStatus === 'ativos' ? l.status !== 'cancelado' : (!filtroStatus || l.status === filtroStatus))
+    && (filtroStatus === 'ativos' ? l.status !== 'cancelado'
+      : filtroStatus === 'vencidos' ? (l.status === 'previsto' && l.data_vencimento < hojeISO())
+      : (!filtroStatus || l.status === filtroStatus))
     && (!filtroNegocio || (filtroNegocio === 'pessoal' ? l.negocio_id === null : l.negocio_id === filtroNegocio))
     && (!filtroCategoria || l.categoria_id === filtroCategoria)
     && (!filtroConta || l.conta_id === filtroConta || l.conta_destino_id === filtroConta)
@@ -106,7 +109,7 @@ export function LancamentosPage() {
     (!filtroTipo || p.tipo === filtroTipo)
     && (!filtroCategoria || p.categoria_id === filtroCategoria)
     && (!filtroConta || p.conta_id === filtroConta)
-    && (!filtroStatus || filtroStatus === 'ativos' || filtroStatus === 'previsto')
+    && (!filtroStatus || filtroStatus === 'ativos' || filtroStatus === 'previsto') // 'vencidos' nunca bate: projeção é sempre futura
     && (!filtroNegocio || (filtroNegocio === 'pessoal' ? p.negocio_id === null : p.negocio_id === filtroNegocio))
     && combina(p))
   // Somas do mês em dois blocos: realizado (efetivados) e pendente (previstos + projeções de contrato)
@@ -252,11 +255,12 @@ export function LancamentosPage() {
           <option value="despesa">Despesas</option>
           <option value="transferencia">Transferências</option>
         </SelectFiltro>
-        <SelectFiltro rotulo="Filtrar por status" valor={filtroStatus} aoMudar={(v) => setFiltroStatus(v as StatusLancamento | '' | 'ativos')}>
+        <SelectFiltro rotulo="Filtrar por status" valor={filtroStatus} aoMudar={(v) => setFiltroStatus(v as StatusLancamento | '' | 'ativos' | 'vencidos')}>
           <option value="ativos">Ativos (sem cancelados)</option>
           <option value="">Todos os status</option>
           <option value="efetivado">Efetivados</option>
           <option value="previsto">Previstos</option>
+          <option value="vencidos">Vencidos</option>
           <option value="cancelado">Cancelados</option>
         </SelectFiltro>
       </BarraFiltros>

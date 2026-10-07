@@ -61,7 +61,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 async function estadoInstancia(instancia: string): Promise<{ ok: boolean; estado: string }> {
   try {
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000)
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 20000)
     const res = await fetch(`${EVO_URL}/instance/connectionState/${instancia}`, { headers: { apikey: EVO_KEY }, signal: ctl.signal })
     clearTimeout(t)
     if (!res.ok) return { ok: false, estado: `HTTP ${res.status}` }

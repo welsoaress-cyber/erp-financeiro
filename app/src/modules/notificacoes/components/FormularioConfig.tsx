@@ -28,6 +28,8 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
   const [reguaAntes, setReguaAntes] = useState((config?.regua_antes ?? [2]).join(', '))
   const [reguaApos, setReguaApos] = useState((config?.regua_apos ?? [3]).join(', '))
   const [bloqueioAutomatico, setBloqueioAutomatico] = useState(config?.bloqueio_automatico ?? false)
+  const [encerramentoAutomatico, setEncerramentoAutomatico] = useState(config?.encerramento_automatico ?? false)
+  const [encerramentoAposDias, setEncerramentoAposDias] = useState(String(config?.encerramento_apos_dias ?? 30))
   const [pontosAtivo, setPontosAtivo] = useState(config?.pontos_ativo ?? false)
   const [horaInicio, setHoraInicio] = useState((config?.hora_inicio ?? '08:00').slice(0, 5))
   const [horaFim, setHoraFim] = useState((config?.hora_fim ?? '18:00').slice(0, 5))
@@ -47,11 +49,13 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
     if (rA.some((d) => !Number.isInteger(d) || d < 1 || d > 30) || rA.length > 5) { setErro('Avisos antes: até 5 números de 1 a 30 (ex.: 2 ou 5, 2). Vazio = nenhum.'); return }
     if (rP.some((d) => !Number.isInteger(d) || d < 1 || d > 60) || rP.length > 5) { setErro('Avisos depois: até 5 números de 1 a 60 (ex.: 3 ou 1, 3).'); return }
     if (horaFim <= horaInicio) { setErro('O fim do horário comercial deve ser depois do início.'); return }
+    const diasEnc = Number(encerramentoAposDias)
+    if (!Number.isInteger(diasEnc) || diasEnc < 1 || diasEnc > 180) { setErro('Encerrar após: de 1 a 180 dias.'); return }
     const inst = instancia.trim().toLowerCase()
     if (provedor === 'evolution' && !/^[a-z0-9_-]{2,40}$/.test(inst)) { setErro('Informe o nome da instância da Evolution API (ex.: servnet).'); return }
     for (const t of [tplProximo, tplDia, tplBloqueio]) if (t.trim().length < 10 || t.length > 1000) { setErro('Cada mensagem precisa ter entre 10 e 1000 caracteres.'); return }
     setErro(null)
-    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, regua_antes: rA, regua_apos: rP, bloqueio_automatico: bloqueioAutomatico, pontos_ativo: pontosAtivo, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
+    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, regua_antes: rA, regua_apos: rP, bloqueio_automatico: bloqueioAutomatico, encerramento_automatico: encerramentoAutomatico, encerramento_apos_dias: diasEnc, pontos_ativo: pontosAtivo, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
   }
 
   return (
@@ -82,6 +86,20 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
           <span className="block text-ink-muted">
             Todo dia às 00:00 o sistema confirma sozinho, sem precisar clicar em "Bloqueei/Desbloqueei na rede" em Cobrança. <b>Só ligue se a rede (ReceitaNet/OLT) já corta e libera o acesso do cliente por conta própria</b> — o ERP passa a só acompanhar o que a rede já faz, no prazo da régua "avisar depois" configurada acima.
           </span>
+        </span>
+      </label>
+      <label className="flex items-start gap-2 rounded-md border border-line p-3 text-sm">
+        <input type="checkbox" checked={encerramentoAutomatico} onChange={(e) => setEncerramentoAutomatico(e.target.checked)} className="mt-0.5 size-4 accent-brand-600" />
+        <span className="flex-1">
+          <span className="block font-medium">Encerrar contrato automaticamente</span>
+          <span className="block text-ink-muted">
+            Contrato suspenso há muito tempo sem pagar se encerra sozinho (todo dia às 00:00) — para de cobrar e sai de "Suspensos". Fica guardado em Contratos → filtro "Encerrados por inadimplência" pra você mandar mensagem de vez em quando.
+          </span>
+          {encerramentoAutomatico && (
+            <span className="mt-2 block max-w-40">
+              <Campo rotulo="Encerrar após (dias de atraso)" type="number" min={1} max={180} value={encerramentoAposDias} onChange={(e) => setEncerramentoAposDias(e.target.value)} />
+            </span>
+          )}
         </span>
       </label>
       <label className="flex items-start gap-2 rounded-md border border-line p-3 text-sm">

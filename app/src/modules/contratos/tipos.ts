@@ -59,6 +59,7 @@ export interface Contrato {
   cortesia: boolean
   centro_custo_id: string | null
   forma_pagamento: FormaPagamentoContrato
+  motivo_encerramento: string | null
 }
 
 export interface DadosNovoContrato {

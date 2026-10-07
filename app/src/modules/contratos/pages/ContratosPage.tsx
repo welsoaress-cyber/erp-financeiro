@@ -42,7 +42,7 @@ export function ContratosPage() {
   const [edicao, setEdicao] = useState<Edicao>(inicialNovo ? { modo: 'novo' } : null)
   const [filtroNegocio, setFiltroNegocio] = useState('')
   const [busca, setBusca] = useState('')
-  const [filtroStatus, setFiltroStatus] = useState<StatusContrato | ''>(
+  const [filtroStatus, setFiltroStatus] = useState<StatusContrato | '' | 'inadimplencia'>(
     statusUrl === 'ativo' || statusUrl === 'suspenso' || statusUrl === 'encerrado' ? statusUrl : 'ativo',
   )
 
@@ -75,7 +75,9 @@ export function ContratosPage() {
       || (p.login_servidor ?? '').toLowerCase().includes(termo)
       || (digitosBusca.length > 2 && (p.telefone ?? '').includes(digitosBusca))
   }
-  const lista = (contratos.data ?? []).filter((c) => (!filtroNegocio || c.negocio_id === filtroNegocio) && (!filtroStatus || c.status === filtroStatus) && casaBusca(c))
+  const lista = (contratos.data ?? []).filter((c) => (!filtroNegocio || c.negocio_id === filtroNegocio)
+    && (filtroStatus === 'inadimplencia' ? (c.status === 'encerrado' && c.motivo_encerramento != null) : (!filtroStatus || c.status === filtroStatus))
+    && casaBusca(c))
   const contratoVisto = edicao?.modo === 'ver' ? (contratos.data ?? []).find((c) => c.id === edicao.id) : undefined
   const temPlanos = (planos.data ?? []).some((p) => p.ativo)
   const carregando = contratos.isPending || planos.isPending || negocios.isPending || pessoas.isPending || resultado.isPending || mrr.isPending || contas.isPending
@@ -134,17 +136,18 @@ export function ContratosPage() {
                 <option value="">Todos os negócios</option>
                 {(negocios.data ?? []).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
               </select>
-              <select aria-label="Filtrar por status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value as StatusContrato | '')} className="h-9 rounded-md border border-line bg-white px-3 text-sm">
+              <select aria-label="Filtrar por status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value as StatusContrato | '' | 'inadimplencia')} className="h-9 rounded-md border border-line bg-white px-3 text-sm">
                 <option value="">Todos os status</option>
                 <option value="ativo">Ativos</option>
                 <option value="suspenso">Suspensos</option>
                 <option value="encerrado">Encerrados</option>
+                <option value="inadimplencia">Encerrados por inadimplência</option>
               </select>
               <span className="ml-auto text-ink-muted">{lista.length} {lista.length === 1 ? 'contrato' : 'contratos'}</span>
             </div>
             {lista.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
-                <p className="text-sm font-medium">Nenhum contrato {filtroStatus ? ROTULO_STATUS_CONTRATO[filtroStatus].toLowerCase() : ''}</p>
+                <p className="text-sm font-medium">Nenhum contrato {filtroStatus === 'inadimplencia' ? 'encerrado por inadimplência' : filtroStatus ? ROTULO_STATUS_CONTRATO[filtroStatus].toLowerCase() : ''}</p>
                 {temPlanos && <Botao onClick={() => setEdicao({ modo: 'novo' })}>Novo contrato</Botao>}
               </div>
             ) : (
@@ -166,7 +169,10 @@ export function ContratosPage() {
                       return (
                         <tr key={c.id} onClick={() => setEdicao({ modo: 'ver', id: c.id })} className="cursor-pointer border-b border-line last:border-0 hover:bg-surface">
                           <td className="px-6 py-3"><div className="font-medium tabular-nums">{codigoContrato(c)}</div><div className="text-xs text-ink-muted">{nome.negocio.get(c.negocio_id) ?? '—'}</div></td>
-                          <td className="px-6 py-3 font-medium">{nome.pessoa.get(c.pessoa_id) ?? '—'}<div className="text-xs font-normal capitalize text-ink-muted">{ROTULO_PESSOA_CONTRATO[c.tipo_financeiro]}</div></td>
+                          <td className="px-6 py-3 font-medium">{nome.pessoa.get(c.pessoa_id) ?? '—'}
+                            <div className="text-xs font-normal capitalize text-ink-muted">{ROTULO_PESSOA_CONTRATO[c.tipo_financeiro]}</div>
+                            {c.motivo_encerramento && <div className="text-xs font-normal text-ink-muted">{pessoaDe.get(c.pessoa_id)?.telefone ?? 'sem telefone'}</div>}
+                          </td>
                           <td className="px-6 py-3 text-ink-muted">{nome.plano.get(c.plano_id) ?? '—'}<div className="text-xs">venc. dia {c.dia_vencimento}</div></td>
                           <td className="px-6 py-3 text-right tabular-nums">{c.cortesia ? <Distintivo tom="info">Cortesia</Distintivo> : formatarMoeda(c.valor)}<div className="text-xs text-ink-muted">{ROTULO_PERIODICIDADE[c.periodicidade]}</div></td>
                           <td className={`px-6 py-3 text-right font-medium tabular-nums ${(r?.resultado ?? 0) < 0 ? 'text-red-700' : (r?.resultado ?? 0) > 0 ? 'text-green-700' : 'text-ink-muted'}`}>{formatarMoeda(r?.resultado ?? 0)}</td>

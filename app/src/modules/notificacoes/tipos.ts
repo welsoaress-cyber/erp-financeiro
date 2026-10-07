@@ -28,6 +28,8 @@ export interface ConfigNotificacao {
   regua_antes: number[]
   regua_apos: number[]
   bloqueio_automatico: boolean
+  encerramento_automatico: boolean
+  encerramento_apos_dias: number
   pontos_ativo: boolean
   hora_inicio: string
   hora_fim: string
@@ -44,6 +46,8 @@ export interface DadosConfigNotificacao {
   regua_antes: number[]
   regua_apos: number[]
   bloqueio_automatico: boolean
+  encerramento_automatico: boolean
+  encerramento_apos_dias: number
   pontos_ativo: boolean
   hora_inicio: string
   hora_fim: string

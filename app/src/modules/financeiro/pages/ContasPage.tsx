@@ -91,7 +91,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const lancamentos = useLancamentos(mes); const pessoas = usePessoas(); const contratos = useContratos(); const contas = useContas()
   const efetivar = useEfetivarLancamento(); const parcial = useBaixaParcial(); const cancelar = useCancelarLancamento()
   const negocios = useNegocios()
-  const [filtroPessoa, setFiltroPessoa] = useState(''); const [filtroSituacao, setFiltroSituacao] = useState<Situacao | ''>(''); const [busca, setBusca] = useState('')
+  const [filtroSituacao, setFiltroSituacao] = useState<Situacao | ''>(''); const [busca, setBusca] = useState('')
   const [filtroNegocio, setFiltroNegocio] = useState('') // '' = todos, 'pessoal' = sem negócio, ou o id
   const [filtroCategoria, setFiltroCategoria] = useState(''); const [filtroConta, setFiltroConta] = useState(''); const [filtroAtraso, setFiltroAtraso] = useState('')
   const [acao, setAcao] = useState<Acao>(null); const [dataBaixa, setDataBaixa] = useState(hojeISO()); const [valorParcial, setValorParcial] = useState(''); const [motivo, setMotivo] = useState(''); const [encargos, setEncargos] = useState(''); const [contaBaixa, setContaBaixa] = useState('')
@@ -155,7 +155,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   // aging: dias de atraso de quem está vencido (30/60/90+), como no extrato de inadimplência
   const diasAtraso = (l: Lancamento) => Math.floor((Date.parse(hojeISO()) - Date.parse(l.data_vencimento)) / 86_400_000)
   const lista = base
-    .filter((l) => (!filtroPessoa || l.pessoa_id === filtroPessoa) && (!filtroSituacao || (!ehCortesia(l) && situacaoDe(l) === filtroSituacao)))
+    .filter((l) => !filtroSituacao || (!ehCortesia(l) && situacaoDe(l) === filtroSituacao))
     .filter((l) => !filtroCategoria || l.categoria_id === filtroCategoria)
     .filter((l) => !filtroConta || l.conta_id === filtroConta)
     .filter((l) => {
@@ -197,7 +197,6 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
   const realizado = base.filter((l) => l.status === 'efetivado').reduce((s, l) => s + l.valor, 0)
   const saldo = realizado - previsto
   const vencidos = base.filter((l) => !ehCortesia(l) && situacaoDe(l) === 'vencido')
-  const pessoasComLanc = (pessoas.data ?? []).filter((p) => base.some((l) => l.pessoa_id === p.id))
   const erro = efetivar.error ?? parcial.error ?? cancelar.error
   const ocupado = efetivar.isPending || parcial.isPending || cancelar.isPending
   function fechar() { efetivar.reset(); parcial.reset(); cancelar.reset(); setAcao(null); setValorParcial(''); setMotivo(''); setDataBaixa(hojeISO()); setEncargos(''); setContaBaixa('') }
@@ -234,10 +233,6 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
             {(negocios.data ?? []).filter((n) => n.ativo).map((n) => <option key={n.id} value={n.id}>{n.nome}</option>)}
           </SelectFiltro>
         )}
-        <SelectFiltro rotulo={receber ? 'Filtrar por cliente' : 'Filtrar por fornecedor'} valor={filtroPessoa} aoMudar={setFiltroPessoa}>
-          <option value="">{receber ? 'Todos os clientes' : 'Todos os fornecedores'}</option>
-          {pessoasComLanc.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-        </SelectFiltro>
         <SelectFiltro rotulo="Filtrar por situação" valor={filtroSituacao} aoMudar={(v) => setFiltroSituacao(v as Situacao | '')}>
           <option value="">Todas as situações</option><option value="aberto">Em aberto</option><option value="vencido">Vencidos</option><option value="pago">{receber ? 'Recebidos' : 'Pagos'}</option>
         </SelectFiltro>

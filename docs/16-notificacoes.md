@@ -56,6 +56,10 @@ banco (fila: notificacoes_log pendente, provedor evolution)
 | Z-API / WPPConnect e similares | Pago (mensalidade) ou auto-hospedado | Usam WhatsApp não oficial; risco de bloqueio do número. |
 Quando autorizado: novo valor no enum `provedor_notificacao`, uma Edge Function que lê os `pendente` e grava `enviado`/`erro`. O esquema, a tela e o job não mudam.
 
+## 5b. 0134/0135 · correções encontradas em produção
+- **0134**: a régua "depois do vencimento" (`regua_apos`) parava assim que o contrato suspendia — `gerar_notificacoes` exigia contrato ativo pra qualquer aviso. Negócio com tolerância curta (`bloqueio_apos_dias` baixo) suspende logo após vencer, então os avisos de cobrança (+1, +3, +5...) nunca saíam. Corrigido: só "antes do vencimento" exige ativo; "no dia" e "depois" valem também pra suspenso.
+- **0135**: `notificacoes_para_envio` (chamada pela Edge Function na hora de mandar) relê valor/vencimento do lançamento e telefone da pessoa NA HORA — nunca usa o texto/número gravados quando o aviso foi gerado. Corrige sozinho telefone atualizado depois do aviso já criado; e se um aviso "antes do vencimento" ficar pendente com o vencimento (editado) já no passado, vira erro em vez de sair com data errada.
+
 ## 6. Testes
 - `supabase/tests/notificacoes_test.sql`: helpers (E.164, template, moeda), validações da config (número, ativo sem número, template curto, log direto bloqueado), geração D-3/D0/D+3 com idempotência e sem telefone, horário comercial (pendente fora, simulado dentro), paga antes do envio → erro, contrato encerrado e config desativada não geram, teste manual, imutabilidade do log, `anon` negado.
 - `supabase/tests/verificar_notificacoes.sql`: 6 verificações. `verificar_agendamento.sql` agora lista os dois jobs.

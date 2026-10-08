@@ -76,5 +76,46 @@ do $$ declare v r%rowtype; g public.notificacoes_log; i int; begin
   select * into g from public.notificacoes_log where id = g.id;
   assert g.status = 'erro' and g.tentativas = 5 and g.erro = 'falha 5', 'T3 erro definitivo após 5 tentativas';
 end $$;
+-- T4 (0135): envio relê valor/vencimento/telefone atuais na hora de mandar —
+-- nunca usa o que ficou gravado na geração do aviso.
+do $$ declare v r%rowtype; v_p uuid; v_ct uuid; v_lanc uuid; rel jsonb; f record; begin
+  select * into v from r;
+  set local role authenticated;
+  set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+  update public.notificacoes_config set hora_inicio = '00:00', hora_fim = '23:59' where negocio_id = v.servnet;
+  insert into public.pessoas (organizacao_id, nome, telefone) values (v.org, 'Cliente Atualiza', '11955550000') returning id into v_p;
+  -- contrato nasce já faturado (gatilho de criação): data_inicio no mês do vencimento buscado, sem precisar criar o lançamento à mão
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento)
+    values (v.org, v.servnet, v_p, v.fibra, 99.90, 'mensal', date '2026-10-01', 15) returning id into v_ct;
+  select id into v_lanc from public.lancamentos where contrato_id = v_ct and tipo = 'receita' and status = 'previsto' limit 1;
+  assert (select data_vencimento from public.lancamentos where id = v_lanc) = date '2026-10-15', 'T4 lançamento nasceu com o vencimento esperado';
+  rel := public.executar_notificacoes_agora(date '2026-10-15');  -- gera o aviso "no dia", com valor/telefone de agora
+  assert (select count(*) from public.notificacoes_log where lancamento_id = v_lanc and tipo = 'vencimento') = 1, 'T4 aviso gerado';
+
+  -- dado muda DEPOIS do aviso já gerado (edição real, não UPDATE direto — lancamentos só muda pelo motor)
+  perform public.atualizar_lancamento(v_lanc, 'Fibra', 150.00, date '2026-10-15', date '2026-10-15', null, null, null, null, null, v.servnet, v_p, v_ct);
+  update public.pessoas set telefone = '11966660000' where id = v_p;
+
+  reset role; set local role service_role;
+  select * into f from public.notificacoes_para_envio(50) where tipo = 'vencimento' and numero_destino like '%66660000';
+  assert f.numero_destino = '+5511966660000', 'T4 telefone relido na hora de enviar, não o gravado';
+  assert f.mensagem like '%150,00%', 'T4 valor relido na hora de enviar: ' || f.mensagem;
+  assert f.mensagem not like '%99,90%', 'T4 mensagem não usa o valor velho gravado na geração';
+
+  -- "antes do vencimento" cujo vencimento (atualizado) já passou vira erro, não sai com data errada
+  reset role; set local role authenticated; set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+  insert into public.pessoas (organizacao_id, nome, telefone) values (v.org, 'Cliente Antecipa', '11955551111') returning id into v_p;
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento)
+    values (v.org, v.servnet, v_p, v.fibra, 99.90, 'mensal', date '2026-10-01', 20) returning id into v_ct;
+  select id into v_lanc from public.lancamentos where contrato_id = v_ct and tipo = 'receita' and status = 'previsto' limit 1;
+  assert (select data_vencimento from public.lancamentos where id = v_lanc) = date '2026-10-20', 'T4 segundo lançamento nasceu com o vencimento esperado';
+  rel := public.executar_notificacoes_agora(date '2026-10-18');  -- D-2, régua padrão
+  assert (select count(*) from public.notificacoes_log where lancamento_id = v_lanc and tipo = 'proximo_vencimento') = 1, 'T4 aviso antes gerado';
+  perform public.atualizar_lancamento(v_lanc, 'Fibra 2', 99.90, date '2026-10-01', date '2026-10-01', null, null, null, null, null, v.servnet, v_p, v_ct);  -- corrigido pra "já vencida"
+  reset role; set local role service_role;
+  perform public.notificacoes_para_envio(50);
+  assert (select status from public.notificacoes_log where lancamento_id = v_lanc and tipo = 'proximo_vencimento') = 'erro', 'T4 aviso antes vira erro quando o vencimento já passou';
+end $$;
+
 rollback;
 \echo OK

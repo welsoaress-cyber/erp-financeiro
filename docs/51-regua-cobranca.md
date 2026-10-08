@@ -37,3 +37,11 @@ Em Notificações → Configurar, dois campos de lista:
 `supabase/tests/regua_test.sql` (padrão enxuto, normalização, validações,
 um disparo por ponto, régua vazia antes) + `notificacoes_test.sql` ajustado
 ao novo padrão; check 0073 no `verificar_tudo.sql` (total 61).
+
+## 0134 · bug: régua "depois" parava quando o contrato suspendia
+`gerar_notificacoes` exigia `contrato ativo` pra qualquer aviso, inclusive os
+pontos de `regua_apos`. Num negócio com tolerância curta (`bloqueio_apos_dias`
+baixo), o contrato suspende logo após o vencimento — e a régua "depois", que
+existe justamente pra cobrar quem não pagou, parava de disparar. Corrigido:
+"antes do vencimento" continua exigindo ativo; "no dia" e "depois" valem
+também pra contrato suspenso (só para quando o contrato é encerrado).

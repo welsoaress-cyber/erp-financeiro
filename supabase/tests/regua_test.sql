@@ -77,5 +77,24 @@ do $$ declare v r%rowtype; c public.notificacoes_config; rel jsonb; begin
   assert (select count(*) from public.notificacoes_log where pessoa_id = v.pessoa) = 5, 'T4 sem aviso antes';
 end $$;
 
+-- T5 (0134): aviso "depois do vencimento" continua saindo mesmo com o contrato
+-- já suspenso — é justamente pra quem não pagou. "Antes do vencimento" não
+-- vale mais pra quem já está suspenso.
+do $$ declare v r%rowtype; rel jsonb; v_ct uuid; begin
+  select * into v from r;
+  select id into v_ct from public.contratos where negocio_id = v.neg and pessoa_id = v.pessoa;
+  update public.contratos set status = 'suspenso' where id = v_ct;
+  rel := public.executar_notificacoes_agora(date '2026-09-25');  -- D+15 (régua {1,3} não bate, mas testamos mesmo assim com regua_apos custom)
+  update public.notificacoes_config set regua_apos = '{15}', regua_antes = '{2}' where negocio_id = v.neg;
+  rel := public.executar_notificacoes_agora(date '2026-09-25');  -- D+15, contrato suspenso
+  assert (select count(*) from public.notificacoes_log where pessoa_id = v.pessoa and tipo = 'bloqueio' and dias = 15) = 1, 'T5 aviso depois continua com contrato suspenso';
+  -- próxima competência (faturamento automático desligado aqui, simula um previsto futuro já existente antes da suspensão)
+  perform public.criar_lancamento('receita', 'Outra fatura', 100, date '2026-10-10', date '2026-10-10', null,
+    (select conta_id from public.contratos where id = v_ct), null,
+    (select id from public.categorias where organizacao_id = v.org and tipo = 'receita' limit 1), null, v.neg, v.pessoa, v_ct);
+  rel := public.executar_notificacoes_agora(date '2026-10-08');  -- D-2 dessa nova fatura, mas contrato suspenso
+  assert not exists (select 1 from public.notificacoes_log where pessoa_id = v.pessoa and tipo = 'proximo_vencimento' and data_referencia = date '2026-10-10'), 'T5 aviso antes não vale pra quem já está suspenso';
+end $$;
+
 rollback;
 \echo OK

@@ -75,7 +75,7 @@ async function enviarTexto(instancia: string, numero: string, texto: string): Pr
   let ultimoErro = ''
   for (let tentativa = 1; tentativa <= 3; tentativa++) {
     try {
-      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 15000)
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000)
       const res = await fetch(`${EVO_URL}/message/sendText/${instancia}`, {
         method: 'POST', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({ number: numero.replace(/\D/g, ''), text: texto }), signal: ctl.signal,

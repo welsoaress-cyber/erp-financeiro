@@ -22,7 +22,7 @@ import { ConsultaCliente } from '../components/ConsultaCliente'
 import { PendenciasAnteriores } from '../components/PendenciasAnteriores'
 
 interface Bloqueio { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; tipo: 'bloqueio' | 'desbloqueio'; status: string; motivo: string; confianca_furada: boolean; criado_em: string }
-interface Confianca { id: string; negocio_id: string; contrato_id: string; pessoa_id: string; segurar_ate: string; observacao: string | null; status: string }
+interface Confianca { id: string; negocio_id: string | null; contrato_id: string | null; pessoa_id: string; segurar_ate: string; observacao: string | null; status: string }
 interface PixCobranca { id: string; negocio_id: string; pessoa_id: string | null; valor: number; status: string; criado_em: string; pago_em: string | null }
 
 /** Cobrança: bloqueio assistido (lista de quem bloquear/desbloquear) e Pix recentes. */
@@ -112,7 +112,7 @@ export function CobrancaPage() {
   const nomePessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, p.nome])), [pessoas.data])
   // busca (cliente/login) usa esse texto combinado; exibição continua só com o nome
   const buscaPessoa = useMemo(() => new Map((pessoas.data ?? []).map((p) => [p.id, `${p.nome} ${p.login_servidor ?? ''}`.toLowerCase()])), [pessoas.data])
-  const rotuloContrato = (id: string) => { const c = (contratos.data ?? []).find((x) => x.id === id); return c ? codigoContrato(c) : '—' }
+  const rotuloContrato = (id: string | null) => { const c = (contratos.data ?? []).find((x) => x.id === id); return c ? codigoContrato(c) : '—' }
   const buscaNorm = busca.trim().toLowerCase()
   const listaTodas = (bloqueios.data ?? []).filter((b) => b.negocio_id === negocioAtual)
   const lista = listaTodas.filter((b) => !buscaNorm || (buscaPessoa.get(b.pessoa_id) ?? '').includes(buscaNorm) || rotuloContrato(b.contrato_id).toLowerCase().includes(buscaNorm))
@@ -124,7 +124,8 @@ export function CobrancaPage() {
     if (!termoPix) return true
     return (buscaPessoa.get(p.pessoa_id ?? '') ?? '').includes(termoPix)
   })
-  const confTodas = (confiancas.data ?? []).filter((c) => c.negocio_id === negocioAtual)
+  // só promessa de contrato segura bloqueio (as de cobrança avulsa ficam só em Contas a receber)
+  const confTodas = (confiancas.data ?? []).filter((c) => c.negocio_id === negocioAtual && c.contrato_id)
   const termoConf = buscaConfianca.trim().toLowerCase()
   const confLista = confTodas.filter((c) => !termoConf
     || (buscaPessoa.get(c.pessoa_id) ?? '').includes(termoConf)

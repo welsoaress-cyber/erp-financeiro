@@ -46,3 +46,18 @@ e combinado), selo "🤝 Confiança furada" no item destacado e cartão
 `supabase/tests/confianca_test.sql` (T1 segurar/descartar, T2 validações e
 substituição, T3 furada + destaque, T4 cumprida e volta sem destaque) e check
 0072 em `verificar_tudo.sql` (total 60).
+
+## 0136 · promessa em cobrança avulsa (sem contrato)
+Pedido do proprietário: "independentemente de contrato, contas a receber tem
+que ter promessa". `confiancas` ganha `lancamento_id` (alternativa a
+`contrato_id` — exatamente um dos dois; `negocio_id` e `contrato_id` viraram
+opcionais). `dar_confianca_lancamento(lancamento, data, observacao)` — mesmas
+validações de prazo (futura, ≤ 90 dias), exige tipo receita, status previsto
+e pessoa vinculada. Sem contrato não há bloqueio pra segurar: resolve sozinha
+(`resolver_confianca_lancamento`, chamada no fim de `efetivar_lancamento`,
+`baixar_parcial` e `cancelar_lancamento`) quando a cobrança some de
+"previsto" — vira cumprida. Não entra na lista "Confianças ativas" da
+Cobrança (essa é só sobre bloqueio de contrato); o botão 🤝 Promessa e o selo
+"🤝 Paga até" em Contas a receber funcionam para qualquer lançamento com
+pessoa vinculada, com ou sem contrato. Testes em
+`supabase/tests/confianca_lancamento_test.sql`.

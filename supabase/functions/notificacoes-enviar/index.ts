@@ -71,24 +71,24 @@ async function estadoInstancia(instancia: string): Promise<{ ok: boolean; estado
   } catch (e) { return { ok: false, estado: `rede: ${String(e)}` } }
 }
 
+// Uma tentativa só (sem retry imediato): se a Evolution demorar mas já tiver
+// enviado, repetir na mesma rodada manda a mesma mensagem duas vezes pro
+// cliente. Se der timeout/erro, fica pendente e a próxima tentativa é só na
+// rodada seguinte (1h depois) — tempo de sobra pra qualquer demora anterior
+// já ter se resolvido sozinha, sem risco de duplicar.
 async function enviarTexto(instancia: string, numero: string, texto: string): Promise<{ ok: boolean; erro?: string; resposta?: unknown }> {
-  let ultimoErro = ''
-  for (let tentativa = 1; tentativa <= 3; tentativa++) {
-    try {
-      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000)
-      const res = await fetch(`${EVO_URL}/message/sendText/${instancia}`, {
-        method: 'POST', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number: numero.replace(/\D/g, ''), text: texto }), signal: ctl.signal,
-      })
-      clearTimeout(t)
-      const corpo = await res.text()
-      let resposta: unknown = corpo; try { resposta = JSON.parse(corpo) } catch { /* texto puro */ }
-      if (res.ok) return { ok: true, resposta }
-      ultimoErro = `HTTP ${res.status}: ${corpo.slice(0, 300)}`
-    } catch (e) { ultimoErro = String(e) }
-    if (tentativa < 3) await sleep(1000 * tentativa)
-  }
-  return { ok: false, erro: ultimoErro }
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000)
+    const res = await fetch(`${EVO_URL}/message/sendText/${instancia}`, {
+      method: 'POST', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: numero.replace(/\D/g, ''), text: texto }), signal: ctl.signal,
+    })
+    clearTimeout(t)
+    const corpo = await res.text()
+    let resposta: unknown = corpo; try { resposta = JSON.parse(corpo) } catch { /* texto puro */ }
+    if (res.ok) return { ok: true, resposta }
+    return { ok: false, erro: `HTTP ${res.status}: ${corpo.slice(0, 300)}` }
+  } catch (e) { return { ok: false, erro: String(e) } }
 }
 
 Deno.serve(async (req) => {

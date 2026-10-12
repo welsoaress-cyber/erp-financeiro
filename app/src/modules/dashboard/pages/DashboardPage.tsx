@@ -85,10 +85,6 @@ export function DashboardPage() {
   const previstosFiltrados = previstosPorNegocio.filter((p) => bate(p.negocio_id))
   const prev = previstosFiltrados.reduce((t, p) => ({ receitas: t.receitas + p.receitas, despesas: t.despesas + p.despesas }), { receitas: 0, despesas: 0 })
 
-  const agendaFiltrada = (agenda.data ?? []).filter((i) => bate(i.negocio_id))
-  const receber30 = agendaFiltrada.filter((i) => i.tipo === 'receita' && i.bucket !== 'mais30').reduce((s, i) => s + i.valor, 0)
-  const pagar30 = agendaFiltrada.filter((i) => i.tipo === 'despesa' && i.bucket !== 'mais30').reduce((s, i) => s + i.valor, 0)
-
   const linhasVisaoPorNegocio = montarLinhasVisaoPorNegocio(negocios.data ?? [], resultado.data ?? [], previstosPorNegocio, bate)
 
   const temNegocios = (negocios.data ?? []).length > 0
@@ -135,8 +131,10 @@ export function DashboardPage() {
           {/* Resumo */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Indicador rotulo="Saldo total" valor={saldoTotal} tom="auto" oculto={oculto} />
-            <Indicador rotulo="A receber · 30 dias" valor={receber30} tom="positivo" oculto={oculto} />
-            <Indicador rotulo="A pagar · 30 dias" valor={pagar30} tom="negativo" oculto={oculto} />
+            <Indicador rotulo="A receber (mês)" valor={prev.receitas} tom="positivo" oculto={oculto}
+              detalhe={`Recebido: ${formatarMoedaOuOculto(totais.receitas, oculto)}`} />
+            <Indicador rotulo="A pagar (mês)" valor={prev.despesas} tom="negativo" oculto={oculto}
+              detalhe={`Pago: ${formatarMoedaOuOculto(totais.despesas, oculto)}`} />
             <Indicador rotulo="Resultado do mês (projetado)" valor={totais.resultado + prev.receitas - prev.despesas} tom="auto" oculto={oculto}
               detalhe={`Realizado: ${formatarMoedaOuOculto(totais.resultado, oculto)}`} />
           </div>

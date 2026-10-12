@@ -17,6 +17,8 @@ import { useNegocios } from '../../negocios/api'
 import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { useLancamentos, useProjecaoContratos } from '../../lancamentos/api'
 import { montarLinhasVisaoPorNegocio, useDashboardAgenda, useResultadoPorNegocio, useSaldoInicial, useUltimosLancamentos, type PrevistoNegocio } from '../api'
+import { useProjecaoSaldoMensal } from '../../lancamentos/api'
+import { SaldoProjetado } from '../components/SaldoProjetado'
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 import { AgendaFinanceira } from '../components/AgendaFinanceira'
 import { PendenciasOperacionais } from '../components/PendenciasOperacionais'
@@ -50,6 +52,8 @@ export function DashboardPage() {
   const lancamentosMes = useLancamentos(mes)
   const projecao = useProjecaoContratos(mes)
   const saldoInicial = useSaldoInicial(mes)
+  const fimDoAno = `${new Date().getFullYear()}-12-31`
+  const saldoProjetado = useProjecaoSaldoMensal(fimDoAno)
   const agenda = useDashboardAgenda()
 
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
@@ -89,8 +93,8 @@ export function DashboardPage() {
 
   const temNegocios = (negocios.data ?? []).length > 0
 
-  const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending || lancamentosMes.isPending || saldoInicial.isPending || agenda.isPending
-  const erro = contas.error ?? resultado.error ?? ultimos.error ?? negocios.error ?? lancamentosMes.error ?? saldoInicial.error ?? agenda.error
+  const carregando = contas.isPending || resultado.isPending || ultimos.isPending || negocios.isPending || lancamentosMes.isPending || saldoInicial.isPending || agenda.isPending || saldoProjetado.isPending
+  const erro = contas.error ?? resultado.error ?? ultimos.error ?? negocios.error ?? lancamentosMes.error ?? saldoInicial.error ?? agenda.error ?? saldoProjetado.error
 
   return (
     <>
@@ -126,7 +130,7 @@ export function DashboardPage() {
       {carregando && <Carregando texto="Calculando…" />}
       {erro && <Alerta tipo="erro" titulo="Não foi possível carregar o painel">{mensagemDeErro(erro)}</Alerta>}
 
-      {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && negocios.isSuccess && lancamentosMes.isSuccess && saldoInicial.isSuccess && agenda.isSuccess && (
+      {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && negocios.isSuccess && lancamentosMes.isSuccess && saldoInicial.isSuccess && agenda.isSuccess && saldoProjetado.isSuccess && (
         <div className="space-y-6">
           {/* Resumo */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -138,6 +142,8 @@ export function DashboardPage() {
             <Indicador rotulo="Resultado do mês (projetado)" valor={totais.resultado + prev.receitas - prev.despesas} tom="auto" oculto={oculto}
               detalhe={`Realizado: ${formatarMoedaOuOculto(totais.resultado, oculto)}`} />
           </div>
+
+          <SaldoProjetado saldoAtual={saldoTotal} fluxos={saldoProjetado.data ?? []} bate={bate} oculto={oculto} />
 
           {/* Agenda financeira */}
           <AgendaFinanceira itens={agenda.data ?? []} bate={bate} oculto={oculto} />

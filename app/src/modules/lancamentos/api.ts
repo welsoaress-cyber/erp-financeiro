@@ -56,6 +56,21 @@ export function useProjecaoContratos(mes: string) {
   })
 }
 
+/** Fluxo previsto (receita/despesa) por negócio e mês, de agora até p_ate — base do gráfico de saldo projetado. */
+export interface FluxoMensal { negocio_id: string | null; mes: string; tipo: 'receita' | 'despesa'; valor: number }
+
+export function useProjecaoSaldoMensal(ate: string) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: [...chaveLancamentos(organizacao.id), 'projecao-saldo-mensal', ate],
+    queryFn: async (): Promise<FluxoMensal[]> => {
+      const { data, error } = await supabase.rpc('projecao_saldo_mensal', { p_organizacao: organizacao.id, p_ate: ate })
+      if (error) throw error
+      return (data ?? []) as FluxoMensal[]
+    },
+  })
+}
+
 /** Existe algum lançamento gerado a partir deste (próxima parcela/ocorrência já projetada)? */
 export function useTemProximaOcorrencia(id: string, habilitado: boolean) {
   return useQuery({

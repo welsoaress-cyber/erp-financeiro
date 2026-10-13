@@ -190,8 +190,18 @@ Deno.serve(async (req) => {
     }
     // Boleto Asaas anexado: mensagem neutra própria ("seu boleto foi gerado"),
     // nunca o texto da régua (fala em "hoje"/"evite o bloqueio" — não cabe
-    // pra um boleto gerado adiantado, com vencimento ainda longe).
+    // pra um boleto gerado adiantado, com vencimento ainda longe). Negócio
+    // com asaas_ativo é tudo-ou-nada: não achou a cobrança lá (ainda não
+    // sincronizou, CPF não bate etc.), não manda nada — fica pendente pra
+    // tentar de novo na próxima rodada, nunca sai avisando sem o boleto real.
     const boleto = it.asaas_ativo ? await boletoAsaas(it.documento, it.lanc_valor, it.lanc_vencimento) : null
+    if (it.asaas_ativo && !boleto) {
+      pulados++
+      const motivo = `Boleto correspondente não encontrado no Asaas ainda (CPF ${mascarar(it.documento)}, valor/vencimento do lançamento). Continua pendente até achar.`
+      await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: false, p_erro: motivo, p_resposta: null, p_contar: false })
+      resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'pulado', motivo })
+      continue
+    }
     let mensagem: string
     let r: { ok: boolean; erro?: string; resposta?: unknown }
     if (boleto) {

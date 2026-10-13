@@ -31,6 +31,7 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
   const [encerramentoAutomatico, setEncerramentoAutomatico] = useState(config?.encerramento_automatico ?? false)
   const [encerramentoAposDias, setEncerramentoAposDias] = useState(String(config?.encerramento_apos_dias ?? 30))
   const [pontosAtivo, setPontosAtivo] = useState(config?.pontos_ativo ?? false)
+  const [asaasAtivo, setAsaasAtivo] = useState(config?.asaas_ativo ?? false)
   const [horaInicio, setHoraInicio] = useState((config?.hora_inicio ?? '08:00').slice(0, 5))
   const [horaFim, setHoraFim] = useState((config?.hora_fim ?? '18:00').slice(0, 5))
   const [tplProximo, setTplProximo] = useState(config?.template_vencimento_proximo ?? TEMPLATES_PADRAO.template_vencimento_proximo)
@@ -55,7 +56,7 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
     if (provedor === 'evolution' && !/^[a-z0-9_-]{2,40}$/.test(inst)) { setErro('Informe o nome da instância da Evolution API (ex.: servnet).'); return }
     for (const t of [tplProximo, tplDia, tplBloqueio]) if (t.trim().length < 10 || t.length > 1000) { setErro('Cada mensagem precisa ter entre 10 e 1000 caracteres.'); return }
     setErro(null)
-    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, regua_antes: rA, regua_apos: rP, bloqueio_automatico: bloqueioAutomatico, encerramento_automatico: encerramentoAutomatico, encerramento_apos_dias: diasEnc, pontos_ativo: pontosAtivo, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
+    salvar.mutate({ id: config?.id, negocioId, dados: { numero_whatsapp: num || null, provedor, instancia: provedor === 'evolution' ? inst : null, ativo, regua_antes: rA, regua_apos: rP, bloqueio_automatico: bloqueioAutomatico, encerramento_automatico: encerramentoAutomatico, encerramento_apos_dias: diasEnc, pontos_ativo: pontosAtivo, asaas_ativo: asaasAtivo, hora_inicio: horaInicio, hora_fim: horaFim, template_vencimento_proximo: tplProximo.trim(), template_vencimento_dia: tplDia.trim(), template_bloqueio: tplBloqueio.trim() } }, { onSuccess: aoConcluir })
   }
 
   return (
@@ -108,6 +109,15 @@ export function FormularioConfig({ negocioId, negocioNome, config, aoConcluir }:
           <span className="block font-medium">Pontos por pontualidade</span>
           <span className="block text-ink-muted">
             Cliente que paga a fatura antes do vencimento ganha pontos (quanto mais cedo, mais pontos, sem limite). Campanha de 01/10/2026 a 30/09/2027. Vitrine de prêmios e resgate ainda não existem — por enquanto só o extrato em Relatórios.
+          </span>
+        </span>
+      </label>
+      <label className="flex items-start gap-2 rounded-md border border-line p-3 text-sm">
+        <input type="checkbox" checked={asaasAtivo} onChange={(e) => setAsaasAtivo(e.target.checked)} className="mt-0.5 size-4 accent-brand-600" />
+        <span>
+          <span className="block font-medium">Anexar boleto do Asaas no aviso</span>
+          <span className="block text-ink-muted">
+            Busca no Asaas (pelo CPF do cliente) a cobrança já gerada pelo ReceitaNet e anexa o PDF do boleto na mensagem — não cria cobrança nova. Requer o secret ASAAS_API_KEY configurado no painel do Supabase. Se não achar a cobrança, o aviso sai só com o texto, igual hoje.
           </span>
         </span>
       </label>

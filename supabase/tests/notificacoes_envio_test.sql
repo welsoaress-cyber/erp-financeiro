@@ -117,5 +117,30 @@ do $$ declare v r%rowtype; v_p uuid; v_ct uuid; v_lanc uuid; rel jsonb; f record
   assert (select status from public.notificacoes_log where lancamento_id = v_lanc and tipo = 'proximo_vencimento') = 'erro', 'T4 aviso antes vira erro quando o vencimento já passou';
 end $$;
 
+-- T5 (0138): asaas_ativo e o CPF/valor/vencimento do lançamento voltam na fila
+-- só quando o negócio liga o boleto anexado — base pra Edge Function buscar
+-- no Asaas (a busca em si é HTTP, fora do alcance do teste local).
+do $$ declare v r%rowtype; v_p uuid; v_ct uuid; v_lanc uuid; rel jsonb; f record; begin
+  select * into v from r;
+  set local role authenticated;
+  set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+  insert into public.pessoas (organizacao_id, nome, documento, telefone) values (v.org, 'Cliente Asaas', '34648481836', '11955559999') returning id into v_p;
+  insert into public.contratos (organizacao_id, negocio_id, pessoa_id, plano_id, valor, periodicidade, data_inicio, dia_vencimento)
+    values (v.org, v.servnet, v_p, v.fibra, 80.00, 'mensal', current_date - 10, extract(day from current_date + 10)::int) returning id into v_ct;
+  select id into v_lanc from public.lancamentos where contrato_id = v_ct and tipo = 'receita' and status = 'previsto' limit 1;
+  rel := public.executar_notificacoes_agora(current_date + 10);
+
+  reset role; set local role service_role;
+  select * into f from public.notificacoes_para_envio(50) where documento = '34648481836';
+  assert f.asaas_ativo = false, 'T5 asaas_ativo false por padrão (opt-in)';
+  assert f.documento = '34648481836' and f.lanc_valor = 80.00 and f.lanc_vencimento = current_date + 10, 'T5 CPF/valor/vencimento do lançamento na fila: ' || f;
+
+  reset role; set local role authenticated; set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+  update public.notificacoes_config set asaas_ativo = true where negocio_id = v.servnet;
+  reset role; set local role service_role;
+  select * into f from public.notificacoes_para_envio(50) where documento = '34648481836';
+  assert f.asaas_ativo = true, 'T5 asaas_ativo true depois de ligado no negócio';
+end $$;
+
 rollback;
 \echo OK

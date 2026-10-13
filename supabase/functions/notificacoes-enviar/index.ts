@@ -4,6 +4,7 @@
 //   EVOLUTION_API_URL   ex.: http://IP-DA-VM:8080   (sem barra no fim)
 //   EVOLUTION_API_KEY   apikey da Evolution
 //   NOTIFICACOES_CRON_SECRET  mesmo valor guardado no Vault
+//   ASAAS_API_KEY       opcional — negócio com asaas_ativo liga o boleto anexado (0138)
 // SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são injetados automaticamente pela plataforma.
 // Deploy com "Verify JWT" desligado (a autenticação é o segredo do cron).
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -16,6 +17,11 @@ const CRON_SECRET = Deno.env.get('NOTIFICACOES_CRON_SECRET') ?? ''
 // Pix no aviso de cobrança (etapa 31): com MP_ACCESS_TOKEN configurado e Pix
 // ativo no negócio, o aviso ganha o copia-e-cola no fim da mensagem.
 const MP_TOKEN = (Deno.env.get('MP_ACCESS_TOKEN') ?? '').trim()
+// Boleto Asaas anexado (etapa 0138, opt-in por negócio): o ReceitaNet já cria
+// a cobrança na conta Asaas do proprietário — aqui só busca (por CPF) e anexa
+// o PDF, nunca cria cobrança nova.
+const ASAAS_KEY = (Deno.env.get('ASAAS_API_KEY') ?? '').trim()
+const ASAAS_URL = 'https://api.asaas.com/v3'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -58,6 +64,59 @@ async function pixDaFatura(sb: any, lancamentoId: string): Promise<string | null
 }
 const mascarar = (n: string | null) => (n ?? '').replace(/\d(?=\d{4})/g, '*')
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+// Busca no Asaas (mesma conta do ReceitaNet) a cobrança do cliente pelo CPF,
+// casando por valor + vencimento com o lançamento do aviso. Não cria nada —
+// só lê o que já existe. Retorna o PDF do boleto em base64, ou null se não
+// achar (cliente sem Asaas, cobrança paga, CPF não bate etc. — aviso sai só
+// com o texto, igual já era).
+async function boletoAsaasBase64(documento: string | null, valor: number | null, vencimento: string | null): Promise<string | null> {
+  if (!ASAAS_KEY || !documento || valor == null || !vencimento) return null
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 15000)
+    const resCli = await fetch(`${ASAAS_URL}/customers?cpfCnpj=${documento}`, { headers: { access_token: ASAAS_KEY }, signal: ctl.signal })
+    clearTimeout(t)
+    if (!resCli.ok) return null
+    const cli = await resCli.json().catch(() => null)
+    const customerId = cli?.data?.[0]?.id
+    if (!customerId) return null
+
+    const ctl2 = new AbortController(); const t2 = setTimeout(() => ctl2.abort(), 15000)
+    const resPag = await fetch(`${ASAAS_URL}/payments?customer=${customerId}&status=PENDING&limit=20`, { headers: { access_token: ASAAS_KEY }, signal: ctl2.signal })
+    clearTimeout(t2)
+    if (!resPag.ok) return null
+    const pag = await resPag.json().catch(() => null)
+    const pagamentos: Array<{ value: number; dueDate: string; bankSlipUrl: string | null }> = pag?.data ?? []
+    const match = pagamentos.find((p) => Number(p.value) === Number(valor) && p.dueDate === vencimento) ?? null
+    if (!match?.bankSlipUrl) return null
+
+    const ctl3 = new AbortController(); const t3 = setTimeout(() => ctl3.abort(), 20000)
+    const resPdf = await fetch(match.bankSlipUrl, { signal: ctl3.signal })
+    clearTimeout(t3)
+    if (!resPdf.ok) return null
+    const bytes = new Uint8Array(await resPdf.arrayBuffer())
+    let bin = ''; for (const b of bytes) bin += String.fromCharCode(b)
+    return btoa(bin)
+  } catch { return null }
+}
+
+async function enviarDocumento(instancia: string, numero: string, legenda: string, pdfBase64: string): Promise<{ ok: boolean; erro?: string; resposta?: unknown }> {
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000)
+    const res = await fetch(`${EVO_URL}/message/sendMedia/${instancia}`, {
+      method: 'POST', headers: { apikey: EVO_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        number: numero.replace(/\D/g, ''), mediatype: 'document', mimetype: 'application/pdf',
+        fileName: 'boleto.pdf', caption: legenda, media: pdfBase64,
+      }), signal: ctl.signal,
+    })
+    clearTimeout(t)
+    const corpo = await res.text()
+    let resposta: unknown = corpo; try { resposta = JSON.parse(corpo) } catch { /* texto puro */ }
+    if (res.ok) return { ok: true, resposta }
+    return { ok: false, erro: `HTTP ${res.status}: ${corpo.slice(0, 300)}` }
+  } catch (e) { return { ok: false, erro: String(e) } }
+}
 
 async function estadoInstancia(instancia: string): Promise<{ ok: boolean; estado: string }> {
   try {
@@ -102,7 +161,7 @@ Deno.serve(async (req) => {
   // lote pequeno + pausa longa entre mensagens: proteção do número contra bloqueio do WhatsApp
   const { data: fila, error } = await sb.rpc('notificacoes_para_envio', { p_limite: 8 })
   if (error) return json({ ok: false, erro: error.message }, 500)
-  const itens = (fila ?? []) as Array<{ id: string; instancia: string; numero_destino: string; mensagem: string; tipo: string }>
+  const itens = (fila ?? []) as Array<{ id: string; instancia: string; numero_destino: string; mensagem: string; tipo: string; asaas_ativo: boolean; documento: string | null; lanc_valor: number | null; lanc_vencimento: string | null }>
   if (itens.length === 0) return json({ ok: true, enviados: 0, erros: 0, pulados: 0, msg: 'Nada pendente.' })
 
   const estados = new Map<string, { ok: boolean; estado: string }>()
@@ -124,7 +183,10 @@ Deno.serve(async (req) => {
       const pix = await pixDaFatura(sb, log?.lancamento_id as string)
       if (pix) mensagem += `\n\nPague agora com Pix copia e cola:\n${pix}`
     }
-    const r = await enviarTexto(it.instancia, it.numero_destino, mensagem)
+    let r: { ok: boolean; erro?: string; resposta?: unknown }
+    const pdf = it.asaas_ativo ? await boletoAsaasBase64(it.documento, it.lanc_valor, it.lanc_vencimento) : null
+    if (pdf) r = await enviarDocumento(it.instancia, it.numero_destino, mensagem, pdf)
+    else r = await enviarTexto(it.instancia, it.numero_destino, mensagem)
     await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: r.ok, p_erro: r.erro ?? null, p_resposta: r.resposta ?? null })
     if (r.ok) { enviados++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'enviado' }) }
     else { erros++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'erro', motivo: r.erro }) }

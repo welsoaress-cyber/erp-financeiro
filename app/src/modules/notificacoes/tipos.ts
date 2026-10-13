@@ -31,6 +31,7 @@ export interface ConfigNotificacao {
   encerramento_automatico: boolean
   encerramento_apos_dias: number
   pontos_ativo: boolean
+  asaas_ativo: boolean
   hora_inicio: string
   hora_fim: string
   template_vencimento_proximo: string
@@ -49,6 +50,7 @@ export interface DadosConfigNotificacao {
   encerramento_automatico: boolean
   encerramento_apos_dias: number
   pontos_ativo: boolean
+  asaas_ativo: boolean
   hora_inicio: string
   hora_fim: string
   template_vencimento_proximo: string

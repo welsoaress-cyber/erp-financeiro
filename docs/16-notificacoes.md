@@ -60,6 +60,14 @@ Quando autorizado: novo valor no enum `provedor_notificacao`, uma Edge Function 
 - **0134**: a régua "depois do vencimento" (`regua_apos`) parava assim que o contrato suspendia — `gerar_notificacoes` exigia contrato ativo pra qualquer aviso. Negócio com tolerância curta (`bloqueio_apos_dias` baixo) suspende logo após vencer, então os avisos de cobrança (+1, +3, +5...) nunca saíam. Corrigido: só "antes do vencimento" exige ativo; "no dia" e "depois" valem também pra suspenso.
 - **0135**: `notificacoes_para_envio` (chamada pela Edge Function na hora de mandar) relê valor/vencimento do lançamento e telefone da pessoa NA HORA — nunca usa o texto/número gravados quando o aviso foi gerado. Corrige sozinho telefone atualizado depois do aviso já criado; e se um aviso "antes do vencimento" ficar pendente com o vencimento (editado) já no passado, vira erro em vez de sair com data errada.
 
+## 5c. 0138 · boleto do Asaas anexado no aviso (Servnet)
+O ReceitaNet já gera a cobrança (boleto/Pix) direto na conta Asaas do proprietário — o ERP não cria cobrança nenhuma, só busca a que já existe e anexa o PDF na mensagem de cobrança que a régua já manda. Opt-in por negócio: **"Anexar boleto do Asaas no aviso"** em Notificações → configurar o negócio (hoje só Servnet liga).
+
+- Casamento: busca o cliente no Asaas pelo **CPF** (`GET /v3/customers?cpfCnpj=`) e, entre as cobranças `PENDING` desse cliente, acha a que bate **valor + vencimento** com o lançamento do aviso. Não achou (cliente sem Asaas, cobrança paga, CPF não cadastrado lá) → aviso sai só com o texto, igual já era.
+- Achou: baixa o PDF do `bankSlipUrl` da cobrança e manda como documento anexado (Evolution API `sendMedia`), com o texto do aviso como legenda.
+- Requer secret `ASAAS_API_KEY` configurado no painel Supabase (Edge Functions → Secrets) — nunca no código nem no chat.
+- Não cobre confirmação automática de pagamento (baixar o lançamento sozinho quando o Asaas avisar que pagou) — fica para uma etapa seguinte.
+
 ## 6. Testes
 - `supabase/tests/notificacoes_test.sql`: helpers (E.164, template, moeda), validações da config (número, ativo sem número, template curto, log direto bloqueado), geração D-3/D0/D+3 com idempotência e sem telefone, horário comercial (pendente fora, simulado dentro), paga antes do envio → erro, contrato encerrado e config desativada não geram, teste manual, imutabilidade do log, `anon` negado.
 - `supabase/tests/verificar_notificacoes.sql`: 6 verificações. `verificar_agendamento.sql` agora lista os dois jobs.

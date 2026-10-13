@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
   // lote pequeno + pausa longa entre mensagens: proteção do número contra bloqueio do WhatsApp
   const { data: fila, error } = await sb.rpc('notificacoes_para_envio', { p_limite: 8 })
   if (error) return json({ ok: false, erro: error.message }, 500)
-  const itens = (fila ?? []) as Array<{ id: string; instancia: string; numero_destino: string; mensagem: string; tipo: string; asaas_ativo: boolean; documento: string | null; lanc_valor: number | null; lanc_vencimento: string | null }>
+  const itens = (fila ?? []) as Array<{ id: string; instancia: string; numero_destino: string; mensagem: string; tipo: string; asaas_ativo: boolean; documento: string | null; lanc_valor: number | null; lanc_vencimento: string | null; nome: string | null; negocio_nome: string | null }>
   if (itens.length === 0) return json({ ok: true, enviados: 0, erros: 0, pulados: 0, msg: 'Nada pendente.' })
 
   const estados = new Map<string, { ok: boolean; estado: string }>()
@@ -188,20 +188,28 @@ Deno.serve(async (req) => {
       resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'pulado', motivo })
       continue
     }
-    let mensagem = it.mensagem
-    if (['proximo_vencimento', 'vencimento', 'bloqueio'].includes(it.tipo)) {
-      const { data: log } = await sb.from('notificacoes_log').select('lancamento_id').eq('id', it.id).maybeSingle()
-      const pix = await pixDaFatura(sb, log?.lancamento_id as string)
-      if (pix) mensagem += `\n\nPague agora com Pix copia e cola:\n${pix}`
-    }
-    let r: { ok: boolean; erro?: string; resposta?: unknown }
+    // Boleto Asaas anexado: mensagem neutra própria ("seu boleto foi gerado"),
+    // nunca o texto da régua (fala em "hoje"/"evite o bloqueio" — não cabe
+    // pra um boleto gerado adiantado, com vencimento ainda longe).
     const boleto = it.asaas_ativo ? await boletoAsaas(it.documento, it.lanc_valor, it.lanc_vencimento) : null
+    let mensagem: string
+    let r: { ok: boolean; erro?: string; resposta?: unknown }
     if (boleto) {
-      let legenda = `${mensagem}\n\n📄 Segue o boleto em anexo, já pronto pra pagar.`
-      if (boleto.pixCopiaCola) legenda += `\n\nPIX Copia e Cola:\n${boleto.pixCopiaCola}`
-      if (boleto.linhaDigitavel) legenda += `\n\nLinha digitável:\n${boleto.linhaDigitavel}`
-      r = await enviarDocumento(it.instancia, it.numero_destino, legenda, boleto.pdfBase64)
-    } else r = await enviarTexto(it.instancia, it.numero_destino, mensagem)
+      const valorFmt = it.lanc_valor != null ? `R$ ${it.lanc_valor.toFixed(2).replace('.', ',')}` : ''
+      const vencFmt = it.lanc_vencimento ? it.lanc_vencimento.split('-').reverse().join('/') : ''
+      mensagem = `Olá ${it.nome ?? ''}! Seu boleto da ${it.negocio_nome ?? ''} foi gerado.\n\nValor: ${valorFmt}\nVencimento: ${vencFmt}\n\n📄 Segue em anexo, já pronto pra pagar.`
+      if (boleto.pixCopiaCola) mensagem += `\n\nPIX Copia e Cola:\n${boleto.pixCopiaCola}`
+      if (boleto.linhaDigitavel) mensagem += `\n\nLinha digitável:\n${boleto.linhaDigitavel}`
+      r = await enviarDocumento(it.instancia, it.numero_destino, mensagem, boleto.pdfBase64)
+    } else {
+      mensagem = it.mensagem
+      if (['proximo_vencimento', 'vencimento', 'bloqueio'].includes(it.tipo)) {
+        const { data: log } = await sb.from('notificacoes_log').select('lancamento_id').eq('id', it.id).maybeSingle()
+        const pix = await pixDaFatura(sb, log?.lancamento_id as string)
+        if (pix) mensagem += `\n\nPague agora com Pix copia e cola:\n${pix}`
+      }
+      r = await enviarTexto(it.instancia, it.numero_destino, mensagem)
+    }
     await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: r.ok, p_erro: r.erro ?? null, p_resposta: r.resposta ?? null })
     if (r.ok) { enviados++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'enviado' }) }
     else { erros++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'erro', motivo: r.erro }) }

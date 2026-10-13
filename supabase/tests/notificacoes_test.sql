@@ -61,7 +61,7 @@ do $$ declare v r%rowtype; rel jsonb; g public.notificacoes_log; n int; begin
   rel := public.executar_notificacoes_agora(date '2026-09-07');  -- 3 dias antes do dia 10
   assert (rel->>'geradas')::int = 2, 'T2 geradas D-3: ' || rel::text;
   select * into g from public.notificacoes_log where pessoa_id = v.joao and tipo = 'proximo_vencimento';
-  assert found and g.numero_destino = '+5511988887777' and g.mensagem like 'Olá João da Silva! Sua fatura do SERVNET (Fibra 500) no valor de R$ 99,90 vence em 10/09/2026%', 'T2 mensagem: ' || g.mensagem;
+  assert found and g.numero_destino = '+5511988887777' and g.mensagem like 'Olá João! Sua fatura do SERVNET (Fibra 500) no valor de R$ 99,90 vence em 10/09/2026%', 'T2 mensagem (0139: só primeiro nome): ' || g.mensagem;
   assert (select status from public.notificacoes_log where pessoa_id = v.semfone and tipo = 'proximo_vencimento') = 'erro', 'T2 sem telefone = erro';
   rel := public.executar_notificacoes_agora(date '2026-09-07');
   assert (rel->>'geradas')::int = 0, 'T2 idempotente';
@@ -122,7 +122,7 @@ do $$ declare v r%rowtype; g public.notificacoes_log; begin
   select * into v from r;
   update public.notificacoes_config set ativo = true where negocio_id = v.servnet;
   g := public.enviar_notificacao_teste(v.servnet, v.joao, 'bloqueio');
-  assert g.tipo = 'teste' and g.status = 'simulado' and g.mensagem like '[TESTE] Olá João da Silva.%' and g.numero_destino = '+5511988887777', 'T4 teste: ' || g.mensagem;
+  assert g.tipo = 'teste' and g.status = 'simulado' and g.mensagem like '[TESTE] Olá João.%' and g.numero_destino = '+5511988887777', 'T4 teste (0139: só primeiro nome): ' || g.mensagem;
   begin
     perform public.enviar_notificacao_teste(v.servnet, v.semfone);
     raise exception 'T4 sem telefone deveria falhar';

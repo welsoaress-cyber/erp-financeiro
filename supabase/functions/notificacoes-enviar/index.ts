@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
     }
     let r: { ok: boolean; erro?: string; resposta?: unknown }
     const pdf = it.asaas_ativo ? await boletoAsaasBase64(it.documento, it.lanc_valor, it.lanc_vencimento) : null
-    if (pdf) r = await enviarDocumento(it.instancia, it.numero_destino, mensagem, pdf)
+    if (pdf) r = await enviarDocumento(it.instancia, it.numero_destino, `${mensagem}\n\n📄 Segue o boleto em anexo, já pronto pra pagar.`, pdf)
     else r = await enviarTexto(it.instancia, it.numero_destino, mensagem)
     await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: r.ok, p_erro: r.erro ?? null, p_resposta: r.resposta ?? null })
     if (r.ok) { enviados++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'enviado' }) }

@@ -8,7 +8,7 @@ import { Alerta } from '../../../core/ui/Alerta'
 import { Carregando } from '../../../core/ui/Carregando'
 import { SeletorMes } from '../../../core/ui/SeletorMes'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
-import { formatarMoedaOuOculto, mesAtualISO } from '../../../core/formatos'
+import { fimDoMes, formatarMes, formatarMoedaOuOculto, mesAtualISO } from '../../../core/formatos'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { useContas } from '../../contas/api'
 import { useCategorias } from '../../categorias/api'
@@ -18,7 +18,6 @@ import { ROTULO_PESSOAL } from '../../negocios/tipos'
 import { useLancamentos, useProjecaoContratos } from '../../lancamentos/api'
 import { montarLinhasVisaoPorNegocio, useDashboardAgenda, useResultadoPorNegocio, useSaldoInicial, useUltimosLancamentos, type PrevistoNegocio } from '../api'
 import { useProjecaoSaldoMensal } from '../../lancamentos/api'
-import { SaldoProjetado } from '../components/SaldoProjetado'
 import { ResumoFinanceiro } from '../components/ResumoFinanceiro'
 import { AgendaFinanceira } from '../components/AgendaFinanceira'
 import { PendenciasOperacionais } from '../components/PendenciasOperacionais'
@@ -52,8 +51,8 @@ export function DashboardPage() {
   const lancamentosMes = useLancamentos(mes)
   const projecao = useProjecaoContratos(mes)
   const saldoInicial = useSaldoInicial(mes)
-  const fimDoAno = `${new Date().getFullYear()}-12-31`
-  const saldoProjetado = useProjecaoSaldoMensal(fimDoAno)
+  const mesFuturo = mes >= mesAtualISO() // projeção só faz sentido pra hoje em diante
+  const saldoProjetado = useProjecaoSaldoMensal(mesFuturo ? fimDoMes(mes) : fimDoMes(mesAtualISO()))
   const agenda = useDashboardAgenda()
 
   const nomeConta = useMemo(() => new Map((contas.data ?? []).map((c) => [c.id, c.nome])), [contas.data])
@@ -88,6 +87,11 @@ export function DashboardPage() {
 
   const previstosFiltrados = previstosPorNegocio.filter((p) => bate(p.negocio_id))
   const prev = previstosFiltrados.reduce((t, p) => ({ receitas: t.receitas + p.receitas, despesas: t.despesas + p.despesas }), { receitas: 0, despesas: 0 })
+
+  // saldo projetado: saldo atual das contas + todo o fluxo previsto (lançamentos + projeção de contratos) até o mês selecionado
+  const saldoProjetadoValor = saldoTotal + (saldoProjetado.data ?? [])
+    .filter((f) => bate(f.negocio_id))
+    .reduce((s, f) => s + (f.tipo === 'receita' ? f.valor : -f.valor), 0)
 
   const linhasVisaoPorNegocio = montarLinhasVisaoPorNegocio(negocios.data ?? [], resultado.data ?? [], previstosPorNegocio, bate)
 
@@ -133,7 +137,7 @@ export function DashboardPage() {
       {contas.isSuccess && resultado.isSuccess && ultimos.isSuccess && negocios.isSuccess && lancamentosMes.isSuccess && saldoInicial.isSuccess && agenda.isSuccess && saldoProjetado.isSuccess && (
         <div className="space-y-6">
           {/* Resumo */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Indicador rotulo="Saldo total" valor={saldoTotal} tom="auto" oculto={oculto} />
             <Indicador rotulo="A receber (mês)" valor={prev.receitas} tom="positivo" oculto={oculto}
               detalhe={`Recebido: ${formatarMoedaOuOculto(totais.receitas, oculto)}`} />
@@ -141,9 +145,11 @@ export function DashboardPage() {
               detalhe={`Pago: ${formatarMoedaOuOculto(totais.despesas, oculto)}`} />
             <Indicador rotulo="Resultado do mês (projetado)" valor={totais.resultado + prev.receitas - prev.despesas} tom="auto" oculto={oculto}
               detalhe={`Realizado: ${formatarMoedaOuOculto(totais.resultado, oculto)}`} />
+            {mesFuturo && (
+              <Indicador rotulo="Saldo projetado" valor={saldoProjetadoValor} tom="auto" oculto={oculto}
+                detalhe={`Até ${formatarMes(mes)}`} />
+            )}
           </div>
-
-          <SaldoProjetado saldoAtual={saldoTotal} fluxos={saldoProjetado.data ?? []} bate={bate} oculto={oculto} />
 
           {/* Agenda financeira */}
           <AgendaFinanceira itens={agenda.data ?? []} bate={bate} oculto={oculto} />

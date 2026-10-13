@@ -65,28 +65,32 @@ async function pixDaFatura(sb: any, lancamentoId: string): Promise<string | null
 const mascarar = (n: string | null) => (n ?? '').replace(/\d(?=\d{4})/g, '*')
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// Busca no Asaas (mesma conta do ReceitaNet) a cobrança do cliente pelo CPF,
-// casando por valor + vencimento com o lançamento do aviso. Não cria nada —
-// só lê o que já existe. Retorna o PDF do boleto em base64, ou null se não
-// achar (cliente sem Asaas, cobrança paga, CPF não bate etc. — aviso sai só
-// com o texto, igual já era).
-async function boletoAsaasBase64(documento: string | null, valor: number | null, vencimento: string | null): Promise<string | null> {
-  if (!ASAAS_KEY || !documento || valor == null || !vencimento) return null
+async function asaasGet(caminho: string): Promise<Record<string, unknown> | null> {
   try {
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 15000)
-    const resCli = await fetch(`${ASAAS_URL}/customers?cpfCnpj=${documento}`, { headers: { access_token: ASAAS_KEY }, signal: ctl.signal })
+    const res = await fetch(`${ASAAS_URL}${caminho}`, { headers: { access_token: ASAAS_KEY }, signal: ctl.signal })
     clearTimeout(t)
-    if (!resCli.ok) return null
-    const cli = await resCli.json().catch(() => null)
-    const customerId = cli?.data?.[0]?.id
+    if (!res.ok) return null
+    return await res.json().catch(() => null)
+  } catch { return null }
+}
+
+interface BoletoAsaas { pdfBase64: string; pixCopiaCola: string | null; linhaDigitavel: string | null }
+
+// Busca no Asaas (mesma conta do ReceitaNet) a cobrança do cliente pelo CPF,
+// casando por valor + vencimento com o lançamento do aviso. Não cria nada —
+// só lê o que já existe. Retorna o PDF do boleto + Pix copia-e-cola + linha
+// digitável, ou null se não achar (cliente sem Asaas, cobrança paga, CPF não
+// bate etc. — aviso sai só com o texto, igual já era).
+async function boletoAsaas(documento: string | null, valor: number | null, vencimento: string | null): Promise<BoletoAsaas | null> {
+  if (!ASAAS_KEY || !documento || valor == null || !vencimento) return null
+  try {
+    const cli = await asaasGet(`/customers?cpfCnpj=${documento}`)
+    const customerId = (cli?.data as Array<{ id: string }> | undefined)?.[0]?.id
     if (!customerId) return null
 
-    const ctl2 = new AbortController(); const t2 = setTimeout(() => ctl2.abort(), 15000)
-    const resPag = await fetch(`${ASAAS_URL}/payments?customer=${customerId}&status=PENDING&limit=20`, { headers: { access_token: ASAAS_KEY }, signal: ctl2.signal })
-    clearTimeout(t2)
-    if (!resPag.ok) return null
-    const pag = await resPag.json().catch(() => null)
-    const pagamentos: Array<{ value: number; dueDate: string; bankSlipUrl: string | null }> = pag?.data ?? []
+    const pag = await asaasGet(`/payments?customer=${customerId}&status=PENDING&limit=20`)
+    const pagamentos = (pag?.data as Array<{ id: string; value: number; dueDate: string; bankSlipUrl: string | null }> | undefined) ?? []
     const match = pagamentos.find((p) => Number(p.value) === Number(valor) && p.dueDate === vencimento) ?? null
     if (!match?.bankSlipUrl) return null
 
@@ -96,7 +100,14 @@ async function boletoAsaasBase64(documento: string | null, valor: number | null,
     if (!resPdf.ok) return null
     const bytes = new Uint8Array(await resPdf.arrayBuffer())
     let bin = ''; for (const b of bytes) bin += String.fromCharCode(b)
-    return btoa(bin)
+
+    const ident = await asaasGet(`/payments/${match.id}/identificationField`)
+    const pix = await asaasGet(`/payments/${match.id}/pixQrCode`)
+    return {
+      pdfBase64: btoa(bin),
+      linhaDigitavel: (ident?.identificationField as string | undefined) ?? null,
+      pixCopiaCola: (pix?.payload as string | undefined) ?? null,
+    }
   } catch { return null }
 }
 
@@ -184,9 +195,13 @@ Deno.serve(async (req) => {
       if (pix) mensagem += `\n\nPague agora com Pix copia e cola:\n${pix}`
     }
     let r: { ok: boolean; erro?: string; resposta?: unknown }
-    const pdf = it.asaas_ativo ? await boletoAsaasBase64(it.documento, it.lanc_valor, it.lanc_vencimento) : null
-    if (pdf) r = await enviarDocumento(it.instancia, it.numero_destino, `${mensagem}\n\n📄 Segue o boleto em anexo, já pronto pra pagar.`, pdf)
-    else r = await enviarTexto(it.instancia, it.numero_destino, mensagem)
+    const boleto = it.asaas_ativo ? await boletoAsaas(it.documento, it.lanc_valor, it.lanc_vencimento) : null
+    if (boleto) {
+      let legenda = `${mensagem}\n\n📄 Segue o boleto em anexo, já pronto pra pagar.`
+      if (boleto.pixCopiaCola) legenda += `\n\nPIX Copia e Cola:\n${boleto.pixCopiaCola}`
+      if (boleto.linhaDigitavel) legenda += `\n\nLinha digitável:\n${boleto.linhaDigitavel}`
+      r = await enviarDocumento(it.instancia, it.numero_destino, legenda, boleto.pdfBase64)
+    } else r = await enviarTexto(it.instancia, it.numero_destino, mensagem)
     await sb.rpc('registrar_resultado_notificacao', { p_id: it.id, p_ok: r.ok, p_erro: r.erro ?? null, p_resposta: r.resposta ?? null })
     if (r.ok) { enviados++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'enviado' }) }
     else { erros++; resultados.push({ id: it.id, destino: mascarar(it.numero_destino), status: 'erro', motivo: r.erro }) }

@@ -64,7 +64,7 @@ Quando autorizado: novo valor no enum `provedor_notificacao`, uma Edge Function 
 O ReceitaNet já gera a cobrança (boleto/Pix) direto na conta Asaas do proprietário — o ERP não cria cobrança nenhuma, só busca a que já existe e anexa o PDF na mensagem de cobrança que a régua já manda. Opt-in por negócio: **"Anexar boleto do Asaas no aviso"** em Notificações → configurar o negócio (hoje só Servnet liga).
 
 - Casamento: busca o cliente no Asaas pelo **CPF** (`GET /v3/customers?cpfCnpj=`) e, entre as cobranças `PENDING` desse cliente, acha a que bate **valor + vencimento** com o lançamento do aviso. Não achou (cliente sem Asaas, cobrança paga, CPF não cadastrado lá) → aviso sai só com o texto, igual já era.
-- Achou: baixa o PDF do `bankSlipUrl` da cobrança e manda como documento anexado (Evolution API `sendMedia`), com o texto do aviso como legenda.
+- Achou: baixa o PDF do `bankSlipUrl` e manda como documento anexado (Evolution API `sendMedia`), com legenda = texto do aviso + Pix copia-e-cola (`/payments/{id}/pixQrCode`) + linha digitável (`/payments/{id}/identificationField`), no mesmo formato que os clientes já recebiam antes.
 - Requer secret `ASAAS_API_KEY` configurado no painel Supabase (Edge Functions → Secrets) — nunca no código nem no chat.
 - Não cobre confirmação automática de pagamento (baixar o lançamento sozinho quando o Asaas avisar que pagou) — fica para uma etapa seguinte.
 

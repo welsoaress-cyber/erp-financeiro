@@ -15,7 +15,7 @@ import { usePeriodo } from '../../../core/periodo/usePeriodo'
 import { useContas } from '../../contas/api'
 import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 
-interface MovConciliacao { id: string; lancamento_id: string; valor: number; data: string; conciliado_em: string | null; descricao: string }
+interface MovConciliacao { id: string; lancamento_id: string; valor: number; data: string; conciliado_em: string | null; descricao: string; pessoa: string | null }
 
 function useMovimentosConta(contaId: string, mes: string) {
   const { organizacao } = useOrganizacao()
@@ -25,17 +25,20 @@ function useMovimentosConta(contaId: string, mes: string) {
     queryFn: async (): Promise<MovConciliacao[]> => {
       const { data, error } = await supabase
         .from('movimentos')
-        .select('id, lancamento_id, valor, data, conciliado_em, lancamentos(descricao)')
+        .select('id, lancamento_id, valor, data, conciliado_em, lancamentos(descricao, pessoas(nome))')
         .eq('organizacao_id', organizacao.id)
         .eq('conta_id', contaId)
         .gte('data', mes)
         .lte('data', fimDoMes(mes))
         .order('data')
       if (error) throw error
-      return (data ?? []).map((m) => ({
-        id: m.id, lancamento_id: m.lancamento_id, valor: Number(m.valor), data: m.data, conciliado_em: m.conciliado_em,
-        descricao: (m.lancamentos as unknown as { descricao: string } | null)?.descricao ?? '—',
-      }))
+      return (data ?? []).map((m) => {
+        const lanc = m.lancamentos as unknown as { descricao: string; pessoas: { nome: string } | null } | null
+        return {
+          id: m.id, lancamento_id: m.lancamento_id, valor: Number(m.valor), data: m.data, conciliado_em: m.conciliado_em,
+          descricao: lanc?.descricao ?? '—', pessoa: lanc?.pessoas?.nome ?? null,
+        }
+      })
     },
   })
 }
@@ -85,7 +88,7 @@ export function ConciliacaoPage() {
     if (sinal === 'entrada' && m.valor < 0) return false
     if (sinal === 'saida' && m.valor >= 0) return false
     if (!termo) return true
-    return m.descricao.toLowerCase().includes(termo) || String(m.valor).includes(termo)
+    return m.descricao.toLowerCase().includes(termo) || (m.pessoa?.toLowerCase().includes(termo) ?? false) || String(m.valor).includes(termo)
   })
   // o botão "Conferir todos" segue o que está na tela: filtrou, confere só o que aparece
   const pendentesVisiveis = lista.filter((m) => !m.conciliado_em)
@@ -116,7 +119,7 @@ export function ConciliacaoPage() {
               </span>
             </div>
             <BarraFiltros>
-              <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar por descrição ou valor" />
+              <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar por cliente, descrição ou valor" />
               <SelectFiltro valor={dia} aoMudar={setDia} rotulo="Filtrar por dia">
                 <option value="">Todos os dias</option>
                 {dias.map((d) => <option key={d} value={d}>{formatarData(d)}</option>)}
@@ -143,7 +146,8 @@ export function ConciliacaoPage() {
                       <input type="checkbox" className="size-4 accent-brand-600" checked={Boolean(m.conciliado_em)}
                         onChange={(e) => conciliar.mutate({ ids: [m.id], conciliar: e.target.checked })} />
                       <span className="min-w-0">
-                        <span className="font-medium">{m.descricao}</span>
+                        <span className="font-medium">{m.pessoa ?? m.descricao}</span>
+                        {m.pessoa && <span className="ml-2 text-ink-muted">{m.descricao}</span>}
                         <span className="ml-2 text-xs text-ink-muted">{formatarData(m.data)}</span>
                       </span>
                     </label>

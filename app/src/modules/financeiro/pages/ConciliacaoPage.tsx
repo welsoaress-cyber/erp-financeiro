@@ -8,7 +8,7 @@ import { Carregando } from '../../../core/ui/Carregando'
 import { SeletorMes } from '../../../core/ui/SeletorMes'
 import { Distintivo } from '../../../core/ui/Distintivo'
 import { mensagemDeErro } from '../../../core/erros/mensagemDeErro'
-import { formatarData, formatarMoeda } from '../../../core/formatos'
+import { fimDoMes, formatarData, formatarMoeda } from '../../../core/formatos'
 import { supabase } from '../../../core/supabase/client'
 import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { usePeriodo } from '../../../core/periodo/usePeriodo'
@@ -23,15 +23,13 @@ function useMovimentosConta(contaId: string, mes: string) {
     queryKey: ['conciliacao', organizacao.id, contaId, mes],
     enabled: Boolean(contaId),
     queryFn: async (): Promise<MovConciliacao[]> => {
-      const inicio = `${mes}-01`
-      const fim = new Date(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0).toISOString().slice(0, 10)
       const { data, error } = await supabase
         .from('movimentos')
         .select('id, lancamento_id, valor, data, conciliado_em, lancamentos(descricao)')
         .eq('organizacao_id', organizacao.id)
         .eq('conta_id', contaId)
-        .gte('data', inicio)
-        .lte('data', fim)
+        .gte('data', mes)
+        .lte('data', fimDoMes(mes))
         .order('data')
       if (error) throw error
       return (data ?? []).map((m) => ({

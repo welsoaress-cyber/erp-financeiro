@@ -68,6 +68,16 @@ O ReceitaNet já gera a cobrança (boleto/Pix) direto na conta Asaas do propriet
 - Requer secret `ASAAS_API_KEY` configurado no painel Supabase (Edge Functions → Secrets) — nunca no código nem no chat.
 - Não cobre confirmação automática de pagamento (baixar o lançamento sozinho quando o Asaas avisar que pagou) — fica para uma etapa seguinte.
 
+## 5d. 0143 · baixa automática via Asaas
+Mesmo padrão da reconciliação Pix (0077): `pg_cron` roda `asaas_reconciliar_agendado()` a cada 5 minutos, direto no banco (sem Edge Function, sem depender do navegador aberto). Só olha lançamento elegível ao boleto Asaas (negócio com `asaas_ativo` + contrato `forma_pagamento = 'boleto'`, mesma trava da 0141).
+
+Como o Asaas não tem "buscar cobrança pelo nosso id" (quem cria a cobrança é o ReceitaNet), o casamento é em duas consultas encadeadas: CPF → cliente Asaas (cacheado em `pessoas.asaas_customer_id`, pra não repetir) → cobranças do cliente, casando por valor + vencimento com status `RECEIVED`/`CONFIRMED`/`RECEIVED_IN_CASH`. Achou: baixa com `pix_efetivar_interno` (mesma função interna que o Pix já usa), na data real do pagamento informada pelo Asaas.
+
+Pré-requisito (uma vez, SQL Editor, chave real — nunca no repositório):
+```sql
+select vault.create_secret('a_chave_do_asaas', 'asaas_api_key');
+```
+
 ## 6. Testes
 - `supabase/tests/notificacoes_test.sql`: helpers (E.164, template, moeda), validações da config (número, ativo sem número, template curto, log direto bloqueado), geração D-3/D0/D+3 com idempotência e sem telefone, horário comercial (pendente fora, simulado dentro), paga antes do envio → erro, contrato encerrado e config desativada não geram, teste manual, imutabilidade do log, `anon` negado.
 - `supabase/tests/verificar_notificacoes.sql`: 6 verificações. `verificar_agendamento.sql` agora lista os dois jobs.

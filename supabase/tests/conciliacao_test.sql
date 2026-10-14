@@ -36,5 +36,41 @@ do $$ declare n int; begin
   exception when insufficient_privilege then null; end;
 end $$;
 
+-- T4 (0142): corrigir_conta_lancamento move a baixa pra outra conta
+set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$ declare v_org uuid; v_neg uuid; v_c1 uuid; v_c2 uuid; v_cat uuid; v_l uuid; e public.lancamentos%rowtype; begin
+  select id into v_org from public.organizacoes limit 1;
+  select id into v_cat from public.categorias where organizacao_id = v_org and tipo = 'receita' limit 1;
+  insert into public.negocios (organizacao_id, nome, slug, ativo) values (v_org, 'CONC T2', 'conc-t2', true) returning id into v_neg;
+  insert into public.contas (organizacao_id, nome, tipo, negocio_id) values (v_org, 'Mercado Pago Conc', 'corrente', v_neg) returning id into v_c1;
+  insert into public.contas (organizacao_id, nome, tipo, negocio_id) values (v_org, 'Caixa Conc', 'dinheiro', v_neg) returning id into v_c2;
+  select id into v_l from public.criar_lancamento('receita', 'Mensal/35', 35, current_date, current_date, current_date, v_c1, null, v_cat, null, v_neg, null, null, false, null, null, null);
+  assert (select conta_id from public.movimentos where lancamento_id = v_l) = v_c1, 'T4 nasce na conta 1';
+
+  e := public.corrigir_conta_lancamento(v_l, v_c2);
+  assert e.conta_id = v_c2, 'T4 lançamento aponta pra conta 2';
+  assert (select count(*) from public.movimentos where lancamento_id = v_l) = 1, 'T4 só um movimento (não duplica)';
+  assert (select conta_id from public.movimentos where lancamento_id = v_l) = v_c2, 'T4 movimento migrou pra conta 2';
+  assert (select valor from public.movimentos where lancamento_id = v_l) = 35, 'T4 valor intocado';
+
+  -- previsto não pode (nada pra mover ainda)
+  declare v_p uuid; begin
+    select id into v_p from public.criar_lancamento('receita', 'Previsto', 10, current_date, current_date, null, v_c1, null, v_cat, null, v_neg, null, null, false, null, null, null);
+    begin
+      perform public.corrigir_conta_lancamento(v_p, v_c2);
+      raise exception 'T4 previsto deveria falhar';
+    exception when check_violation then null; end;
+  end;
+
+  -- transferência não pode (duas contas)
+  declare v_t uuid; begin
+    select id into v_t from public.criar_lancamento('transferencia', 'Transf', 20, current_date, current_date, current_date, v_c1, v_c2, null, null, v_neg, null, null, false, null, null, null);
+    begin
+      perform public.corrigir_conta_lancamento(v_t, v_c2);
+      raise exception 'T4 transferência deveria falhar';
+    exception when check_violation then null; end;
+  end;
+end $$;
+
 rollback;
 \echo OK

@@ -150,7 +150,7 @@ Não quer esperar virar o dia (ex.: acabou de lançar um contrato e a fatura já
 
 ### 3.5 Conciliação bancária
 
-Escolha a conta e o mês e marque cada movimento que você encontrou no extrato do banco (ou use "Conferir todos" — ele confere só o que está aparecendo, então dá para conferir em blocos). Filtros: busca por descrição/valor, **só pendentes** ou **só conferidos** e **entradas/saídas**. Os cartões mostram conferidos × pendentes com as somas. Rotina de dono: no início do mês, conferir o mês anterior movimento a movimento e então **Fechar o mês** — saldo do sistema conferido vira fato, não fé.
+Escolha a conta e o mês e marque cada movimento que você encontrou no extrato do banco (ou use "Conferir todos" — ele confere só o que está aparecendo, então dá para conferir em blocos). Cada linha mostra o **nome do cliente**. Filtros: busca por cliente/descrição/valor, **dia** (a lista do mês inteiro fica bagunçada — filtra pra um dia só), **só pendentes**/**só conferidos** e **entradas/saídas**. Os cartões mostram conferidos × pendentes com as somas. Pagamento conferido na conta errada (ex.: marcado no Mercado Pago, mas caiu na Caixa)? **"Ajustar baixa"** ao lado do movimento move o lançamento pra conta certa sem reabrir a edição inteira (não serve pra transferência). Rotina de dono: no início do mês, conferir o mês anterior movimento a movimento e então **Fechar o mês** — saldo do sistema conferido vira fato, não fé.
 
 ## 4. Contas
 

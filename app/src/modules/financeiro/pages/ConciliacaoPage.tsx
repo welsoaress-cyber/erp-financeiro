@@ -55,6 +55,19 @@ function useConciliar() {
   })
 }
 
+/** Ajustar baixa: move um lançamento já efetivado pra outra conta (ex.: marcado no Mercado Pago, caiu na Caixa). */
+function useCorrigirConta() {
+  const { organizacao } = useOrganizacao()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: { lancamentoId: string; contaId: string }) => {
+      const { error } = await supabase.rpc('corrigir_conta_lancamento', { p_id: p.lancamentoId, p_conta_id: p.contaId })
+      if (error) throw error
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['conciliacao', organizacao.id] }),
+  })
+}
+
 /** Conciliação bancária: conferir os movimentos de cada conta contra o extrato, mês a mês. */
 export function ConciliacaoPage() {
   const { mes, setMes } = usePeriodo()
@@ -64,7 +77,9 @@ export function ConciliacaoPage() {
   const [situacao, setSituacao] = useState<'' | 'pendente' | 'conferido'>('')
   const [sinal, setSinal] = useState<'' | 'entrada' | 'saida'>('')
   const [dia, setDia] = useState('')
+  const [movendoId, setMovendoId] = useState<string | null>(null)
   const conciliar = useConciliar()
+  const corrigirConta = useCorrigirConta()
   const contasAtivas = (contas.data ?? []).filter((c) => c.ativo)
   const conta = contasAtivas.find((c) => c.id === contaId) ?? contasAtivas[0] ?? null
   const movs = useMovimentosConta(conta?.id ?? '', mes)
@@ -103,6 +118,7 @@ export function ConciliacaoPage() {
         </select>
       </div>
       {conciliar.error != null && <div className="mb-3"><Alerta tipo="erro">{mensagemDeErro(conciliar.error)}</Alerta></div>}
+      {corrigirConta.error != null && <div className="mb-3"><Alerta tipo="erro">{mensagemDeErro(corrigirConta.error)}</Alerta></div>}
       {!conta ? <Alerta tipo="info">Cadastre uma conta antes.</Alerta> : movs.isPending ? <Carregando /> : (
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
@@ -152,6 +168,17 @@ export function ConciliacaoPage() {
                       </span>
                     </label>
                     <span className="flex shrink-0 items-center gap-2">
+                      {movendoId === m.id ? (
+                        <select aria-label="Mover para outra conta" autoFocus className="h-8 rounded-md border border-line bg-white px-1 text-xs" defaultValue=""
+                          disabled={corrigirConta.isPending}
+                          onChange={(e) => { if (e.target.value) { corrigirConta.mutate({ lancamentoId: m.lancamento_id, contaId: e.target.value }); setMovendoId(null) } }}
+                          onBlur={() => setMovendoId(null)}>
+                          <option value="" disabled>Mover pra...</option>
+                          {contasAtivas.filter((c) => c.id !== conta.id).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                        </select>
+                      ) : (
+                        <button type="button" onClick={() => setMovendoId(m.id)} className="text-xs text-ink-muted underline hover:text-ink" title="Lançado na conta errada? Corrige sem reabrir o lançamento inteiro.">Ajustar baixa</button>
+                      )}
                       <span className={`font-medium tabular-nums ${m.valor < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatarMoeda(m.valor)}</span>
                       {m.conciliado_em ? <Distintivo tom="ok">Conferido</Distintivo> : <Distintivo tom="alerta">Pendente</Distintivo>}
                     </span>

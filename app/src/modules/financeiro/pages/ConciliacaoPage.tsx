@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { Cartao } from '../../../core/ui/Cartao'
@@ -60,10 +60,13 @@ export function ConciliacaoPage() {
   const [busca, setBusca] = useState('')
   const [situacao, setSituacao] = useState<'' | 'pendente' | 'conferido'>('')
   const [sinal, setSinal] = useState<'' | 'entrada' | 'saida'>('')
+  const [dia, setDia] = useState('')
   const conciliar = useConciliar()
   const contasAtivas = (contas.data ?? []).filter((c) => c.ativo)
   const conta = contasAtivas.find((c) => c.id === contaId) ?? contasAtivas[0] ?? null
   const movs = useMovimentosConta(conta?.id ?? '', mes)
+  const dias = useMemo(() => Array.from(new Set((movs.data ?? []).map((m) => m.data))).sort(), [movs.data])
+  useEffect(() => { setDia('') }, [mes, conta?.id])
 
   const { conferidos, pendentes } = useMemo(() => {
     const l = movs.data ?? []
@@ -76,6 +79,7 @@ export function ConciliacaoPage() {
 
   const termo = busca.trim().toLowerCase()
   const lista = (movs.data ?? []).filter((m) => {
+    if (dia && m.data !== dia) return false
     if (situacao === 'pendente' && m.conciliado_em) return false
     if (situacao === 'conferido' && !m.conciliado_em) return false
     if (sinal === 'entrada' && m.valor < 0) return false
@@ -113,6 +117,10 @@ export function ConciliacaoPage() {
             </div>
             <BarraFiltros>
               <CampoBusca valor={busca} aoMudar={setBusca} rotulo="Buscar por descrição ou valor" />
+              <SelectFiltro valor={dia} aoMudar={setDia} rotulo="Filtrar por dia">
+                <option value="">Todos os dias</option>
+                {dias.map((d) => <option key={d} value={d}>{formatarData(d)}</option>)}
+              </SelectFiltro>
               <SelectFiltro valor={situacao} aoMudar={(v) => setSituacao(v as typeof situacao)} rotulo="Filtrar por situação">
                 <option value="">Conferidos e pendentes</option>
                 <option value="pendente">Só pendentes</option>

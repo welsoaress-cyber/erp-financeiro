@@ -117,6 +117,8 @@ Filtros da tela: negócio, cliente/fornecedor, situação (aberto/vencido/pago),
 
 **🤝 Cliente prometeu pagar em outro dia?** Clique em **🤝 Prometeu pagar** na linha dele, escolha até quando e anote o combinado. A linha passa a mostrar o selo **🤝 Paga até DD/MM** aqui e na tela de Cobrança, e o bloqueio fica segurado até essa data. Pagou no prazo → a promessa se resolve sozinha como cumprida; passou devendo → ele volta na Cobrança destacado como **confiança furada** (você sabe que já confiou uma vez). Para desfazer, clique de novo na linha e use **Cancelar promessa**.
 
+**⚠️ ao lado do nome** (0144): o Asaas confirmou um pagamento do cliente, mas o valor ou vencimento não bate com este lançamento — a baixa automática (§5) não arriscou cair na fatura errada. Passe o mouse pra ver o que o Asaas informou; confira manualmente e, se for o caso, ajuste o lançamento. Histórico completo em **Relatórios → Divergências de pagamento Asaas**.
+
 ### 3.3 Contas a pagar
 
 ![Contas a pagar](img/05-contas-a-pagar.png)

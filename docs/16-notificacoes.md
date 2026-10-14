@@ -78,6 +78,13 @@ Pré-requisito (uma vez, SQL Editor, chave real — nunca no repositório):
 select vault.create_secret('a_chave_do_asaas', 'asaas_api_key');
 ```
 
+### 0144/0145 · divergência não some silenciosa
+Pedido do proprietário: casamento exato (CPF + valor + vencimento) significa que, se a data não bater, a baixa nunca acontece sozinha — mas também não pode ficar escondida. Quando o Asaas confirma um pagamento do cliente que não bate com nenhum lançamento `previsto`, grava em `asaas_divergencias` (quem acha é a própria `asaas_reconciliar_agendado`, 0145). Dois lugares pra ver:
+- **Alerta ⚠️** ao lado do nome do cliente em Financeiro → Contas a receber (hover mostra valor/vencimento que o Asaas confirmou).
+- **Relatório "Divergências de pagamento Asaas"** (Central de Relatórios → Financeiro).
+
+Resolve sozinho: baixa numa rodada seguinte (bateu) ou o lançamento sai de "previsto" por qualquer caminho (baixa manual, cancelamento, estorno).
+
 ## 6. Testes
 - `supabase/tests/notificacoes_test.sql`: helpers (E.164, template, moeda), validações da config (número, ativo sem número, template curto, log direto bloqueado), geração D-3/D0/D+3 com idempotência e sem telefone, horário comercial (pendente fora, simulado dentro), paga antes do envio → erro, contrato encerrado e config desativada não geram, teste manual, imutabilidade do log, `anon` negado.
 - `supabase/tests/verificar_notificacoes.sql`: 6 verificações. `verificar_agendamento.sql` agora lista os dois jobs.

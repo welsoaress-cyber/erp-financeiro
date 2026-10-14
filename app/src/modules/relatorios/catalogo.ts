@@ -537,6 +537,26 @@ export const RELATORIOS: Relatorio[] = [
     agrupavel: ['origem', 'categoria', 'situacao', 'negocio'],
     ordem: { chave: 'nome' },
   },
+  {
+    id: 'asaas-divergencias',
+    titulo: 'Divergências de pagamento Asaas',
+    area: 'Financeiro',
+    descricao: 'Pagamento confirmado no Asaas que não bateu (valor ou vencimento diferente) com o lançamento do ERP — a baixa automática não arrisca, fica pra conferir manualmente.',
+    view: 'vw_rel_asaas_divergencias',
+    filtros: ['negocio'],
+    colunas: [
+      { chave: 'detectado_em', rotulo: 'Detectado em', tipo: 'data' },
+      { chave: 'cliente', rotulo: 'Cliente' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+      { chave: 'valor_esperado', rotulo: 'Valor no ERP', tipo: 'moeda' },
+      { chave: 'vencimento_esperado', rotulo: 'Vencimento no ERP', tipo: 'data' },
+      { chave: 'valor_pago', rotulo: 'Valor pago no Asaas', tipo: 'moeda' },
+      { chave: 'vencimento_pago', rotulo: 'Vencimento no Asaas', tipo: 'data' },
+      { chave: 'status_pagamento', rotulo: 'Status no Asaas' },
+    ],
+    agrupavel: ['negocio'],
+    ordem: { chave: 'detectado_em', desc: true },
+  },
 ]
 
 export const AREAS: Area[] = ['Financeiro', 'Clientes e contratos', 'Operação', 'Comercial']

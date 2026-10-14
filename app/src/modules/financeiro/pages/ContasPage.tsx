@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
+import { supabase } from '../../../core/supabase/client'
+import { useOrganizacao } from '../../../core/organizacao/useOrganizacao'
 import { CabecalhoPagina } from '../../../core/ui/CabecalhoPagina'
 import { BarraFiltros, CampoBusca, ContagemFiltro, SelectFiltro } from '../../../core/ui/Filtros'
 import { Cartao } from '../../../core/ui/Cartao'
@@ -34,6 +37,28 @@ const situacaoDe = (l: Lancamento): Situacao => (l.status === 'efetivado' ? 'pag
 const ROTULO: Record<Situacao, string> = { aberto: 'Em aberto', vencido: 'Vencido', pago: 'Pago' }
 const TOM: Record<Situacao, 'ok' | 'alerta' | 'info'> = { pago: 'ok', vencido: 'alerta', aberto: 'info' }
 type Acao = { tipo: 'baixa' | 'parcial' | 'cancelar'; l: Lancamento } | null
+
+interface DivergenciaAsaas { lancamento_id: string; valor_pago: number | null; vencimento_pago: string | null; status_pagamento: string | null }
+
+/** Lançamentos com pagamento confirmado no Asaas que não bateu com o ERP (0144/0145) — alerta em Contas a receber. */
+function useDivergenciasAsaas(ativo: boolean) {
+  const { organizacao } = useOrganizacao()
+  return useQuery({
+    queryKey: ['asaas-divergencias', organizacao.id],
+    enabled: ativo,
+    queryFn: async (): Promise<DivergenciaAsaas[]> => {
+      const { data, error } = await supabase.from('vw_rel_asaas_divergencias').select('lancamento_id, valor_pago, vencimento_pago, status_pagamento').eq('organizacao_id', organizacao.id)
+      if (error) throw error
+      return data ?? []
+    },
+  })
+}
+
+/** Alerta: o Asaas confirmou um pagamento do cliente que não bateu (valor/vencimento) com este lançamento — baixa automática não arriscou, confira manualmente. */
+function BadgeDivergenciaAsaas({ d }: { d: DivergenciaAsaas }) {
+  const detalhe = `Asaas confirmou ${d.valor_pago != null ? formatarMoeda(d.valor_pago) : 'um pagamento'}${d.vencimento_pago ? ` (venc. ${formatarData(d.vencimento_pago)})` : ''}, mas não bate com este lançamento. Confira manualmente.`
+  return <span title={detalhe} className="shrink-0 cursor-help text-amber-600" aria-label="Divergência de pagamento Asaas">⚠️</span>
+}
 
 function Indicador({ rotulo, valor, tom, ajuda }: { rotulo: string; valor: string; tom?: 'ok' | 'alerta'; ajuda?: string }) {
   return <Cartao className="p-4"><p className="text-xs uppercase tracking-wide text-ink-muted">{rotulo}</p><p className={`mt-1 whitespace-nowrap text-xl font-semibold tabular-nums ${tom === 'ok' ? 'text-green-700' : tom === 'alerta' ? 'text-red-700' : ''}`}>{valor}</p>{ajuda && <p className="text-xs text-ink-muted">{ajuda}</p>}</Cartao>
@@ -108,6 +133,8 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, vencidosAnteriores.data])
   // promessa de pagamento (voto de confiança): só faz sentido em contas a receber
+  const divergenciasAsaas = useDivergenciasAsaas(receber)
+  const divergenciaPorLancamento = useMemo(() => new Map((divergenciasAsaas.data ?? []).map((d) => [d.lancamento_id, d])), [divergenciasAsaas.data])
   const confiancas = useConfiancasAtivas(receber)
   const darConfianca = useDarConfianca()
   const cancelarConfianca = useCancelarConfianca()
@@ -322,7 +349,7 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
                   <li key={l.id} className="px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0 flex-1">
-                        <span className="block text-xs tabular-nums text-ink-muted">{formatarData(l.data_vencimento)}{l.pessoa_id ? ` · ${nomePessoa.get(l.pessoa_id) ?? '—'}` : ''}</span>
+                        <span className="block text-xs tabular-nums text-ink-muted">{formatarData(l.data_vencimento)}{l.pessoa_id ? ` · ${nomePessoa.get(l.pessoa_id) ?? '—'}` : ''}{divergenciaPorLancamento.has(l.id) && <BadgeDivergenciaAsaas d={divergenciaPorLancamento.get(l.id)!} />}</span>
                         <span className="mt-0.5 block font-medium">{l.descricao}</span>
                         {(c || l.recorrente) && <span className="text-xs text-ink-muted">{c ? codigoContrato(c) : ''}{c && l.recorrente ? ' · ' : ''}{l.recorrente ? `🔄 ${rotuloParcela(l)}` : ''}</span>}
                         {l.observacao && <span className="block text-xs text-ink-muted">{l.observacao}</span>}
@@ -368,7 +395,12 @@ function ContasPage({ tipo }: { tipo: 'receita' | 'despesa' }) {
                 <tr key={l.id} className="border-b border-line last:border-0 hover:bg-surface">
                   <td className="whitespace-nowrap px-4 py-3 tabular-nums">{formatarData(l.data_vencimento)}</td>
                   <td className="px-4 py-3"><span className="font-medium">{l.descricao}</span>{c && <span className="ml-2 font-mono text-xs text-ink-muted">{codigoContrato(c)}</span>}{l.recorrente && <span className="ml-2 text-xs text-ink-muted">🔄 {rotuloParcela(l)}</span>}{l.observacao && <p className="text-xs text-ink-muted">{l.observacao}</p>}</td>
-                  <td className="whitespace-nowrap px-4 py-3">{l.pessoa_id ? nomePessoa.get(l.pessoa_id) ?? '—' : '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    <span className="flex items-center justify-between gap-2">
+                      <span>{l.pessoa_id ? nomePessoa.get(l.pessoa_id) ?? '—' : '—'}</span>
+                      {divergenciaPorLancamento.has(l.id) && <BadgeDivergenciaAsaas d={divergenciaPorLancamento.get(l.id)!} />}
+                    </span>
+                  </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums">{ehCortesia(l) ? <span className="text-ink-muted line-through">{formatarMoeda(l.valor)}</span> : formatarMoeda(l.valor)}</td>
                   <td className="whitespace-nowrap px-4 py-3">
                     {ehCortesia(l) ? <Distintivo tom="info">Cortesia</Distintivo> : <Distintivo tom={TOM[st]}>{st === 'pago' ? (receber ? 'Recebido' : 'Pago') : ROTULO[st]}</Distintivo>}

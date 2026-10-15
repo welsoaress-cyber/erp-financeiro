@@ -85,6 +85,9 @@ Pedido do proprietário: casamento exato (CPF + valor + vencimento) significa qu
 
 Resolve sozinho: baixa numa rodada seguinte (bateu) ou o lançamento sai de "previsto" por qualquer caminho (baixa manual, cancelamento, estorno).
 
+### 0147/0148 · Pix também, e relatório de conferência
+Pedido do proprietário: cliente da Servnet que paga Pix também é a mesma conta Asaas (não é outro sistema) — a trava passa a aceitar contrato `forma_pagamento` **boleto ou pix** (continua sem mexer em quem usa Mercado Pago). Toda baixa automática (boleto ou Pix) grava em `asaas_baixas_automaticas` — relatório **"Baixas automáticas via Asaas"** (Central de Relatórios → Financeiro), pra conferência diária de que está tudo certo.
+
 ## 6. Testes
 - `supabase/tests/notificacoes_test.sql`: helpers (E.164, template, moeda), validações da config (número, ativo sem número, template curto, log direto bloqueado), geração D-3/D0/D+3 com idempotência e sem telefone, horário comercial (pendente fora, simulado dentro), paga antes do envio → erro, contrato encerrado e config desativada não geram, teste manual, imutabilidade do log, `anon` negado.
 - `supabase/tests/verificar_notificacoes.sql`: 6 verificações. `verificar_agendamento.sql` agora lista os dois jobs.

@@ -557,6 +557,25 @@ export const RELATORIOS: Relatorio[] = [
     agrupavel: ['negocio'],
     ordem: { chave: 'detectado_em', desc: true },
   },
+  {
+    id: 'asaas-baixas-automaticas',
+    titulo: 'Baixas automáticas via Asaas',
+    area: 'Financeiro',
+    descricao: 'Tudo que a reconciliação do Asaas deu baixa sozinha (boleto ou Pix) — conferência diária de que está tudo certo.',
+    view: 'vw_rel_asaas_baixas_automaticas',
+    filtros: ['negocio'],
+    colunas: [
+      { chave: 'baixado_em', rotulo: 'Baixado em', tipo: 'data' },
+      { chave: 'cliente', rotulo: 'Cliente' },
+      { chave: 'negocio', rotulo: 'Negócio' },
+      { chave: 'valor', rotulo: 'Valor', tipo: 'moeda', totalizar: true },
+      { chave: 'data_pagamento', rotulo: 'Data do pagamento', tipo: 'data' },
+      { chave: 'forma_pagamento', rotulo: 'Forma de pagamento' },
+      { chave: 'forma_cobranca_asaas', rotulo: 'Cobrança no Asaas' },
+    ],
+    agrupavel: ['negocio', 'forma_pagamento'],
+    ordem: { chave: 'baixado_em', desc: true },
+  },
 ]
 
 export const AREAS: Area[] = ['Financeiro', 'Clientes e contratos', 'Operação', 'Comercial']

@@ -69,7 +69,7 @@ O ReceitaNet já gera a cobrança (boleto/Pix) direto na conta Asaas do propriet
 - Não cobre confirmação automática de pagamento (baixar o lançamento sozinho quando o Asaas avisar que pagou) — fica para uma etapa seguinte.
 
 ## 5d. 0143 · baixa automática via Asaas
-Mesmo padrão da reconciliação Pix (0077): `pg_cron` roda `asaas_reconciliar_agendado()` a cada 5 minutos, direto no banco (sem Edge Function, sem depender do navegador aberto). Só olha lançamento elegível ao boleto Asaas (negócio com `asaas_ativo` + contrato `forma_pagamento = 'boleto'`, mesma trava da 0141).
+Mesmo padrão da reconciliação Pix (0077): `pg_cron` roda `asaas_reconciliar_agendado()` a cada 30 minutos (0146 — começou em 5 min, trocado pra reduzir log/histórico no banco), direto no banco (sem Edge Function, sem depender do navegador aberto). Só olha lançamento elegível ao boleto Asaas (negócio com `asaas_ativo` + contrato `forma_pagamento = 'boleto'`, mesma trava da 0141).
 
 Como o Asaas não tem "buscar cobrança pelo nosso id" (quem cria a cobrança é o ReceitaNet), o casamento é em duas consultas encadeadas: CPF → cliente Asaas (cacheado em `pessoas.asaas_customer_id`, pra não repetir) → cobranças do cliente, casando por valor + vencimento com status `RECEIVED`/`CONFIRMED`/`RECEIVED_IN_CASH`. Achou: baixa com `pix_efetivar_interno` (mesma função interna que o Pix já usa), na data real do pagamento informada pelo Asaas.
 
